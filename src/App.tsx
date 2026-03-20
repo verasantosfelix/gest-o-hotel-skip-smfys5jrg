@@ -1,4 +1,30 @@
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
+import * as jsxRuntime from 'react/jsx-runtime'
+import * as jsxDevRuntime from 'react/jsx-dev-runtime'
+
+try {
+  const patch = (rt: any) => {
+    if (!rt) return
+    const methods = ['jsx', 'jsxs', 'jsxDEV']
+    methods.forEach((m) => {
+      if (rt[m]) {
+        const orig = rt[m]
+        rt[m] = function (t: any, p: any, ...args: any[]) {
+          if (t === React.Fragment && p && 'data-uid' in p) {
+            const { 'data-uid': _, 'data-prohibitions': __, ...rest } = p
+            return orig(t, rest, ...args)
+          }
+          return orig(t, p, ...args)
+        }
+      }
+    })
+  }
+  patch(jsxRuntime)
+  patch(jsxDevRuntime)
+} catch (e) {
+  // Silent fallback if module is sealed
+}
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
