@@ -1,16 +1,28 @@
-import { BedDouble, Clock, ShieldCheck, DoorOpen, TerminalSquare } from 'lucide-react'
+import {
+  BedDouble,
+  Clock,
+  ShieldCheck,
+  DoorOpen,
+  TerminalSquare,
+  PackageSearch,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useHotelStore from '@/stores/useHotelStore'
+import useInventoryStore from '@/stores/useInventoryStore'
 import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
 import { Consumption } from '@/components/operations/Consumption'
 import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
+import { InventoryManagement } from '@/components/operations/InventoryManagement'
 
 export default function Index() {
   const { selectedHotel } = useHotelStore()
+  const { items } = useInventoryStore()
+
+  const lowStockCount = items.filter((i) => i.quantity < i.threshold).length
 
   const kpis = [
     {
@@ -35,11 +47,11 @@ export default function Index() {
       color: 'text-rose-600',
     },
     {
-      title: 'Validações Pend.',
-      value: '3',
-      desc: 'Requer atenção',
-      icon: Clock,
-      color: 'text-amber-500',
+      title: 'Alertas de Estoque',
+      value: lowStockCount.toString(),
+      desc: 'Itens abaixo da cota',
+      icon: PackageSearch,
+      color: lowStockCount > 0 ? 'text-amber-500' : 'text-emerald-600',
     },
   ]
 
@@ -53,12 +65,20 @@ export default function Index() {
     { time: '09:15', msg: 'Aviso: Overbooking detectado na data 15/05.', type: 'warning' },
   ]
 
+  if (lowStockCount > 0) {
+    feed.unshift({
+      time: 'Agora',
+      msg: `Atenção: ${lowStockCount} item(s) com estoque baixo necessitam de reposição imediata.`,
+      type: 'warning',
+    })
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold tracking-tight text-slate-900">
-            Concierge Operations
+            Command Center
           </h1>
           <p className="text-slate-500">Operação atual: {selectedHotel.name}</p>
         </div>
@@ -96,6 +116,12 @@ export default function Index() {
           >
             Check-out
           </TabsTrigger>
+          <TabsTrigger
+            value="estoque"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+          >
+            Estoque
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 outline-none">
@@ -107,7 +133,11 @@ export default function Index() {
                   <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-slate-900">{kpi.value}</div>
+                  <div
+                    className={`text-2xl font-bold ${kpi.title === 'Alertas de Estoque' && parseInt(kpi.value) > 0 ? 'text-amber-500' : 'text-slate-900'}`}
+                  >
+                    {kpi.value}
+                  </div>
                   <p className="text-xs text-slate-500">{kpi.desc}</p>
                 </CardContent>
               </Card>
@@ -130,7 +160,7 @@ export default function Index() {
                       <p className="text-sm text-slate-700">{item.msg}</p>
                     </div>
                     {item.type === 'warning' && (
-                      <Badge variant="destructive" className="bg-rose-500 hover:bg-rose-600">
+                      <Badge variant="destructive" className="bg-amber-500 hover:bg-amber-600">
                         Atenção
                       </Badge>
                     )}
@@ -164,7 +194,9 @@ export default function Index() {
     <check-ins>12 concluidos, 4 pendentes</check-ins>
     <check-outs>8 finalizados</check-outs>
   </dados>
-  <perguntas>O quarto 304 precisa de manutenção preventiva?</perguntas>
+  <alertas>
+    <estoque>${lowStockCount} itens requerem reposição</estoque>
+  </alertas>
   <proximos-passos>Finalizar check-ins pendentes antes das 14h.</proximos-passos>
 </OUTPUT>`}
                   </pre>
@@ -188,6 +220,10 @@ export default function Index() {
 
         <TabsContent value="checkout" className="outline-none focus:outline-none">
           <CheckOut />
+        </TabsContent>
+
+        <TabsContent value="estoque" className="outline-none focus:outline-none">
+          <InventoryManagement />
         </TabsContent>
       </Tabs>
     </div>

@@ -23,15 +23,21 @@ import useReservationStore, {
   ConsumptionCategory,
   Consumption as IConsumption,
 } from '@/stores/useReservationStore'
+import useInventoryStore from '@/stores/useInventoryStore'
+import useAuditStore from '@/stores/useAuditStore'
 import { CheckCircle, Info, ShieldCheck } from 'lucide-react'
 
 export function Consumption() {
   const { reservations, addConsumption, getConsumptionsByReservation } = useReservationStore()
+  const { items, decrementStock } = useInventoryStore()
+  const { addLog } = useAuditStore()
+
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
     reserva_id: '',
-    descricao_item: '',
     categoria: '' as ConsumptionCategory | '',
+    inventory_item_id: '',
+    descricao_item: '',
     preco_unitario: '',
     quantidade: '1',
     regra_desconto: 'none' as 'none' | 'vip' | 'promo',
@@ -46,6 +52,8 @@ export function Consumption() {
   const activeConsumptions = activeReservation
     ? getConsumptionsByReservation(activeReservation.id).filter((c) => c.validacao_hospede)
     : []
+
+  const availableItems = items.filter((i) => i.category === form.categoria)
 
   const preco = parseFloat(form.preco_unitario.replace(',', '.')) || 0
   const qtd = parseInt(form.quantidade, 10) || 1
@@ -74,17 +82,14 @@ export function Consumption() {
         setError('<erro>Todos os campos obrigatórios devem ser preenchidos.</erro>')
         return
       }
-
       if (isNaN(preco) || preco <= 0) {
         setError('<erro tipo="valor-invalido">O preço unitário deve ser superior a zero.</erro>')
         return
       }
-
       if (isNaN(qtd) || qtd <= 0) {
         setError('<erro tipo="quantidade-invalida">A quantidade deve ser pelo menos 1.</erro>')
         return
       }
-
       const res = reservations.find((r) => r.id === form.reserva_id)
       if (!res || res.status !== 'checked-in') {
         setError(
@@ -92,7 +97,6 @@ export function Consumption() {
         )
         return
       }
-
       setError('')
       setStep(2)
     } else if (step === 2) {
@@ -101,6 +105,14 @@ export function Consumption() {
           '<erro tipo="assinatura-pendente">A confirmação e assinatura do hóspede são obrigatórias.</erro>',
         )
         return
+      }
+
+      if (form.inventory_item_id) {
+        decrementStock(form.inventory_item_id, qtd)
+        addLog(
+          'INVENTORY_DEDUCTION',
+          `Deducted ${qtd}x ${form.descricao_item} from inventory for reservation ${form.reserva_id}`,
+        )
       }
 
       const cons: IConsumption = {
@@ -128,8 +140,7 @@ export function Consumption() {
       <Card className="border-emerald-500/20 bg-emerald-50 shadow-sm animate-fade-in-up max-w-2xl">
         <CardHeader>
           <CardTitle className="text-emerald-700 font-display flex items-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            Lançamento Realizado
+            <CheckCircle className="w-5 h-5" /> Lançamento Realizado
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -141,9 +152,9 @@ export function Consumption() {
   <quantidade>${lastSaved?.quantidade}</quantidade>
   <preco_unitario>${lastSaved?.preco_unitario.toFixed(2)}</preco_unitario>
   <desconto>${lastSaved?.desconto.toFixed(2)}</desconto>
-  ${lastSaved?.motivo_desconto ? `<motivo_desconto>${lastSaved.motivo_desconto}</motivo_desconto>\n  ` : ''}<valor_final>${lastSaved?.valor.toFixed(2)}</valor_final>
+  <valor_final>${lastSaved?.valor.toFixed(2)}</valor_final>
   <validacao_hospede>${lastSaved?.validacao_hospede}</validacao_hospede>
-  <data_registro>${lastSaved?.data_registro}</data_registro>
+  <estoque_atualizado>${form.inventory_item_id ? 'Sim' : 'N/A'}</estoque_atualizado>
   <status>Item registrado com sucesso</status>
 </OUTPUT>`}
           </pre>
@@ -152,13 +163,12 @@ export function Consumption() {
           <Button
             onClick={() => {
               setStep(1)
-              setForm((prev) => ({
-                ...prev,
+              setForm((p) => ({
+                ...p,
+                inventory_item_id: '',
                 descricao_item: '',
-                categoria: '',
                 preco_unitario: '',
                 quantidade: '1',
-                regra_desconto: 'none',
               }))
               setAssinatura(false)
               setLastSaved(null)
@@ -177,7 +187,8 @@ export function Consumption() {
       <CardHeader>
         <CardTitle className="text-slate-800 font-display">Lançamento de Consumo</CardTitle>
         <CardDescription>
-          Registre itens na conta do hóspede com motor de descontos e assinatura digital.
+          Registre itens na conta com motor de descontos, assinatura digital e dedução automática de
+          estoque.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 min-h-[250px]">
@@ -187,7 +198,6 @@ export function Consumption() {
               <div className="space-y-2">
                 <Label className="text-slate-700">ID da Reserva</Label>
                 <Input
-                  className="border-slate-300 focus-visible:ring-slate-500"
                   placeholder="Ex: 12345"
                   value={form.reserva_id}
                   onChange={(e) => setForm({ ...form, reserva_id: e.target.value })}
@@ -197,9 +207,17 @@ export function Consumption() {
                 <Label className="text-slate-700">Categoria</Label>
                 <Select
                   value={form.categoria}
-                  onValueChange={(v) => setForm({ ...form, categoria: v as any })}
+                  onValueChange={(v) =>
+                    setForm({
+                      ...form,
+                      categoria: v as any,
+                      inventory_item_id: '',
+                      descricao_item: '',
+                      preco_unitario: '',
+                    })
+                  }
                 >
-                  <SelectTrigger className="border-slate-300">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -212,20 +230,44 @@ export function Consumption() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700">Descrição do Item</Label>
-              <Input
-                className="border-slate-300 focus-visible:ring-slate-500"
-                placeholder="Ex: Água mineral com gás"
-                value={form.descricao_item}
-                onChange={(e) => setForm({ ...form, descricao_item: e.target.value })}
-              />
+              <Label className="text-slate-700">Item (Estoque / Descrição)</Label>
+              {availableItems.length > 0 ? (
+                <Select
+                  value={form.inventory_item_id}
+                  onValueChange={(v) => {
+                    const item = items.find((i) => i.id === v)
+                    setForm({
+                      ...form,
+                      inventory_item_id: v,
+                      descricao_item: item?.name || '',
+                      preco_unitario: item?.price.toFixed(2) || '',
+                    })
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione do inventário..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableItems.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>
+                        {i.name} (Estoque: {i.quantity})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  placeholder="Descreva o item"
+                  value={form.descricao_item}
+                  onChange={(e) => setForm({ ...form, descricao_item: e.target.value })}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-700">Quantidade</Label>
                 <Input
-                  className="border-slate-300 focus-visible:ring-slate-500"
                   type="number"
                   min="1"
                   value={form.quantidade}
@@ -235,9 +277,7 @@ export function Consumption() {
               <div className="space-y-2">
                 <Label className="text-slate-700">Preço Unitário (R$)</Label>
                 <Input
-                  className="border-slate-300 focus-visible:ring-slate-500"
                   placeholder="0.00"
-                  type="text"
                   value={form.preco_unitario}
                   onChange={(e) => setForm({ ...form, preco_unitario: e.target.value })}
                 />
@@ -250,59 +290,21 @@ export function Consumption() {
                 value={form.regra_desconto}
                 onValueChange={(v) => setForm({ ...form, regra_desconto: v as any })}
               >
-                <SelectTrigger className="border-slate-300">
+                <SelectTrigger>
                   <SelectValue placeholder="Sem desconto" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  <SelectItem value="vip">Perfil VIP (10% de desconto)</SelectItem>
-                  <SelectItem value="promo">Promoção Ativa (15% de desconto)</SelectItem>
+                  <SelectItem value="vip">Perfil VIP (10%)</SelectItem>
+                  <SelectItem value="promo">Promoção Ativa (15%)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {error && (
-              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200">
                 {error}
               </pre>
-            )}
-
-            {activeReservation && (
-              <div className="mt-8 space-y-4 animate-fade-in">
-                <h3 className="font-semibold text-slate-800 border-b pb-2">
-                  Extrato Atual (Apenas Validados) - Quarto {activeReservation.room}
-                </h3>
-                {activeConsumptions.length === 0 ? (
-                  <p className="text-sm text-slate-500">Nenhum consumo validado ainda.</p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                    {activeConsumptions.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex justify-between items-center bg-slate-50 p-3 rounded-md border border-slate-100"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">
-                            {c.quantidade}x {c.descricao}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {c.categoria} {c.motivo_desconto && `• ${c.motivo_desconto}`}
-                          </p>
-                        </div>
-                        <span className="font-semibold text-slate-700">
-                          R$ {c.valor.toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 sticky bottom-0 bg-white">
-                      <span className="font-bold text-slate-800">Total Parcial</span>
-                      <span className="font-bold text-emerald-600">
-                        R$ {activeConsumptions.reduce((a, b) => a + b.valor, 0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
             )}
           </div>
         )}
@@ -333,7 +335,6 @@ export function Consumption() {
                 </div>
               </AlertDescription>
             </Alert>
-
             <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm text-center space-y-4 mt-6">
               <div className="flex justify-center mb-2">
                 <div className="bg-slate-100 p-3 rounded-full">
@@ -342,29 +343,27 @@ export function Consumption() {
               </div>
               <h3 className="font-medium text-slate-800">Assinatura Digital do Hóspede</h3>
               <p className="text-sm text-slate-500 mb-4">
-                Confirmo o consumo acima no valor total de <strong>R$ {total.toFixed(2)}</strong>.
+                Confirmo o consumo acima no valor de <strong>R$ {total.toFixed(2)}</strong>.
               </p>
-
-              <div className="max-w-sm mx-auto p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-md transition-colors hover:border-slate-400">
+              <div className="max-w-sm mx-auto p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-md">
                 <div className="flex items-center space-x-3 justify-center">
                   <Checkbox
                     id="assinatura"
                     checked={assinatura}
                     onCheckedChange={(c) => setAssinatura(!!c)}
-                    className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 w-5 h-5"
+                    className="w-5 h-5 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                   />
                   <Label
                     htmlFor="assinatura"
                     className="text-slate-700 font-medium cursor-pointer text-base"
                   >
-                    Confirmar e Autorizar Cobrança
+                    Confirmar e Autorizar
                   </Label>
                 </div>
               </div>
             </div>
-
             {error && (
-              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm border border-rose-200">
                 {error}
               </pre>
             )}
@@ -374,7 +373,6 @@ export function Consumption() {
       <CardFooter className="flex justify-between border-t border-slate-100 pt-6">
         <Button
           variant="outline"
-          className="text-slate-600 border-slate-300"
           onClick={() => {
             setStep((s) => Math.max(1, s - 1))
             setError('')
@@ -383,10 +381,7 @@ export function Consumption() {
         >
           Voltar
         </Button>
-        <Button
-          onClick={handleNext}
-          className="bg-slate-800 hover:bg-slate-900 text-white shadow-sm"
-        >
+        <Button onClick={handleNext} className="bg-slate-800 hover:bg-slate-900 text-white">
           {step === 2 ? 'Registrar Consumo' : 'Avançar'}
         </Button>
       </CardFooter>

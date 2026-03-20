@@ -31,6 +31,7 @@ interface ReservationStore {
   updateReservationStatus: (id: string, status: ReservationStatus, room?: string) => void
   addConsumption: (cons: Consumption) => void
   getConsumptionsByReservation: (reserva_id: string) => Consumption[]
+  validateConsumption: (id: string) => void
 }
 
 const INITIAL_RESERVATIONS: Reservation[] = [
@@ -65,15 +66,15 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     data_registro: new Date().toISOString(),
   },
   {
-    id: 'c3',
-    reserva_id: '99999',
-    categoria: 'Serviços Extras',
-    descricao: 'Massagem Relaxante',
+    id: 'c4',
+    reserva_id: '12345',
+    categoria: 'Minibar',
+    descricao: 'Amendoim',
     quantidade: 1,
-    preco_unitario: 120.0,
+    preco_unitario: 15.0,
     desconto: 0,
-    valor: 120.0,
-    validacao_hospede: true,
+    valor: 15.0,
+    validacao_hospede: false,
     data_registro: new Date().toISOString(),
   },
 ]
@@ -93,6 +94,12 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
 
   const addConsumption = (cons: Consumption) => setConsumptions((prev) => [...prev, cons])
 
+  const validateConsumption = (id: string) => {
+    setConsumptions((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, validacao_hospede: true } : c)),
+    )
+  }
+
   const getConsumptionsByReservation = (reserva_id: string) =>
     consumptions.filter((c) => c.reserva_id === reserva_id)
 
@@ -106,6 +113,7 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
         updateReservationStatus,
         addConsumption,
         getConsumptionsByReservation,
+        validateConsumption,
       },
     },
     children,

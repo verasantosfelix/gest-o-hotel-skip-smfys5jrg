@@ -8,39 +8,52 @@ import Rooms from './pages/Rooms'
 import Guests from './pages/Guests'
 import Housekeeping from './pages/Housekeeping'
 import NotFound from './pages/NotFound'
+import GuestPortal from './pages/GuestPortal'
 import Layout from './components/Layout'
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
+import { InventoryProvider } from './stores/useInventoryStore'
+import { AuditProvider } from './stores/useAuditStore'
 
 const App = () => (
-  <HotelProvider>
-    <ReservationProvider>
-      <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/reservas" element={<Reservations />} />
-              <Route path="/quartos" element={<Rooms />} />
-              <Route path="/hospedes" element={<Guests />} />
-              <Route path="/governanca" element={<Housekeeping />} />
-              <Route
-                path="/auditoria"
-                element={<div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>}
-              />
-              <Route
-                path="/configuracoes"
-                element={<div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>}
-              />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </BrowserRouter>
-    </ReservationProvider>
-  </HotelProvider>
+  <AuditProvider>
+    <InventoryProvider>
+      <HotelProvider>
+        <ReservationProvider>
+          <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/reservas" element={<Reservations />} />
+                  <Route path="/quartos" element={<Rooms />} />
+                  <Route path="/hospedes" element={<Guests />} />
+                  <Route path="/governanca" element={<Housekeeping />} />
+                  <Route
+                    path="/auditoria"
+                    element={
+                      <div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>
+                    }
+                  />
+                  <Route
+                    path="/configuracoes"
+                    element={
+                      <div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>
+                    }
+                  />
+                </Route>
+                {/* Guest-facing routes */}
+                <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </BrowserRouter>
+        </ReservationProvider>
+      </HotelProvider>
+    </InventoryProvider>
+  </AuditProvider>
 )
 
 export default App

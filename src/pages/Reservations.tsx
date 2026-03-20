@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, Filter, AlertTriangle, CheckCircle2, Terminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,11 +33,11 @@ type Reservation = {
 
 const MOCK_DATA: Reservation[] = [
   {
-    id: 'RES-001',
-    guest: 'Ana Oliveira',
-    dates: '10/05 - 14/05',
+    id: '12345',
+    guest: 'João Silva',
+    dates: 'Hoje - 14/05',
     status: 'Confirmado',
-    room: 'Luxo - 204',
+    room: 'Luxo - 304',
   },
   {
     id: 'RES-002',
@@ -169,6 +170,11 @@ export default function Reservations() {
             </div>
           </div>
           <DrawerFooter>
+            <Button variant="secondary" asChild className="mb-2 w-full sm:w-auto">
+              <Link to={`/portal/guest/${selected?.id}`} target="_blank">
+                Abrir Portal do Hóspede
+              </Link>
+            </Button>
             <Button variant="outline" onClick={() => setSelected(null)}>
               Fechar
             </Button>
