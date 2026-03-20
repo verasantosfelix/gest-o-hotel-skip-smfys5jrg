@@ -34,6 +34,14 @@ import {
   ShoppingBag,
   Terminal,
   CreditCard,
+  Shirt,
+  SearchX,
+  Package,
+  Star,
+  Mail,
+  BotMessageSquare,
+  Landmark,
+  MoonStar,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -66,6 +74,8 @@ const navEstrategico = [
   { name: 'Eventos', url: '/eventos', icon: CalendarRange },
   { name: 'Integrações', url: '/integracoes', icon: Plug },
   { name: 'Comunicação Omnichannel', url: '/comunicacao', icon: MessageSquare },
+  { name: 'Fidelidade & Feedback', url: '/fidelidade-feedback', icon: Star },
+  { name: 'Comms Automáticas', url: '/guest-comms', icon: Mail },
 ]
 
 const navServicos = [
@@ -74,6 +84,8 @@ const navServicos = [
   { name: 'Guest Journey', url: '/guest-journey', icon: Compass },
   { name: 'Tech Mobility', url: '/mobilidade', icon: Smartphone },
   { name: 'Concierge Avançado', url: '/concierge', icon: ConciergeBell },
+  { name: 'IA Concierge', url: '/ai-concierge', icon: BotMessageSquare },
+  { name: 'Minibar & Amenities', url: '/minibar-amenities', icon: Package },
   { name: 'Spa & Bem-estar', url: '/spa', icon: Heart },
   { name: 'Lazer & Piscinas', url: '/lazer', icon: Umbrella },
   { name: 'Frota & Transfers', url: '/frota', icon: Car },
@@ -103,6 +115,10 @@ export function AppSidebar() {
     navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
     navGestao.push({ name: 'Contratos & Docs', url: '/documentos-contratos', icon: FileSignature })
     navGestao.push({ name: 'Grupos & MICE', url: '/mice', icon: Building })
+    navGestao.push({ name: 'Lavanderia & Uniformes', url: '/lavanderia', icon: Shirt })
+    navGestao.push({ name: 'Achados e Perdidos', url: '/achados-perdidos', icon: SearchX })
+    navGestao.push({ name: 'Financeiro B2B', url: '/financeiro-corp', icon: Landmark })
+    navGestao.push({ name: 'Auditoria Noturna', url: '/auditoria-noturna', icon: MoonStar })
     navGestao.push({ name: 'ChatOps Interno', url: '/chatops', icon: Terminal })
     navGestao.push({ name: 'Pagamentos / Gateway', url: '/pagamentos', icon: CreditCard })
   }
@@ -148,9 +164,7 @@ export function AppSidebar() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-
             <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
-
             <SidebarGroup>
               <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
                 Estratégico
@@ -173,7 +187,6 @@ export function AppSidebar() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-
             <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
           </>
         )}

@@ -1,7 +1,10 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import pb from '@/lib/pocketbase/client'
+
 import Index from './pages/Index'
 import Reservations from './pages/Reservations'
 import Rooms from './pages/Rooms'
@@ -38,6 +41,14 @@ import PoolsLeisure from './pages/PoolsLeisure'
 import GiftShop from './pages/GiftShop'
 import ChatOps from './pages/ChatOps'
 import Payments from './pages/Payments'
+import Laundry from './pages/Laundry'
+import LostAndFound from './pages/LostAndFound'
+import MinibarAmenities from './pages/MinibarAmenities'
+import LoyaltyFeedback from './pages/LoyaltyFeedback'
+import GuestComms from './pages/GuestComms'
+import AIConcierge from './pages/AIConcierge'
+import FinanceCorporate from './pages/FinanceCorporate'
+import NightAudit from './pages/NightAudit'
 
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
@@ -47,68 +58,87 @@ import { AuthProvider } from './stores/useAuthStore'
 import { RoomProvider } from './stores/useRoomStore'
 import { ApprovalProvider } from './stores/useApprovalStore'
 
-const App = () => (
-  <AuthProvider>
-    <AuditProvider>
-      <ApprovalProvider>
-        <InventoryProvider>
-          <HotelProvider>
-            <ReservationProvider>
-              <RoomProvider>
-                <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <Routes>
-                      <Route element={<Layout />}>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/reservas" element={<Reservations />} />
-                        <Route path="/quartos" element={<Rooms />} />
-                        <Route path="/hospedes" element={<Guests />} />
-                        <Route path="/governanca" element={<Housekeeping />} />
-                        <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
-                        <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
-                        <Route path="/auditoria" element={<Audit />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/relatorios" element={<Reports />} />
-                        <Route path="/configuracoes" element={<Settings />} />
-                        <Route path="/crm" element={<CRM />} />
-                        <Route path="/equipe" element={<Staff />} />
-                        <Route path="/integracoes" element={<Integrations />} />
-                        <Route path="/marketing" element={<Marketing />} />
-                        <Route path="/fnb" element={<FnB />} />
-                        <Route path="/eventos" element={<Events />} />
-                        <Route path="/manutencao" element={<Maintenance />} />
-                        <Route path="/seguranca" element={<Security />} />
-                        <Route path="/revenue" element={<Revenue />} />
-                        <Route path="/mobilidade" element={<TechMobility />} />
-                        <Route path="/ia-governanca" element={<AIGovernance />} />
-                        <Route path="/guest-journey" element={<GuestJourney />} />
-                        <Route path="/comunicacao" element={<Communication />} />
+const App = () => {
+  useEffect(() => {
+    if (!pb.authStore.isValid) {
+      pb.collection('users')
+        .authWithPassword('verasantos.cql@gmail.com', 'securepassword123')
+        .catch(console.error)
+    }
+  }, [])
 
-                        <Route path="/documentos-contratos" element={<DocumentsContracts />} />
-                        <Route path="/concierge" element={<AdvancedConcierge />} />
-                        <Route path="/mice" element={<MICE />} />
-                        <Route path="/frota" element={<FleetTransfers />} />
-                        <Route path="/spa" element={<SpaWellness />} />
-                        <Route path="/lazer" element={<PoolsLeisure />} />
-                        <Route path="/loja" element={<GiftShop />} />
+  return (
+    <AuthProvider>
+      <AuditProvider>
+        <ApprovalProvider>
+          <InventoryProvider>
+            <HotelProvider>
+              <ReservationProvider>
+                <RoomProvider>
+                  <BrowserRouter
+                    future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
+                  >
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <Routes>
+                        <Route element={<Layout />}>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/reservas" element={<Reservations />} />
+                          <Route path="/quartos" element={<Rooms />} />
+                          <Route path="/hospedes" element={<Guests />} />
+                          <Route path="/governanca" element={<Housekeeping />} />
+                          <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
+                          <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
+                          <Route path="/auditoria" element={<Audit />} />
+                          <Route path="/analytics" element={<Analytics />} />
+                          <Route path="/relatorios" element={<Reports />} />
+                          <Route path="/configuracoes" element={<Settings />} />
+                          <Route path="/crm" element={<CRM />} />
+                          <Route path="/equipe" element={<Staff />} />
+                          <Route path="/integracoes" element={<Integrations />} />
+                          <Route path="/marketing" element={<Marketing />} />
+                          <Route path="/fnb" element={<FnB />} />
+                          <Route path="/eventos" element={<Events />} />
+                          <Route path="/manutencao" element={<Maintenance />} />
+                          <Route path="/seguranca" element={<Security />} />
+                          <Route path="/revenue" element={<Revenue />} />
+                          <Route path="/mobilidade" element={<TechMobility />} />
+                          <Route path="/ia-governanca" element={<AIGovernance />} />
+                          <Route path="/guest-journey" element={<GuestJourney />} />
+                          <Route path="/comunicacao" element={<Communication />} />
+                          <Route path="/documentos-contratos" element={<DocumentsContracts />} />
+                          <Route path="/concierge" element={<AdvancedConcierge />} />
+                          <Route path="/mice" element={<MICE />} />
+                          <Route path="/frota" element={<FleetTransfers />} />
+                          <Route path="/spa" element={<SpaWellness />} />
+                          <Route path="/lazer" element={<PoolsLeisure />} />
+                          <Route path="/loja" element={<GiftShop />} />
+                          <Route path="/chatops" element={<ChatOps />} />
+                          <Route path="/pagamentos" element={<Payments />} />
 
-                        <Route path="/chatops" element={<ChatOps />} />
-                        <Route path="/pagamentos" element={<Payments />} />
-                      </Route>
-                      <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </TooltipProvider>
-                </BrowserRouter>
-              </RoomProvider>
-            </ReservationProvider>
-          </HotelProvider>
-        </InventoryProvider>
-      </ApprovalProvider>
-    </AuditProvider>
-  </AuthProvider>
-)
+                          <Route path="/lavanderia" element={<Laundry />} />
+                          <Route path="/achados-perdidos" element={<LostAndFound />} />
+                          <Route path="/minibar-amenities" element={<MinibarAmenities />} />
+                          <Route path="/fidelidade-feedback" element={<LoyaltyFeedback />} />
+                          <Route path="/guest-comms" element={<GuestComms />} />
+                          <Route path="/ai-concierge" element={<AIConcierge />} />
+                          <Route path="/financeiro-corp" element={<FinanceCorporate />} />
+                          <Route path="/auditoria-noturna" element={<NightAudit />} />
+                        </Route>
+                        <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </TooltipProvider>
+                  </BrowserRouter>
+                </RoomProvider>
+              </ReservationProvider>
+            </HotelProvider>
+          </InventoryProvider>
+        </ApprovalProvider>
+      </AuditProvider>
+    </AuthProvider>
+  )
+}
 
 export default App
