@@ -10,7 +10,10 @@ try {
       if (rt[m]) {
         const orig = rt[m]
         rt[m] = function (t: any, p: any, ...args: any[]) {
-          if (t === React.Fragment && p && 'data-uid' in p) {
+          const isFragment =
+            t === React.Fragment ||
+            (typeof t === 'symbol' && t.toString() === 'Symbol(react.fragment)')
+          if (isFragment && p && ('data-uid' in p || 'data-prohibitions' in p)) {
             const { 'data-uid': _, 'data-prohibitions': __, ...rest } = p
             return orig(t, rest, ...args)
           }
