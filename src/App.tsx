@@ -36,6 +36,8 @@ import FleetTransfers from './pages/FleetTransfers'
 import SpaWellness from './pages/SpaWellness'
 import PoolsLeisure from './pages/PoolsLeisure'
 import GiftShop from './pages/GiftShop'
+import ChatOps from './pages/ChatOps'
+import Payments from './pages/Payments'
 
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
@@ -84,7 +86,6 @@ const App = () => (
                         <Route path="/guest-journey" element={<GuestJourney />} />
                         <Route path="/comunicacao" element={<Communication />} />
 
-                        {/* New Modules */}
                         <Route path="/documentos-contratos" element={<DocumentsContracts />} />
                         <Route path="/concierge" element={<AdvancedConcierge />} />
                         <Route path="/mice" element={<MICE />} />
@@ -92,6 +93,9 @@ const App = () => (
                         <Route path="/spa" element={<SpaWellness />} />
                         <Route path="/lazer" element={<PoolsLeisure />} />
                         <Route path="/loja" element={<GiftShop />} />
+
+                        <Route path="/chatops" element={<ChatOps />} />
+                        <Route path="/pagamentos" element={<Payments />} />
                       </Route>
                       <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
                       <Route path="*" element={<NotFound />} />

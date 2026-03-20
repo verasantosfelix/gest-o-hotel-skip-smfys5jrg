@@ -32,6 +32,8 @@ import {
   Heart,
   Umbrella,
   ShoppingBag,
+  Terminal,
+  CreditCard,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -101,6 +103,8 @@ export function AppSidebar() {
     navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
     navGestao.push({ name: 'Contratos & Docs', url: '/documentos-contratos', icon: FileSignature })
     navGestao.push({ name: 'Grupos & MICE', url: '/mice', icon: Building })
+    navGestao.push({ name: 'ChatOps Interno', url: '/chatops', icon: Terminal })
+    navGestao.push({ name: 'Pagamentos / Gateway', url: '/pagamentos', icon: CreditCard })
   }
 
   if (userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)) {
