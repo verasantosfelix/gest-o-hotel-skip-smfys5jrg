@@ -1,0 +1,55 @@
+migrate(
+  (app) => {
+    const docsCol = app.findCollectionByNameOrId('financial_docs')
+    const contractsCol = app.findCollectionByNameOrId('financial_contracts')
+    const auditLogsCol = app.findCollectionByNameOrId('financial_audit_logs')
+
+    const doc1 = new Record(docsCol)
+    doc1.set('doc_type', 'Receita')
+    doc1.set('amount', 150000)
+    doc1.set('currency', 'AOA')
+    doc1.set('due_date', '2024-05-15')
+    doc1.set('status', 'Pendente')
+    doc1.set('entity_name', 'Agência Viagens ABC')
+    doc1.set('category', 'A/R')
+    doc1.set('issue_date', '2024-04-15')
+    app.save(doc1)
+
+    const doc2 = new Record(docsCol)
+    doc2.set('doc_type', 'Despesa')
+    doc2.set('amount', 45000)
+    doc2.set('currency', 'AOA')
+    doc2.set('due_date', '2024-05-10')
+    doc2.set('status', 'Pendente')
+    doc2.set('entity_name', 'Fornecedor Bebidas XYZ')
+    doc2.set('category', 'A/P')
+    doc2.set('issue_date', '2024-04-10')
+    app.save(doc2)
+
+    const contract1 = new Record(contractsCol)
+    contract1.set('name', 'Fornecimento de Bebidas 2024')
+    contract1.set('type', 'supplier')
+    contract1.set('entity_name', 'Fornecedor Bebidas XYZ')
+    contract1.set('start_date', '2024-01-01')
+    contract1.set('end_date', '2024-12-31')
+    contract1.set('value', 500000)
+    contract1.set('currency', 'AOA')
+    contract1.set('status', 'active')
+    app.save(contract1)
+
+    const log1 = new Record(auditLogsCol)
+    log1.set('type', 'night_audit')
+    log1.set('status', 'completed_with_warnings')
+    log1.set('details', { unreconciled: 2, revenue: 1250000 })
+    log1.set('error_count', 2)
+    app.save(log1)
+  },
+  (app) => {
+    app.db().newQuery('DELETE FROM financial_contracts').execute()
+    app.db().newQuery('DELETE FROM financial_audit_logs').execute()
+    app
+      .db()
+      .newQuery("DELETE FROM financial_docs WHERE category = 'A/R' OR category = 'A/P'")
+      .execute()
+  },
+)
