@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T22:55:05.492Z",
+  "generatedAt": "2026-03-20T23:01:22.134Z",
   "collections": [
     {
       "name": "users",
@@ -2290,6 +2290,235 @@
           "type": "number",
           "required": false,
           "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "event_spaces",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["meeting_room", "ballroom", "garden", "rooftop"]
+        },
+        {
+          "name": "capacity_formats",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["available", "occupied", "setup", "maintenance"]
+        },
+        {
+          "name": "current_layout",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["corporate", "wedding", "social", "conference"]
+        },
+        {
+          "name": "client_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "contact_info",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "start_time",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "end_time",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "space_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "event_spaces"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "preparation", "ongoing", "finished", "cancelled"]
+        },
+        {
+          "name": "participants_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "technical_requirements",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "catering_details",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "total_budget",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "contract_file",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "event_consumptions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "event_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "events"
+        },
+        {
+          "name": "item_description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["fb", "equipment", "staff", "extra"]
         },
         {
           "name": "created",
