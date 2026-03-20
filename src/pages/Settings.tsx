@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { Shield } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
@@ -10,6 +10,8 @@ import useAuthStore from '@/stores/useAuthStore'
 export default function Settings() {
   const { userRole, allowReports, setAllowReports } = useAuthStore()
   const navigate = useNavigate()
+
+  if (userRole === 'Limpeza') return <Navigate to="/governanca" replace />
 
   useEffect(() => {
     if (userRole !== 'Admin') {

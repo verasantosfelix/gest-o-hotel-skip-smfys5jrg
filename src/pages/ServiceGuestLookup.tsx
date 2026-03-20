@@ -20,9 +20,8 @@ export default function ServiceGuestLookup() {
   const { reservations } = useReservationStore()
   const { userRole } = useAuthStore()
 
-  if (userRole === 'Admin') {
-    return <Navigate to="/" replace />
-  }
+  if (userRole === 'Limpeza') return <Navigate to="/governanca" replace />
+  if (userRole === 'Admin') return <Navigate to="/" replace />
 
   const inHouse = reservations.filter((r) => r.status === 'checked-in')
 

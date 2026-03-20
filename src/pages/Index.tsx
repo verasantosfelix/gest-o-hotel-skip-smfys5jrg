@@ -1,11 +1,11 @@
 import { Navigate } from 'react-router-dom'
 import {
   BedDouble,
-  Clock,
   ShieldCheck,
   DoorOpen,
   TerminalSquare,
   PackageSearch,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useHotelStore from '@/stores/useHotelStore'
 import useInventoryStore from '@/stores/useInventoryStore'
 import useAuthStore from '@/stores/useAuthStore'
+import useRoomStore from '@/stores/useRoomStore'
 import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
 import { Consumption } from '@/components/operations/Consumption'
@@ -24,6 +25,11 @@ export default function Index() {
   const { userRole, allowReports } = useAuthStore()
   const { selectedHotel } = useHotelStore()
   const { items } = useInventoryStore()
+  const { rooms } = useRoomStore()
+
+  if (userRole === 'Limpeza') {
+    return <Navigate to="/governanca" replace />
+  }
 
   if (userRole !== 'Admin' && userRole !== 'Administrativa') {
     return <Navigate to="/busca-hospedes" replace />
@@ -31,6 +37,7 @@ export default function Index() {
 
   const canViewReports = userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)
   const lowStockCount = items.filter((i) => i.quantity < i.threshold).length
+  const dirtyRooms = rooms.filter((r) => r.cleaningStatus === 'Sujo').length
 
   const kpis = [
     {
@@ -48,11 +55,11 @@ export default function Index() {
       color: 'text-emerald-600',
     },
     {
-      title: 'Check-outs Hoje',
-      value: '8',
-      desc: 'Todos finalizados',
-      icon: DoorOpen,
-      color: 'text-rose-600',
+      title: 'Limpeza Pendente',
+      value: dirtyRooms.toString(),
+      desc: 'Quartos sujos',
+      icon: Sparkles,
+      color: dirtyRooms > 0 ? 'text-amber-500' : 'text-emerald-600',
     },
     {
       title: 'Alertas de Estoque',
@@ -64,14 +71,22 @@ export default function Index() {
   ]
 
   const feed = [
-    { time: '10:42', msg: 'Quarto 304 alterado para "Limpo" por Maria Silva.', type: 'info' },
+    { time: 'Agora', msg: 'Dashboard sincronizado com módulo de Governança.', type: 'info' },
     {
-      time: '10:30',
+      time: '10:42',
       msg: 'Check-in rápido concluído: Reserva #8492 (João Pedro).',
       type: 'success',
     },
     { time: '09:15', msg: 'Aviso: Overbooking detectado na data 15/05.', type: 'warning' },
   ]
+
+  if (dirtyRooms > 0) {
+    feed.unshift({
+      time: 'Agora',
+      msg: `${dirtyRooms} quarto(s) aguardam limpeza pela governança.`,
+      type: 'warning',
+    })
+  }
 
   if (lowStockCount > 0) {
     feed.unshift({
@@ -199,10 +214,10 @@ export default function Index() {
                 <div className="bg-[#0f172a] text-slate-300 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner">
                   <pre className="text-emerald-400 whitespace-pre-wrap leading-relaxed">
                     {`<OUTPUT>
-  <resumo>Operação nominal. 82% de ocupação. 3 pendências de limpeza.</resumo>
+  <resumo>Operação nominal. 82% de ocupação.</resumo>
   <dados>
     <check-ins>12 concluidos, 4 pendentes</check-ins>
-    <check-outs>8 finalizados</check-outs>
+    <governanca>${dirtyRooms} pendências de limpeza</governanca>
   </dados>
   <alertas>
     <estoque>${lowStockCount} itens requerem reposição</estoque>

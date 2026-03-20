@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { History, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
@@ -10,6 +10,8 @@ export default function Audit() {
   const { userRole, allowReports } = useAuthStore()
   const { logs } = useAuditStore()
   const navigate = useNavigate()
+
+  if (userRole === 'Limpeza') return <Navigate to="/governanca" replace />
 
   const canAccess = userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)
 

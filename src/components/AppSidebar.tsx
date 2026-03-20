@@ -43,11 +43,15 @@ export function AppSidebar() {
   const { userRole, allowReports } = useAuthStore()
 
   const isManager = userRole === 'Admin' || userRole === 'Administrativa'
+  const isLimpeza = userRole === 'Limpeza'
 
-  const navGestao = [
-    { name: 'Quartos', url: '/quartos', icon: BedDouble },
-    { name: 'Governança', url: '/governanca', icon: Sparkles },
-  ]
+  const navGestao = []
+
+  if (!isLimpeza) {
+    navGestao.push({ name: 'Quartos', url: '/quartos', icon: BedDouble })
+  }
+
+  navGestao.push({ name: 'Governança', url: '/governanca', icon: Sparkles })
 
   if (userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)) {
     navGestao.push({ name: 'Rastreabilidade', url: '/auditoria', icon: History })
@@ -92,58 +96,57 @@ export function AppSidebar() {
             </SidebarGroup>
 
             <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
-
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-                Gestão
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navGestao.map((item) => {
-                    const isActive = location.pathname === item.url
-                    return (
-                      <SidebarMenuItem key={item.name}>
-                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                          <Link to={item.url} className="flex items-center gap-3">
-                            <item.icon className="h-4 w-4" />
-                            <span className="font-medium">{item.name}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
           </>
         )}
 
-        {(userRole === 'Administrativa' || !isManager) && (
-          <>
-            {isManager && <SidebarSeparator className="mx-4 my-2 bg-slate-200" />}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-                Serviços ({userRole})
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navServicos.map((item) => {
-                    const isActive = location.pathname === item.url
-                    return (
-                      <SidebarMenuItem key={item.name}>
-                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                          <Link to={item.url} className="flex items-center gap-3">
-                            <item.icon className="h-4 w-4" />
-                            <span className="font-medium">{item.name}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
+        {(isManager || isLimpeza) && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+              Gestão
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navGestao.map((item) => {
+                  const isActive = location.pathname === item.url
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link to={item.url} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          <span className="font-medium">{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {!isManager && !isLimpeza && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+              Serviços ({userRole})
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navServicos.map((item) => {
+                  const isActive = location.pathname === item.url
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link to={item.url} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          <span className="font-medium">{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         )}
       </SidebarContent>
     </Sidebar>

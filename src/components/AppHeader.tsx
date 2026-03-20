@@ -25,7 +25,7 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-slate-400 hidden sm:block" />
           <Select value={userRole} onValueChange={(v) => setUserRole(v as Role)}>
-            <SelectTrigger className="w-[150px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
+            <SelectTrigger className="w-[160px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
               <SelectValue placeholder="Perfil" />
             </SelectTrigger>
             <SelectContent>
@@ -43,6 +43,9 @@ export function AppHeader() {
               </SelectItem>
               <SelectItem value="Spa" className="text-xs">
                 Spa
+              </SelectItem>
+              <SelectItem value="Limpeza" className="text-xs">
+                Limpeza/Lavanderia
               </SelectItem>
             </SelectContent>
           </Select>

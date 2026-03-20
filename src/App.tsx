@@ -19,6 +19,7 @@ import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
 import { AuditProvider } from './stores/useAuditStore'
 import { AuthProvider } from './stores/useAuthStore'
+import { RoomProvider } from './stores/useRoomStore'
 
 const App = () => (
   <AuthProvider>
@@ -26,28 +27,30 @@ const App = () => (
       <InventoryProvider>
         <HotelProvider>
           <ReservationProvider>
-            <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/reservas" element={<Reservations />} />
-                    <Route path="/quartos" element={<Rooms />} />
-                    <Route path="/hospedes" element={<Guests />} />
-                    <Route path="/governanca" element={<Housekeeping />} />
-                    <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
-                    <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
-                    <Route path="/auditoria" element={<Audit />} />
-                    <Route path="/configuracoes" element={<Settings />} />
-                  </Route>
-                  {/* Guest-facing routes */}
-                  <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </TooltipProvider>
-            </BrowserRouter>
+            <RoomProvider>
+              <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route element={<Layout />}>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/reservas" element={<Reservations />} />
+                      <Route path="/quartos" element={<Rooms />} />
+                      <Route path="/hospedes" element={<Guests />} />
+                      <Route path="/governanca" element={<Housekeeping />} />
+                      <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
+                      <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
+                      <Route path="/auditoria" element={<Audit />} />
+                      <Route path="/configuracoes" element={<Settings />} />
+                    </Route>
+                    {/* Guest-facing routes */}
+                    <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </TooltipProvider>
+              </BrowserRouter>
+            </RoomProvider>
           </ReservationProvider>
         </HotelProvider>
       </InventoryProvider>

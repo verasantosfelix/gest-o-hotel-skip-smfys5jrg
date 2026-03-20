@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 
-export type Role = 'Admin' | 'Administrativa' | 'Restaurante' | 'Bar' | 'Spa'
+export type Role = 'Admin' | 'Administrativa' | 'Restaurante' | 'Bar' | 'Spa' | 'Limpeza'
 
 interface AuthStore {
   userRole: Role
@@ -21,7 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? 'Gerente Geral'
       : userRole === 'Administrativa'
         ? 'Responsável de Reservas'
-        : `Atendente ${userRole}`
+        : userRole === 'Limpeza'
+          ? 'Equipe de Governança'
+          : `Atendente ${userRole}`
 
   return React.createElement(
     AuthContext.Provider,
