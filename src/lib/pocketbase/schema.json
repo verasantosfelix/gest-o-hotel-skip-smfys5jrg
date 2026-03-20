@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T22:34:29.600Z",
+  "generatedAt": "2026-03-20T22:38:52.037Z",
   "collections": [
     {
       "name": "users",
@@ -741,6 +741,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "next_maintenance_date",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
@@ -1457,6 +1469,67 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "technician_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "used_materials",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "initial_photo",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completion_photo",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location_details",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "response_start_at",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "resolved_at",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "problem_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "planned_intervention",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
