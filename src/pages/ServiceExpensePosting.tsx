@@ -33,10 +33,6 @@ export default function ServiceExpensePosting() {
   const { userRole, userName } = useAuthStore()
   const { addLog } = useAuditStore()
 
-  if (userRole === 'Admin') {
-    return <Navigate to="/" replace />
-  }
-
   const defaultReservaId = searchParams.get('reserva_id') || ''
 
   const [reservaId, setReservaId] = useState(defaultReservaId)
@@ -47,12 +43,16 @@ export default function ServiceExpensePosting() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState('')
 
-  const inHouse = reservations.filter((r) => r.status === 'checked-in')
-  const selectedReserva = inHouse.find((r) => r.id === reservaId)
-
   useEffect(() => {
     setIsSuccess(false)
   }, [])
+
+  if (userRole === 'Admin') {
+    return <Navigate to="/" replace />
+  }
+
+  const inHouse = reservations.filter((r) => r.status === 'checked-in')
+  const selectedReserva = inHouse.find((r) => r.id === reservaId)
 
   const handleSubmit = () => {
     setError('')
