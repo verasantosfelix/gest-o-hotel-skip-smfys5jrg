@@ -8,11 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/use-toast'
 import useRoomStore, { CleaningStatus } from '@/stores/useRoomStore'
 import useAuthStore from '@/stores/useAuthStore'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 export default function Housekeeping() {
   const { userRole } = useAuthStore()
   const { rooms, updateRoomStatus } = useRoomStore()
   const [tab, setTab] = useState<CleaningStatus | 'Todas'>('Todas')
+  const isMobile = useIsMobile()
 
   if (userRole !== 'Admin' && userRole !== 'Administrativa' && userRole !== 'Limpeza') {
     return <Navigate to="/" replace />
@@ -28,8 +30,72 @@ export default function Housekeeping() {
     })
   }
 
-  const filteredRooms = tab === 'Todas' ? rooms : rooms.filter((r) => r.cleaningStatus === tab)
+  // "Staff On-the-Go" Interface for Housekeeping
+  if (isLimpezaRole && isMobile) {
+    return (
+      <div className="space-y-4 bg-slate-50 min-h-[calc(100vh-64px)] pb-24 -m-4 md:-m-6 p-4">
+        <h1 className="text-xl font-bold text-slate-900 px-1 pt-2">Meus Quartos (On-the-go)</h1>
+        <div className="grid gap-4">
+          {rooms.map((room) => (
+            <Card key={room.id} className="shadow-sm border-slate-200 overflow-hidden">
+              <div
+                className={`h-1.5 w-full ${
+                  room.cleaningStatus === 'Sujo'
+                    ? 'bg-rose-500'
+                    : room.cleaningStatus === 'Em Limpeza'
+                      ? 'bg-amber-500'
+                      : room.cleaningStatus === 'Limpo'
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-500'
+                }`}
+              />
+              <CardContent className="p-5 flex flex-col gap-5">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-3xl font-black text-slate-800 tracking-tighter">
+                    Q.{room.num}
+                  </h2>
+                  <Badge
+                    variant="outline"
+                    className="text-sm px-3 py-1 bg-slate-100 font-bold uppercase tracking-wider"
+                  >
+                    {room.cleaningStatus}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    className="h-16 text-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white min-h-[44px] shadow-sm"
+                    onClick={() => handleUpdateStatus(room.id, 'Limpo', room.num)}
+                    disabled={room.cleaningStatus === 'Limpo'}
+                  >
+                    Cleaned (Pronto)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-16 text-lg font-bold text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100 min-h-[44px]"
+                    onClick={() => handleUpdateStatus(room.id, 'Sujo', room.num)}
+                    disabled={room.cleaningStatus === 'Sujo'}
+                  >
+                    Needs Cleaning
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-14 text-base font-bold text-slate-700 border-slate-300 bg-slate-100 hover:bg-slate-200 min-h-[44px]"
+                    onClick={() => handleUpdateStatus(room.id, 'Manutenção', room.num)}
+                    disabled={room.cleaningStatus === 'Manutenção'}
+                  >
+                    Maintenance Required
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
+  // Desktop Interface
+  const filteredRooms = tab === 'Todas' ? rooms : rooms.filter((r) => r.cleaningStatus === tab)
   const getStatusColor = (status: CleaningStatus) => {
     switch (status) {
       case 'Sujo':

@@ -16,6 +16,7 @@ import {
   Briefcase,
   Plug,
   Utensils,
+  BarChart,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const navOperacional = [
 ]
 
 const navEstrategico = [
+  { name: 'Analytics & BI', url: '/analytics', icon: BarChart },
   { name: 'CRM & Experiência', url: '/crm', icon: HeartHandshake },
   { name: 'Marketing', url: '/marketing', icon: Megaphone },
   { name: 'Eventos', url: '/eventos', icon: CalendarRange },
