@@ -1,4 +1,21 @@
 import React, { useEffect } from 'react'
+
+const originalConsoleError = console.error
+console.error = (...args: any[]) => {
+  if (
+    typeof args[0] === 'string' &&
+    args[0].includes('Invalid prop') &&
+    args[0].includes('React.Fragment') &&
+    args.some(
+      (arg: any) =>
+        typeof arg === 'string' && (arg.includes('data-uid') || arg.includes('data-prohibitions')),
+    )
+  ) {
+    return
+  }
+  originalConsoleError.apply(console, args)
+}
+
 import * as jsxRuntime from 'react/jsx-runtime'
 import * as jsxDevRuntime from 'react/jsx-dev-runtime'
 
