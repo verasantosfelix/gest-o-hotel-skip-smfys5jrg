@@ -23,9 +23,10 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { getUsers, getProfiles, updateUser, updateProfile } from '@/services/staff'
 import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from '@/components/ui/use-toast'
+import { CreateUserDialog } from '@/components/staff/CreateUserDialog'
 
 export default function Staff() {
-  const { hasAccess } = useAccess()
+  const { hasAccess, isManager } = useAccess()
   const [users, setUsers] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,18 +90,23 @@ export default function Staff() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-blue-100 rounded-full">
-          <Briefcase className="w-6 h-6 text-blue-700" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-full">
+            <Briefcase className="w-6 h-6 text-blue-700" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Gestão de Equipe e Departamentos
+            </h1>
+            <p className="text-sm text-slate-500">
+              Defina líderes e permissões estruturais para cada perfil
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Gestão de Equipe e Departamentos
-          </h1>
-          <p className="text-sm text-slate-500">
-            Defina líderes e permissões estruturais para cada perfil
-          </p>
-        </div>
+        {(hasAccess(['Administrativo_Financeiro', 'Direcao_Admin']) || isManager()) && (
+          <CreateUserDialog />
+        )}
       </div>
 
       <div className="space-y-8">

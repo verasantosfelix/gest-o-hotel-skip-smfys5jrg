@@ -21,3 +21,10 @@ export const getProfiles = async () => {
 export const updateProfile = async (id: string, data: any) => {
   return await pb.collection('profiles').update(id, data)
 }
+
+export const createUser = async (data: any) => {
+  return await pb.collection('users').create({
+    ...data,
+    emailVisibility: true,
+  })
+}
