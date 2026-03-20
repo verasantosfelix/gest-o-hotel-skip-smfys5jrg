@@ -28,6 +28,7 @@ import Revenue from './pages/Revenue'
 import TechMobility from './pages/TechMobility'
 import AIGovernance from './pages/AIGovernance'
 import GuestJourney from './pages/GuestJourney'
+import Communication from './pages/Communication'
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -73,6 +74,7 @@ const App = () => (
                         <Route path="/mobilidade" element={<TechMobility />} />
                         <Route path="/ia-governanca" element={<AIGovernance />} />
                         <Route path="/guest-journey" element={<GuestJourney />} />
+                        <Route path="/comunicacao" element={<Communication />} />
                       </Route>
                       <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
                       <Route path="*" element={<NotFound />} />

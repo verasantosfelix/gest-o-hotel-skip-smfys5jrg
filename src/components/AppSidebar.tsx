@@ -24,6 +24,7 @@ import {
   Smartphone,
   Bot,
   Compass,
+  MessageSquare,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -55,6 +56,7 @@ const navEstrategico = [
   { name: 'Marketing', url: '/marketing', icon: Megaphone },
   { name: 'Eventos', url: '/eventos', icon: CalendarRange },
   { name: 'Integrações', url: '/integracoes', icon: Plug },
+  { name: 'Comunicação Omnichannel', url: '/comunicacao', icon: MessageSquare },
 ]
 
 const navServicos = [
