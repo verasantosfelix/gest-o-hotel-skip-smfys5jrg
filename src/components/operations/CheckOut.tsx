@@ -242,9 +242,9 @@ export function CheckOut() {
                   disabled={isProcessingPOS}
                 >
                   {isProcessingPOS ? (
-                    <>
+                    <span className="flex items-center">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Aguardando Terminal...
-                    </>
+                    </span>
                   ) : (
                     'Processar via Terminal Externo'
                   )}
