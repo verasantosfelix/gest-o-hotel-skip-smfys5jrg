@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { BedDouble, Sparkles, AlertCircle, Wrench, Lock, Search, Wind } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BedDouble, Sparkles, AlertTriangle, Wrench, Search, Wind, Calendar } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,25 +12,88 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from '@/components/ui/drawer'
-import { Label } from '@/components/ui/label'
-import useRoomStore, { Room, RoomStatus, CleaningStatus } from '@/stores/useRoomStore'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { useRealtime } from '@/hooks/use-realtime'
+import { getRooms, updateRoom, type RoomRecord } from '@/services/rooms'
+import useAuthStore from '@/stores/useAuthStore'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+import { toast } from '@/components/ui/use-toast'
+
+const getStatusConfig = (status: string) => {
+  switch (status) {
+    case 'maintenance':
+      return {
+        icon: Wrench,
+        color: 'bg-rose-500/10 text-rose-700 border-rose-300',
+        label: 'Manutenção',
+      }
+    case 'out_of_order':
+      return {
+        icon: AlertTriangle,
+        color: 'bg-slate-500/10 text-slate-700 border-slate-300',
+        label: 'Bloqueado',
+      }
+    case 'occupied':
+      return {
+        icon: BedDouble,
+        color: 'bg-blue-500/10 text-blue-700 border-blue-200',
+        label: 'Ocupado',
+      }
+    case 'cleaning':
+      return {
+        icon: Wind,
+        color: 'bg-amber-500/10 text-amber-700 border-amber-200',
+        label: 'Limpeza',
+      }
+    case 'available':
+    default:
+      return {
+        icon: Sparkles,
+        color: 'bg-emerald-500/10 text-emerald-700 border-emerald-200',
+        label: 'Livre',
+      }
+  }
+}
 
 export default function Rooms() {
   const { hasAccess } = useAccess()
-  const { rooms, updateRoomStatus } = useRoomStore()
-  const [filter, setFilter] = useState('Todos')
+  const { userRole } = useAuthStore()
+
+  const [rooms, setRooms] = useState<RoomRecord[]>([])
   const [search, setSearch] = useState('')
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
-  const [blockReason, setBlockReason] = useState('')
+  const [selectedRoom, setSelectedRoom] = useState<RoomRecord | null>(null)
+
+  const isMaintenance = userRole === 'Manutencao_Oficina'
+  const [filter, setFilter] = useState(isMaintenance ? 'maintenance' : 'all')
+
+  useEffect(() => {
+    if (isMaintenance) setFilter('maintenance')
+  }, [isMaintenance])
+
+  const loadRooms = async () => {
+    try {
+      const data = await getRooms()
+      setRooms(data)
+    } catch (e) {
+      console.error('Failed to load rooms data', e)
+    }
+  }
+
+  useEffect(() => {
+    loadRooms()
+  }, [])
+  useRealtime('rooms', () => {
+    loadRooms()
+  })
 
   if (!hasAccess(['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin'])) {
     return (
@@ -40,43 +103,26 @@ export default function Rooms() {
     )
   }
 
-  const handleStatusChange = (newStatus: RoomStatus) => {
-    if (selectedRoom) {
-      updateRoomStatus(
-        selectedRoom.id,
-        undefined,
-        newStatus,
-        newStatus === 'Bloqueado' ? blockReason : undefined,
-      )
+  const handleResolve = async (id: string) => {
+    try {
+      await updateRoom(id, { status: 'cleaning', maintenance_description: '', priority: '' })
+      toast({
+        title: 'Manutenção Resolvida',
+        description: 'O quarto foi encaminhado para limpeza.',
+      })
       setSelectedRoom(null)
-      setBlockReason('')
-    }
-  }
-
-  const handleCleaningChange = (newStatus: CleaningStatus) => {
-    if (selectedRoom) {
-      updateRoomStatus(selectedRoom.id, newStatus)
-      setSelectedRoom(null)
+    } catch (e) {
+      toast({ title: 'Erro', description: 'Falha ao atualizar o status.', variant: 'destructive' })
     }
   }
 
   const filteredRooms = rooms.filter((r) => {
-    const matchFilter = filter === 'Todos' || r.status === filter || r.cleaningStatus === filter
-    const matchSearch = r.num.includes(search)
-    return matchFilter && matchSearch
+    const matchSearch = r.room_number.includes(search)
+    if (!matchSearch) return false
+    if (isMaintenance) return r.status === 'maintenance'
+    if (filter !== 'all') return r.status === filter
+    return true
   })
-
-  const getStatusConfig = (status: RoomStatus, cleaning: CleaningStatus) => {
-    if (status === 'Bloqueado')
-      return { icon: Lock, color: 'bg-slate-500/10 text-slate-700 border-slate-300' }
-    if (cleaning === 'Manutenção')
-      return { icon: Wrench, color: 'bg-rose-500/10 text-rose-700 border-rose-300' }
-    if (status === 'Ocupado')
-      return { icon: BedDouble, color: 'bg-blue-500/10 text-blue-700 border-blue-200' }
-    if (cleaning === 'Limpo')
-      return { icon: Sparkles, color: 'bg-emerald-500/10 text-emerald-700 border-emerald-200' }
-    return { icon: Wind, color: 'bg-amber-500/10 text-amber-700 border-amber-200' }
-  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
@@ -84,7 +130,9 @@ export default function Rooms() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mapa de Acomodações</h1>
           <p className="text-sm text-muted-foreground">
-            Controle de ocupação, bloqueios e status de governança.
+            {isMaintenance
+              ? 'Visão focada em reparos e manutenções pendentes.'
+              : 'Controle de ocupação, bloqueios e status de governança.'}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -97,122 +145,177 @@ export default function Rooms() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filtrar por Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Todos">Todos os Quartos</SelectItem>
-              <SelectItem value="Livre">Livre</SelectItem>
-              <SelectItem value="Ocupado">Ocupado</SelectItem>
-              <SelectItem value="Sujo">Sujo</SelectItem>
-              <SelectItem value="Em Limpeza">Em Limpeza</SelectItem>
-              <SelectItem value="Manutenção">Manutenção</SelectItem>
-              <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-            </SelectContent>
-          </Select>
+          {!isMaintenance && (
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filtrar por Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Quartos</SelectItem>
+                <SelectItem value="maintenance">Manutenção</SelectItem>
+                <SelectItem value="available">Livre</SelectItem>
+                <SelectItem value="occupied">Ocupado</SelectItem>
+                <SelectItem value="cleaning">Em Limpeza</SelectItem>
+                <SelectItem value="out_of_order">Bloqueado</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {filteredRooms.map((room) => {
-          const config = getStatusConfig(room.status, room.cleaningStatus)
+          const config = getStatusConfig(room.status)
           return (
             <Card
               key={room.id}
-              className="relative overflow-hidden group hover:shadow-md transition-all cursor-pointer border-slate-200"
+              className={cn(
+                'relative overflow-hidden group hover:shadow-md transition-all cursor-pointer border-slate-200',
+                room.status === 'maintenance' && 'border-rose-300 bg-rose-50/30',
+              )}
               onClick={() => setSelectedRoom(room)}
             >
               <div
-                className={`absolute top-0 left-0 w-1 h-full ${config.color.split(' ')[0].replace('/10', '')}`}
+                className={cn(
+                  'absolute top-0 left-0 w-1 h-full',
+                  config.color.split(' ')[0].replace('/10', ''),
+                )}
               />
               <CardHeader className="pb-2">
                 <CardTitle className="flex justify-between items-center text-lg">
-                  <span className="font-mono">{room.num}</span>
+                  <span className="font-mono">{room.room_number}</span>
                   <Badge
                     variant="outline"
-                    className={`${config.color} border flex gap-1 items-center`}
+                    className={cn(config.color, 'border flex gap-1 items-center')}
                   >
-                    <config.icon className="w-3 h-3" />
-                    {room.status === 'Livre' && room.cleaningStatus === 'Limpo'
-                      ? 'Pronto'
-                      : room.status !== 'Livre'
-                        ? room.status
-                        : room.cleaningStatus}
+                    <config.icon className="w-3 h-3" /> {config.label}
                   </Badge>
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">{room.type}</p>
+                <p className="text-sm text-muted-foreground">{room.floor}º Andar</p>
               </CardHeader>
               <CardContent className="pt-0 pb-4">
-                <div className="flex flex-col gap-1 mt-2">
-                  {room.occupancy && (
-                    <span className="text-xs font-medium text-blue-700">
-                      {room.occupancy} - {room.guestName}
-                    </span>
-                  )}
-                  {room.cleaningStatus === 'Sujo' && room.status === 'Livre' && (
-                    <span className="text-xs font-medium text-amber-600 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> Aguarda Limpeza
-                    </span>
-                  )}
-                </div>
+                {room.status === 'maintenance' && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {room.priority && (
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-[10px] uppercase font-bold px-1.5 py-0',
+                            room.priority === 'high'
+                              ? 'text-rose-700 border-rose-200 bg-rose-100'
+                              : room.priority === 'medium'
+                                ? 'text-orange-700 border-orange-200 bg-orange-100'
+                                : 'text-slate-700 border-slate-200 bg-slate-100',
+                          )}
+                        >
+                          {room.priority === 'high'
+                            ? 'Alta'
+                            : room.priority === 'medium'
+                              ? 'Média'
+                              : 'Baixa'}
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="text-xs text-slate-700 line-clamp-2 font-medium">
+                      {room.maintenance_description || 'Sem descrição'}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      <Drawer open={!!selectedRoom} onOpenChange={(o) => !o && setSelectedRoom(null)}>
-        <DrawerContent className="max-w-xl mx-auto h-[85vh]">
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
-              Quarto {selectedRoom?.num}
-            </DrawerTitle>
-            <DrawerDescription>Gestão detalhada do quarto e histórico.</DrawerDescription>
-          </DrawerHeader>
-          {selectedRoom && (
-            <div className="p-4 space-y-6 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+      <Dialog open={!!selectedRoom} onOpenChange={(o) => !o && setSelectedRoom(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedRoom?.status === 'maintenance' ? (
+                <Wrench className="w-5 h-5 text-rose-600" />
+              ) : (
+                <BedDouble className="w-5 h-5" />
+              )}{' '}
+              Quarto {selectedRoom?.room_number}
+            </DialogTitle>
+            <DialogDescription>Detalhes e status do quarto.</DialogDescription>
+          </DialogHeader>
+          {selectedRoom && selectedRoom.status === 'maintenance' ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-lg space-y-3 shadow-sm">
+                <div>
+                  <h4 className="text-xs font-bold uppercase text-rose-800 tracking-wider">
+                    Descrição do Problema
+                  </h4>
+                  <p className="text-sm text-slate-800 mt-1">
+                    {selectedRoom.maintenance_description}
+                  </p>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-rose-200/50">
+                  <div className="flex items-center gap-1.5 text-xs text-rose-700 font-medium">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {format(new Date(selectedRoom.created), 'dd/MM/yyyy HH:mm')}
+                  </div>
+                  {selectedRoom.priority && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'uppercase text-[10px] font-bold',
+                        selectedRoom.priority === 'high'
+                          ? 'text-rose-700 border-rose-200 bg-rose-100'
+                          : selectedRoom.priority === 'medium'
+                            ? 'text-orange-700 border-orange-200 bg-orange-100'
+                            : 'text-slate-700 border-slate-200 bg-slate-100',
+                      )}
+                    >
+                      Prioridade{' '}
+                      {selectedRoom.priority === 'high'
+                        ? 'Alta'
+                        : selectedRoom.priority === 'medium'
+                          ? 'Média'
+                          : 'Baixa'}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setSelectedRoom(null)}>
+                  Fechar
+                </Button>
+                {hasAccess(['Manutencao_Oficina', 'Direcao_Admin']) && (
+                  <Button
+                    onClick={() => handleResolve(selectedRoom.id)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Marcar como Resolvido
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
                 <div>
                   <p className="text-sm text-slate-500">Status Ocupação</p>
-                  <p className="font-bold text-slate-900">{selectedRoom.status}</p>
+                  <p className="font-bold text-slate-900 capitalize">
+                    {selectedRoom?.status.replace('_', ' ')}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Status Governança</p>
-                  <p className="font-bold text-slate-900">{selectedRoom.cleaningStatus}</p>
+                  <p className="text-sm text-slate-500">Andar</p>
+                  <p className="font-bold text-slate-900">{selectedRoom?.floor}º Andar</p>
                 </div>
               </div>
-
-              <div className="space-y-4 pt-2 border-t">
-                <h4 className="text-sm font-semibold">Alterar Ocupação</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStatusChange('Livre')}
-                    disabled={selectedRoom.status === 'Livre'}
-                  >
-                    Marcar Livre
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStatusChange('Ocupado')}
-                    disabled={selectedRoom.status === 'Ocupado'}
-                  >
-                    Marcar Ocupado
-                  </Button>
-                </div>
-              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedRoom(null)}>
+                  Fechar
+                </Button>
+              </DialogFooter>
             </div>
           )}
-          <DrawerFooter>
-            <Button variant="ghost" onClick={() => setSelectedRoom(null)}>
-              Fechar
-            </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
