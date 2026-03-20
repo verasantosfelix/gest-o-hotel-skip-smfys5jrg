@@ -41,7 +41,8 @@ const formSchema = z
   .object({
     name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Email inválido'),
-    role: z.enum(['manager', 'user'], { required_error: 'Selecione um cargo' }),
+    role: z.enum(['manager', 'user'], { required_error: 'Selecione um nível de acesso base' }),
+    profile: z.string().optional(),
     password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
     passwordConfirm: z.string(),
   })
@@ -52,7 +53,7 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>
 
-export function CreateUserDialog() {
+export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -65,6 +66,7 @@ export function CreateUserDialog() {
       name: '',
       email: '',
       role: 'user',
+      profile: 'none',
       password: '',
       passwordConfirm: '',
     },
@@ -105,20 +107,23 @@ export function CreateUserDialog() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
     try {
-      await createUser(
-        {
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          passwordConfirm: values.passwordConfirm,
-          role: values.role,
-        },
-        avatarFile,
-      )
+      const payload: any = {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        passwordConfirm: values.passwordConfirm,
+        role: values.role,
+      }
+
+      if (values.profile && values.profile !== 'none') {
+        payload.profile = values.profile
+      }
+
+      await createUser(payload, avatarFile)
 
       toast({
         title: 'Sucesso',
-        description: 'User created and invitation email sent successfully.',
+        description: 'Membro criado e email de convite enviado com sucesso.',
       })
 
       setOpen(false)
@@ -127,7 +132,7 @@ export function CreateUserDialog() {
     } catch (error: any) {
       const errors = extractFieldErrors(error)
       if (errors.email) {
-        form.setError('email', { type: 'manual', message: 'This email is already in use' })
+        form.setError('email', { type: 'manual', message: 'Este email já está em uso' })
       } else {
         toast({
           title: 'Erro',
@@ -160,7 +165,7 @@ export function CreateUserDialog() {
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
-          Add Member
+          Novo Membro
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
@@ -238,33 +243,64 @@ export function CreateUserDialog() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cargo (Role)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cargo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível Base</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">Colaborador</SelectItem>
+                        <SelectItem value="manager">Manager / Lead</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="profile"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento / Cargo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sem Cargo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none" className="text-slate-400 italic">
+                          Nenhum
+                        </SelectItem>
+                        {profiles.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Senha Temporária (Password)</FormLabel>
+                  <FormLabel>Senha Temporária</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="Mínimo 8 caracteres" {...field} />
                   </FormControl>
@@ -288,7 +324,7 @@ export function CreateUserDialog() {
             <div className="flex justify-end pt-4 pb-2">
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create Account & Send Invite
+                Criar Acesso
               </Button>
             </div>
           </form>

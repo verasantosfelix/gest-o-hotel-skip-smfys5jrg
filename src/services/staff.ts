@@ -12,6 +12,8 @@ export const updateUser = async (id: string, data: any, avatarFile?: File | null
   Object.keys(data).forEach((key) => {
     if (data[key] !== undefined && data[key] !== null) {
       formData.append(key, data[key])
+    } else if (data[key] === null) {
+      formData.append(key, '') // clear relation
     }
   })
 
@@ -29,8 +31,16 @@ export const getProfiles = async () => {
   })
 }
 
+export const createProfile = async (data: any) => {
+  return await pb.collection('profiles').create(data)
+}
+
 export const updateProfile = async (id: string, data: any) => {
   return await pb.collection('profiles').update(id, data)
+}
+
+export const deleteProfile = async (id: string) => {
+  return await pb.collection('profiles').delete(id)
 }
 
 export const createUser = async (data: any, avatarFile?: File | null) => {

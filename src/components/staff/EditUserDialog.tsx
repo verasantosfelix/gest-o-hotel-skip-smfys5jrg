@@ -21,6 +21,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/components/ui/use-toast'
@@ -32,11 +39,12 @@ const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
 
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+  profile: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditUserDialog({ user }: { user: any }) {
+export function EditUserDialog({ user, profiles = [] }: { user: any; profiles?: any[] }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -47,12 +55,16 @@ export function EditUserDialog({ user }: { user: any }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user.name || '',
+      profile: user.profile || 'none',
     },
   })
 
   useEffect(() => {
     if (open) {
-      form.reset({ name: user.name || '' })
+      form.reset({
+        name: user.name || '',
+        profile: user.profile || 'none',
+      })
       setAvatarFile(null)
       if (user.avatar) {
         setAvatarPreview(pb.files.getUrl(user, user.avatar))
@@ -97,7 +109,15 @@ export function EditUserDialog({ user }: { user: any }) {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
     try {
-      await updateUser(user.id, { name: values.name }, avatarFile)
+      const payload: any = { name: values.name }
+
+      if (values.profile === 'none') {
+        payload.profile = null // Clear relation
+      } else if (values.profile) {
+        payload.profile = values.profile
+      }
+
+      await updateUser(user.id, payload, avatarFile)
       toast({ title: 'Sucesso', description: 'Perfil atualizado com sucesso.' })
       setOpen(false)
     } catch (error: any) {
@@ -118,7 +138,7 @@ export function EditUserDialog({ user }: { user: any }) {
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
           <DialogDescription>
-            Atualize as informações e a foto de perfil do membro.
+            Atualize as informações e o cargo/departamento do membro.
           </DialogDescription>
         </DialogHeader>
 
@@ -171,6 +191,33 @@ export function EditUserDialog({ user }: { user: any }) {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="profile"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Departamento / Cargo</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um cargo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-slate-400 italic">
+                        Nenhum
+                      </SelectItem>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
