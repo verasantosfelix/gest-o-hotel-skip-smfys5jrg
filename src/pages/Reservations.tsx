@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Search, Filter, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Search, Filter, AlertTriangle, CheckCircle2, Terminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -19,14 +20,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from '@/components/ui/drawer'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ReservationAssistant } from '@/components/ReservationAssistant'
 
 type Reservation = {
   id: string
@@ -62,24 +56,41 @@ const MOCK_DATA: Reservation[] = [
 
 export default function Reservations() {
   const [selected, setSelected] = useState<Reservation | null>(null)
-  const [validationOpen, setValidationOpen] = useState(false)
-  const [hasConflict, setHasConflict] = useState(false)
-
-  const handleAction = (conflict: boolean) => {
-    setHasConflict(conflict)
-    setValidationOpen(true)
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Gestão de Reservas</h1>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Gestão de Reservas</h1>
+          <p className="text-muted-foreground text-sm">
+            Controle de estadias e motor de assistência.
+          </p>
+        </div>
+      </div>
+
+      <Card className="border-primary/20 shadow-md overflow-hidden">
+        <CardHeader className="bg-primary/5 pb-4 border-b">
+          <CardTitle className="text-lg flex items-center gap-2 font-mono">
+            <Terminal className="h-5 w-5 text-primary" />
+            Assistente SKIP
+          </CardTitle>
+          <CardDescription>
+            Motor de processamento de linguagem natural. Interaja para gerenciar reservas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ReservationAssistant />
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-between items-center gap-4 mt-8 mb-4">
+        <h2 className="text-lg font-semibold">Tabela de Operações</h2>
+        <div className="flex gap-2">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por hóspede ou reserva" className="pl-8" />
+            <Input placeholder="Buscar na tabela..." className="pl-8 h-9" />
           </div>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" className="h-9 w-9">
             <Filter className="h-4 w-4" />
           </Button>
         </div>
@@ -94,7 +105,6 @@ export default function Reservations() {
               <TableHead>Datas</TableHead>
               <TableHead>Acomodação</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,7 +114,7 @@ export default function Reservations() {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => setSelected(res)}
               >
-                <TableCell className="font-medium">{res.id}</TableCell>
+                <TableCell className="font-medium font-mono text-xs">{res.id}</TableCell>
                 <TableCell>{res.guest}</TableCell>
                 <TableCell>{res.dates}</TableCell>
                 <TableCell>{res.room}</TableCell>
@@ -118,16 +128,13 @@ export default function Reservations() {
                           : 'destructive'
                     }
                     className={
-                      res.status === 'Confirmado' ? 'bg-accent text-accent-foreground' : ''
+                      res.status === 'Confirmado'
+                        ? 'bg-emerald-600/20 text-emerald-600 hover:bg-emerald-600/30 border-transparent'
+                        : ''
                     }
                   >
                     {res.status}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    Ver Detalhes
-                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -157,19 +164,8 @@ export default function Reservations() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status Financeiro</p>
-                <Badge className="bg-accent">Pago</Badge>
+                <Badge className="bg-emerald-600">Pago</Badge>
               </div>
-            </div>
-            <div className="pt-4 border-t flex gap-2">
-              <Button onClick={() => handleAction(false)} className="bg-primary">
-                Confirmar Check-in
-              </Button>
-              <Button variant="outline" onClick={() => handleAction(true)}>
-                Modificar Datas
-              </Button>
-              <Button variant="destructive" onClick={() => handleAction(false)}>
-                Cancelar Reserva
-              </Button>
             </div>
           </div>
           <DrawerFooter>
@@ -179,55 +175,6 @@ export default function Reservations() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-
-      <Dialog open={validationOpen} onOpenChange={setValidationOpen}>
-        <DialogContent className="glassmorphism sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {hasConflict ? (
-                <AlertTriangle className="text-destructive h-5 w-5" />
-              ) : (
-                <CheckCircle2 className="text-accent h-5 w-5" />
-              )}
-              Motor de Validação SKIP
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            {hasConflict ? (
-              <Alert variant="destructive" className="animate-pulse-error bg-destructive/10">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle className="font-mono">&lt;erro tipo="validacao"&gt;</AlertTitle>
-                <AlertDescription className="font-mono text-xs mt-2">
-                  Conflito de inventário: Acomodação indisponível para o novo período solicitado.
-                  Sugestão: Datas disponíveis a partir de 18/05.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="bg-slate-900 text-slate-50 p-3 rounded font-mono text-xs">
-                <span className="text-accent">Intent:</span> Confirmar operação.
-                <br />
-                <span className="text-blue-400">Validate:</span> Dados íntegros. Regras de negócio
-                satisfeitas.
-                <br />
-                <br />
-                Aguardando confirmação final do operador.
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setValidationOpen(false)}>
-              Abortar
-            </Button>
-            <Button
-              disabled={hasConflict}
-              className={hasConflict ? '' : 'bg-accent hover:bg-accent/90'}
-              onClick={() => setValidationOpen(false)}
-            >
-              {hasConflict ? 'Corrigir Dados' : 'Confirmar Execução'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
