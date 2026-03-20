@@ -27,6 +27,7 @@ export default function FinanceCorporate() {
       console.error(e)
     }
   }
+
   useEffect(() => {
     loadData()
   }, [])
@@ -50,7 +51,9 @@ export default function FinanceCorporate() {
       })
       toast({ title: 'Sucesso', description: 'Documento Financeiro criado.' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleBudget = async () => {
@@ -64,7 +67,9 @@ export default function FinanceCorporate() {
       })
       toast({ title: 'Sucesso', description: 'Orçamento definido.' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (

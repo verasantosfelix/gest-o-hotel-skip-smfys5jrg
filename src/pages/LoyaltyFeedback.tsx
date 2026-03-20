@@ -23,6 +23,7 @@ export default function LoyaltyFeedback() {
       console.error(e)
     }
   }
+
   useEffect(() => {
     loadData()
   }, [])
@@ -36,7 +37,9 @@ export default function LoyaltyFeedback() {
       })
       toast({ title: 'Sucesso', description: 'Hóspede adicionado ao programa.' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleFeedback = async () => {
@@ -53,7 +56,9 @@ export default function LoyaltyFeedback() {
       })
       toast({ title: 'Sucesso', description: 'Feedback computado com NLP.' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
