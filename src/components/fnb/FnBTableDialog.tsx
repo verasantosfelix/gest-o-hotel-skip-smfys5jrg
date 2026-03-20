@@ -46,7 +46,9 @@ export function FnBTableDialog({ table, onClose }: { table: FBTable; onClose: ()
         setOrder(null)
         setItems([])
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const loadData = async () => {
@@ -55,7 +57,9 @@ export function FnBTableDialog({ table, onClose }: { table: FBTable; onClose: ()
       setProducts(await getFBProducts())
       const res = await getReservations()
       setReservations(res.filter((r) => r.status === 'in_house'))
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
   useEffect(() => {
     loadData()
@@ -94,7 +98,9 @@ export function FnBTableDialog({ table, onClose }: { table: FBTable; onClose: ()
       loadOrder()
       setSelProduct('')
       toast({ title: 'Item adicionado' })
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleClosePay = async () => {
@@ -104,7 +110,9 @@ export function FnBTableDialog({ table, onClose }: { table: FBTable; onClose: ()
       await updateFBTable(table.id, { status: 'free' })
       toast({ title: 'Conta fechada via POS Externo' })
       onClose()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handlePostRoom = async () => {
@@ -121,7 +129,9 @@ export function FnBTableDialog({ table, onClose }: { table: FBTable; onClose: ()
       await updateFBTable(table.id, { status: 'free' })
       toast({ title: 'Lançado no quarto com sucesso' })
       onClose()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (

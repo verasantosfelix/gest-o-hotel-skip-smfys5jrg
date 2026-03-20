@@ -75,7 +75,9 @@ export function FnBRoomService() {
       setSelProd('')
       setSelRes('')
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleDeliver = async (o: FBOrder) => {
@@ -89,7 +91,9 @@ export function FnBRoomService() {
       await updateFBOrder(o.id, { status: 'closed' })
       toast({ title: 'Pedido Entregue e Consumo Postado' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (

@@ -30,7 +30,9 @@ export function FnBKDS() {
         await updateFBOrder(it.order_id, { status: 'preparing' })
       }
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleFinish = async (it: FBOrderItem) => {
@@ -42,7 +44,9 @@ export function FnBKDS() {
         await updateFBOrder(it.order_id, { status: 'ready' })
       }
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (

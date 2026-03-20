@@ -55,7 +55,9 @@ export function FnBReservations() {
       toast({ title: 'Reserva Criada com Sucesso' })
       setForm({ name: '', people: '', time: '', table: '' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleArrive = async (r: FBReservationFNB) => {
@@ -64,7 +66,9 @@ export function FnBReservations() {
       if (r.table_id) await updateFBTable(r.table_id, { status: 'occupied' })
       toast({ title: 'Check-in realizado. Mesa Ocupada.' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
