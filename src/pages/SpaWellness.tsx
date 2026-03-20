@@ -1,136 +1,111 @@
 import { useState, useEffect } from 'react'
-import { Heart, Clock, Calendar as CalendarIcon } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Heart, Activity, CheckSquare, Settings } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
-import { ModuleCalendar } from '@/components/dashboard/ModuleCalendar'
-import { getCalendarEvents, CalendarEvent } from '@/services/calendar'
+
+import { SpaAgenda } from '@/components/spa/SpaAgenda'
+import { SpaRooms } from '@/components/spa/SpaRooms'
+import { SpaInventory } from '@/components/spa/SpaInventory'
+import { SpaRoutines } from '@/components/spa/SpaRoutines'
+import { SpaKPIs } from '@/components/spa/SpaKPIs'
+
+import { getSpaRooms, getUsers, getSpaAppointments } from '@/services/spa'
 import { useRealtime } from '@/hooks/use-realtime'
 
 export default function SpaWellness() {
   const { hasAccess } = useAccess()
-  const [events, setEvents] = useState<CalendarEvent[]>([])
 
-  const loadData = async () => {
+  const [availableRooms, setAvailableRooms] = useState(0)
+  const [availableTherapists, setAvailableTherapists] = useState(0)
+
+  const loadHeaderData = async () => {
     try {
-      const data = await getCalendarEvents('spa')
-      setEvents(data)
+      const [rooms, users, appts] = await Promise.all([
+        getSpaRooms(),
+        getUsers(),
+        getSpaAppointments(),
+      ])
+      setAvailableRooms(rooms.filter((r) => r.status === 'free').length)
+      const busy = new Set(
+        appts.filter((a) => a.status === 'in_progress').map((a) => a.therapist_id),
+      ).size
+      const totalT = users.length || 5
+      setAvailableTherapists(Math.max(0, totalT - busy))
     } catch (e) {
       console.error(e)
     }
   }
 
   useEffect(() => {
-    loadData()
+    loadHeaderData()
   }, [])
-
-  useRealtime('calendar_events', loadData)
+  useRealtime('spa_rooms', loadHeaderData)
+  useRealtime('spa_appointments', loadHeaderData)
 
   if (!hasAccess(['Spa_Wellness', 'Direcao_Admin'])) {
     return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin']} />
   }
 
-  // Sort events by time for the linear views
-  const sortedEvents = [...events].sort(
-    (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
-  )
-
-  const groupEventsByDay = () => {
-    const groups: Record<string, CalendarEvent[]> = {}
-    sortedEvents.forEach((ev) => {
-      const date = ev.start_date.split('T')[0] || ev.start_date.split(' ')[0]
-      if (!groups[date]) groups[date] = []
-      groups[date].push(ev)
-    })
-    return groups
-  }
-
-  const weeklyGroups = groupEventsByDay()
-
   return (
     <div className="space-y-6 animate-fade-in pb-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-rose-100 rounded-full">
-          <Heart className="w-6 h-6 text-rose-600" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-rose-100 rounded-full">
+            <Heart className="w-6 h-6 text-rose-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Spa & Wellness</h1>
+            <p className="text-sm text-slate-500">Gestão de Agendas, Instalações e Faturamento</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Spa & Wellness</h1>
-          <p className="text-sm text-slate-500">Agendas Dinâmicas</p>
-        </div>
-      </div>
-
-      {/* MOBILE VIEW: Linear Hourly Agenda */}
-      <div className="block md:hidden">
-        <div className="relative border-l-2 border-rose-200 ml-3 space-y-6 pb-4">
-          {sortedEvents.map((ev, i) => (
-            <div key={ev.id} className="relative pl-6">
-              <div className="absolute -left-[9px] top-1 w-4 h-4 bg-white border-2 border-rose-400 rounded-full" />
-              <Card className="border-none shadow-sm bg-white">
-                <CardContent className="p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(ev.start_date).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <Badge variant="outline" className="text-[10px]">
-                      {ev.type}
-                    </Badge>
-                  </div>
-                  <h4 className="font-bold text-slate-800">{ev.title}</h4>
-                  <p className="text-xs text-slate-500 mt-1">{ev.description}</p>
-                </CardContent>
-              </Card>
-            </div>
-          ))}
-          {sortedEvents.length === 0 && <p className="pl-6 text-slate-500">Agenda livre.</p>}
+        <div className="flex gap-4">
+          <div className="bg-white border rounded-md px-4 py-2 shadow-sm text-center">
+            <p className="text-[10px] uppercase font-bold text-slate-500">Salas Livres</p>
+            <p className="text-xl font-black text-emerald-600 leading-tight">{availableRooms}</p>
+          </div>
+          <div className="bg-white border rounded-md px-4 py-2 shadow-sm text-center">
+            <p className="text-[10px] uppercase font-bold text-slate-500">Terapeutas</p>
+            <p className="text-xl font-black text-blue-600 leading-tight">{availableTherapists}</p>
+          </div>
         </div>
       </div>
 
-      {/* TABLET VIEW: Card-based Weekly Layout */}
-      <div className="hidden md:grid lg:hidden grid-cols-2 gap-4">
-        {Object.entries(weeklyGroups).map(([date, dayEvents]) => (
-          <Card key={date} className="border-slate-200 shadow-sm flex flex-col">
-            <CardHeader className="bg-slate-50 pb-3 py-3 border-b">
-              <CardTitle className="text-base flex items-center gap-2 text-slate-700">
-                <CalendarIcon className="w-4 h-4" />
-                {new Date(date).toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 flex-1 space-y-3">
-              {dayEvents.map((ev) => (
-                <div
-                  key={ev.id}
-                  className="p-3 bg-white border rounded-md shadow-sm border-slate-100"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="font-medium text-slate-800">{ev.title}</div>
-                    <Badge variant="secondary" className="bg-rose-50 text-rose-700">
-                      {new Date(ev.start_date).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-1 line-clamp-1">{ev.description}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Tabs defaultValue="agenda" className="w-full">
+        <TabsList className="mb-6 h-auto flex flex-wrap justify-start bg-slate-100 p-1 border">
+          <TabsTrigger value="agenda" className="px-4 py-2 gap-2">
+            <Heart className="w-4 h-4" /> Agenda do Dia
+          </TabsTrigger>
+          <TabsTrigger value="rooms" className="px-4 py-2 gap-2">
+            <Settings className="w-4 h-4" /> Salas & Estoque
+          </TabsTrigger>
+          <TabsTrigger value="routines" className="px-4 py-2 gap-2">
+            <CheckSquare className="w-4 h-4" /> Rotinas
+          </TabsTrigger>
+          <TabsTrigger value="kpis" className="px-4 py-2 gap-2">
+            <Activity className="w-4 h-4" /> Performance
+          </TabsTrigger>
+        </TabsList>
 
-      {/* DESKTOP VIEW: Full Calendar */}
-      <div className="hidden lg:block">
-        <ModuleCalendar sector="spa" title="Calendário Geral de Terapias" />
-      </div>
+        <TabsContent value="agenda" className="mt-0 outline-none">
+          <SpaAgenda />
+        </TabsContent>
+
+        <TabsContent value="rooms" className="mt-0 outline-none">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <SpaRooms />
+            <SpaInventory />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="routines" className="mt-0 outline-none">
+          <SpaRoutines />
+        </TabsContent>
+
+        <TabsContent value="kpis" className="mt-0 outline-none">
+          <SpaKPIs />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

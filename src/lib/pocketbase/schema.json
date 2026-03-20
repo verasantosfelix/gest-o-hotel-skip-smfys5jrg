@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T22:44:25.069Z",
+  "generatedAt": "2026-03-20T22:50:52.082Z",
   "collections": [
     {
       "name": "users",
@@ -1891,6 +1891,244 @@
           "required": true,
           "system": false,
           "selectValues": ["pending", "cooking", "finished"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "spa_services",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "duration_minutes",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "spa_rooms",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["free", "occupied", "cleaning", "maintenance"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "spa_appointments",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "guest_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "hotel_reservation_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "reservations"
+        },
+        {
+          "name": "spa_room_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "spa_rooms"
+        },
+        {
+          "name": "service_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "spa_services"
+        },
+        {
+          "name": "therapist_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "start_time",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "end_time",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["scheduled", "checked_in", "in_progress", "completed", "cancelled"]
+        },
+        {
+          "name": "contraindications",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "spa_inventory",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "item_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unit",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "min_threshold",
+          "type": "number",
+          "required": true,
+          "system": false
         },
         {
           "name": "created",
