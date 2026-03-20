@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/use-toast'
 import useReservationStore from '@/stores/useReservationStore'
 import useAuditStore from '@/stores/useAuditStore'
 import { BadgeDollarSign, FileDown } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 export function FinancialDashboard() {
   const { consumptions } = useReservationStore()
@@ -28,7 +29,7 @@ export function FinancialDashboard() {
       description: 'O relatório financeiro foi gerado e o download iniciado.',
     })
 
-    const content = `RELATÓRIO FINANCEIRO (SIMULADO)\n--------------------------\nReceita de Consumo: R$ ${totalRev.toFixed(2)}\n\nPor Categoria:\n- Restaurante: R$ ${revRestaurante.toFixed(2)}\n- Minibar: R$ ${revMinibar.toFixed(2)}\n- Serviços Extras: R$ ${revServicos.toFixed(2)}\n\nData de Geração: ${new Date().toLocaleString()}`
+    const content = `RELATÓRIO FINANCEIRO (SIMULADO)\n--------------------------\nReceita de Consumo: ${formatCurrency(totalRev, 'AOA')}\n\nPor Categoria:\n- Restaurante: ${formatCurrency(revRestaurante, 'AOA')}\n- Minibar: ${formatCurrency(revMinibar, 'AOA')}\n- Serviços Extras: ${formatCurrency(revServicos, 'AOA')}\n\nData de Geração: ${new Date().toLocaleString()}`
 
     const blob = new Blob([content], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
@@ -59,7 +60,9 @@ export function FinancialDashboard() {
             <BadgeDollarSign className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-600">R$ {totalRev.toFixed(2)}</div>
+            <div className="text-3xl font-bold text-emerald-600">
+              {formatCurrency(totalRev, 'AOA')}
+            </div>
             <p className="text-xs text-slate-500 mt-1">Acumulado do período atual</p>
           </CardContent>
         </Card>
@@ -76,7 +79,7 @@ export function FinancialDashboard() {
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-slate-700">Restaurante</span>
                 <span className="text-slate-500 font-mono">
-                  R$ {revRestaurante.toFixed(2)} (
+                  {formatCurrency(revRestaurante, 'AOA')} (
                   {((revRestaurante / totalRev) * 100 || 0).toFixed(0)}%)
                 </span>
               </div>
@@ -90,7 +93,8 @@ export function FinancialDashboard() {
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-slate-700">Minibar</span>
                 <span className="text-slate-500 font-mono">
-                  R$ {revMinibar.toFixed(2)} ({((revMinibar / totalRev) * 100 || 0).toFixed(0)}%)
+                  {formatCurrency(revMinibar, 'AOA')} (
+                  {((revMinibar / totalRev) * 100 || 0).toFixed(0)}%)
                 </span>
               </div>
               <Progress
@@ -103,7 +107,8 @@ export function FinancialDashboard() {
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-slate-700">Serviços Extras</span>
                 <span className="text-slate-500 font-mono">
-                  R$ {revServicos.toFixed(2)} ({((revServicos / totalRev) * 100 || 0).toFixed(0)}%)
+                  {formatCurrency(revServicos, 'AOA')} (
+                  {((revServicos / totalRev) * 100 || 0).toFixed(0)}%)
                 </span>
               </div>
               <Progress

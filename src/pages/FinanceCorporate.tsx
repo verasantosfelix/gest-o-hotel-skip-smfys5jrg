@@ -1,22 +1,35 @@
 import { useState, useEffect } from 'react'
-import { Landmark, FileText, DollarSign } from 'lucide-react'
+import { Landmark } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { getFinancialDocs, createFinancialDoc } from '@/services/financial'
 import { getBudgetEntries, createBudgetEntry } from '@/services/budget'
 import { toast } from '@/components/ui/use-toast'
+import { formatCurrency } from '@/lib/utils'
 
 export default function FinanceCorporate() {
   const [docs, setDocs] = useState<any[]>([])
   const [budgets, setBudgets] = useState<any[]>([])
-  const [docForm, setDocForm] = useState({ type: 'Fatura', entity: '', amount: '' })
+  const [docForm, setDocForm] = useState({
+    type: 'Fatura',
+    entity: '',
+    amount: '',
+    currency: 'AOA',
+  })
   const [bgForm, setBgForm] = useState({
     year: new Date().getFullYear(),
     center: '',
     category: 'OPEX',
     amount: '',
+    currency: 'AOA',
   })
 
   const loadData = async () => {
@@ -47,9 +60,11 @@ export default function FinanceCorporate() {
         doc_type: docForm.type,
         entity_name: docForm.entity,
         amount: val,
+        currency: docForm.currency,
         status: 'Pendente',
       })
       toast({ title: 'Sucesso', description: 'Documento Financeiro criado.' })
+      setDocForm((prev) => ({ ...prev, amount: '' }))
       loadData()
     } catch (e) {
       console.error(e)
@@ -58,14 +73,24 @@ export default function FinanceCorporate() {
 
   const handleBudget = async () => {
     const val = parseFloat(bgForm.amount)
+    if (val <= 0 || isNaN(val)) {
+      toast({
+        title: 'Erro',
+        description: 'O valor deve ser maior que zero.',
+        variant: 'destructive',
+      })
+      return
+    }
     try {
       await createBudgetEntry({
         year: bgForm.year,
         cost_center: bgForm.center,
         category: bgForm.category,
         amount: val,
+        currency: bgForm.currency,
       })
       toast({ title: 'Sucesso', description: 'Orçamento definido.' })
+      setBgForm((prev) => ({ ...prev, amount: '' }))
       loadData()
     } catch (e) {
       console.error(e)
@@ -87,24 +112,44 @@ export default function FinanceCorporate() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <select
-                className="border rounded px-2"
+              <Select
                 value={docForm.type}
-                onChange={(e) => setDocForm({ ...docForm, type: e.target.value })}
+                onValueChange={(v) => setDocForm({ ...docForm, type: v })}
               >
-                <option>Fatura</option>
-                <option>Nota Proforma</option>
-                <option>AP (Fornecedor)</option>
-              </select>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fatura">Fatura</SelectItem>
+                  <SelectItem value="Nota Proforma">Nota Proforma</SelectItem>
+                  <SelectItem value="AP (Fornecedor)">AP (Fornecedor)</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 placeholder="Empresa"
                 value={docForm.entity}
+                className="flex-1"
                 onChange={(e) => setDocForm({ ...docForm, entity: e.target.value })}
               />
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={docForm.currency}
+                onValueChange={(v) => setDocForm({ ...docForm, currency: v })}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AOA">AOA</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 type="number"
                 placeholder="Valor"
-                className="w-32"
+                className="flex-1"
                 value={docForm.amount}
                 onChange={(e) => setDocForm({ ...docForm, amount: e.target.value })}
               />
@@ -116,7 +161,7 @@ export default function FinanceCorporate() {
                   <span>
                     {d.doc_type} - {d.entity_name}
                   </span>
-                  <span className="font-bold">R$ {d.amount.toFixed(2)}</span>
+                  <span className="font-bold">{formatCurrency(d.amount, d.currency)}</span>
                 </div>
               ))}
             </div>
@@ -131,21 +176,41 @@ export default function FinanceCorporate() {
             <div className="flex gap-2">
               <Input
                 placeholder="Centro Custo"
+                className="flex-1"
                 value={bgForm.center}
                 onChange={(e) => setBgForm({ ...bgForm, center: e.target.value })}
               />
-              <select
-                className="border rounded px-2"
+              <Select
                 value={bgForm.category}
-                onChange={(e) => setBgForm({ ...bgForm, category: e.target.value })}
+                onValueChange={(v) => setBgForm({ ...bgForm, category: v })}
               >
-                <option>OPEX</option>
-                <option>CAPEX</option>
-              </select>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPEX">OPEX</SelectItem>
+                  <SelectItem value="CAPEX">CAPEX</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={bgForm.currency}
+                onValueChange={(v) => setBgForm({ ...bgForm, currency: v })}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AOA">AOA</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 type="number"
                 placeholder="Valor"
-                className="w-32"
+                className="flex-1"
                 value={bgForm.amount}
                 onChange={(e) => setBgForm({ ...bgForm, amount: e.target.value })}
               />
@@ -157,7 +222,7 @@ export default function FinanceCorporate() {
                   <span>
                     {b.year} | {b.cost_center} ({b.category})
                   </span>
-                  <span className="font-bold">R$ {b.amount.toFixed(2)}</span>
+                  <span className="font-bold">{formatCurrency(b.amount, b.currency)}</span>
                 </div>
               ))}
             </div>

@@ -5,9 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
+import { formatCurrency } from '@/lib/utils'
 
 export default function Marketing() {
   const { userRole } = useAuthStore()
@@ -30,7 +38,7 @@ export default function Marketing() {
           Marketing & Campanhas
         </h1>
         <p className="text-muted-foreground text-sm">
-          Crie promoções, segmente públicos e ative ofertas.
+          Crie promoções, segmente públicos e ative ofertas monitorando alocação de orçamento.
         </p>
       </div>
 
@@ -60,6 +68,25 @@ export default function Marketing() {
                   <div className="space-y-2">
                     <Label>Agendamento</Label>
                     <Input type="datetime-local" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Orçamento Alocado</Label>
+                      <Input type="number" placeholder="Ex: 50000" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Moeda</Label>
+                      <Select defaultValue="AOA">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AOA">AOA</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <Button onClick={() => setStep(2)}>Revisar e Avançar</Button>
                 </div>
@@ -124,6 +151,9 @@ export default function Marketing() {
                     <strong className="block text-slate-900">Desconto de Inverno (15%)</strong>
                     <span className="text-sm text-slate-500 mt-1 block">
                       Regra: Fidelidade Gold + 3 diárias
+                    </span>
+                    <span className="text-sm font-medium text-slate-700 mt-1 block">
+                      Custo Alocado: {formatCurrency(250000, 'AOA')}
                     </span>
                   </div>
                   <Button

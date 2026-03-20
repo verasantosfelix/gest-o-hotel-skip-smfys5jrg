@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import useAuthStore from '@/stores/useAuthStore'
+import { formatCurrency } from '@/lib/utils'
 
 export default function Payments() {
   const { userRole } = useAuthStore()
@@ -23,19 +24,23 @@ export default function Payments() {
 
   // Simples
   const [valSimples, setValSimples] = useState('')
+  const [currencySimples, setCurrencySimples] = useState('AOA')
   const [method, setMethod] = useState('credito')
   const [confirmingSimples, setConfirmingSimples] = useState(false)
 
   // Recorrente
   const [valRecorrente, setValRecorrente] = useState('')
+  const [currencyRecorrente, setCurrencyRecorrente] = useState('AOA')
   const [periodicity, setPeriodicity] = useState('mensal')
 
   // Estorno
   const [valEstorno, setValEstorno] = useState('')
+  const [currencyEstorno, setCurrencyEstorno] = useState('AOA')
   const [transactionId, setTransactionId] = useState('')
 
   // Split
   const [valSplit, setValSplit] = useState('')
+  const [currencySplit, setCurrencySplit] = useState('AOA')
   const [splitDetails, setSplitDetails] = useState('')
 
   if (userRole !== 'Admin' && userRole !== 'Administrativa') {
@@ -64,7 +69,7 @@ export default function Payments() {
     setOutput(
       `<OUTPUT>\n  <status>Pagamento realizado</status>\n  <recibo>REC-${Math.floor(
         Math.random() * 90000,
-      )}</recibo>\n  <metodo>${method}</metodo>\n</OUTPUT>`,
+      )}</recibo>\n  <metodo>${method}</metodo>\n  <valor>${formatCurrency(parseFloat(valSimples), currencySimples)}</valor>\n</OUTPUT>`,
     )
   }
 
@@ -72,7 +77,7 @@ export default function Payments() {
     e.preventDefault()
     if (!validateValue(valRecorrente)) return
     setOutput(
-      `<OUTPUT>\n  <status>Pagamento recorrente ativado</status>\n  <periodicidade>${periodicity}</periodicidade>\n  <valor>${valRecorrente}</valor>\n</OUTPUT>`,
+      `<OUTPUT>\n  <status>Pagamento recorrente ativado</status>\n  <periodicidade>${periodicity}</periodicidade>\n  <valor>${formatCurrency(parseFloat(valRecorrente), currencyRecorrente)}</valor>\n</OUTPUT>`,
     )
   }
 
@@ -85,7 +90,7 @@ export default function Payments() {
       return
     }
     setOutput(
-      `<OUTPUT>\n  <status>Estorno processado</status>\n  <transacao>${transactionId}</transacao>\n  <valor_estornado>${valEstorno}</valor_estornado>\n</OUTPUT>`,
+      `<OUTPUT>\n  <status>Estorno processado</status>\n  <transacao>${transactionId}</transacao>\n  <valor_estornado>${formatCurrency(parseFloat(valEstorno), currencyEstorno)}</valor_estornado>\n</OUTPUT>`,
     )
   }
 
@@ -98,7 +103,7 @@ export default function Payments() {
       return
     }
     setOutput(
-      `<OUTPUT>\n  <status>Split registrado</status>\n  <detalhes>${splitDetails}</detalhes>\n  <valor_total>${valSplit}</valor_total>\n</OUTPUT>`,
+      `<OUTPUT>\n  <status>Split registrado</status>\n  <detalhes>${splitDetails}</detalhes>\n  <valor_total>${formatCurrency(parseFloat(valSplit), currencySplit)}</valor_total>\n</OUTPUT>`,
     )
   }
 
@@ -110,7 +115,8 @@ export default function Payments() {
           Gateway Avançado & Pagamentos
         </h1>
         <p className="text-muted-foreground text-sm">
-          Gerenciamento financeiro centralizado para processamentos diretos, estornos e split.
+          Gerenciamento financeiro centralizado para processamentos diretos, estornos e split em
+          múltiplas moedas.
         </p>
       </div>
 
@@ -148,15 +154,28 @@ export default function Payments() {
                 {!confirmingSimples ? (
                   <form onSubmit={handleSimples} className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Valor da Transação (R$)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Ex: 150.00"
-                        value={valSimples}
-                        onChange={(e) => setValSimples(e.target.value)}
-                        required
-                      />
+                      <Label>Valor da Transação</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Ex: 150.00"
+                          value={valSimples}
+                          onChange={(e) => setValSimples(e.target.value)}
+                          required
+                          className="flex-1"
+                        />
+                        <Select value={currencySimples} onValueChange={setCurrencySimples}>
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AOA">AOA</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="USD">USD</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Método de Pagamento</Label>
@@ -167,7 +186,7 @@ export default function Payments() {
                         <SelectContent>
                           <SelectItem value="credito">Cartão de Crédito</SelectItem>
                           <SelectItem value="debito">Cartão de Débito</SelectItem>
-                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="pix">PIX / Transferência</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -184,8 +203,8 @@ export default function Payments() {
                       </AlertTitle>
                       <AlertDescription className="text-amber-700 mt-2">
                         Confirmar pagamento? O valor de{' '}
-                        <strong>R$ {parseFloat(valSimples).toFixed(2)}</strong> será processado via{' '}
-                        <strong>{method}</strong>.
+                        <strong>{formatCurrency(parseFloat(valSimples), currencySimples)}</strong>{' '}
+                        será processado via <strong>{method}</strong>.
                       </AlertDescription>
                     </Alert>
                     <div className="flex gap-2">
@@ -210,15 +229,28 @@ export default function Payments() {
               <TabsContent value="recorrente">
                 <form onSubmit={handleRecorrente} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Valor por Ciclo (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Ex: 50.00"
-                      value={valRecorrente}
-                      onChange={(e) => setValRecorrente(e.target.value)}
-                      required
-                    />
+                    <Label>Valor por Ciclo</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Ex: 50.00"
+                        value={valRecorrente}
+                        onChange={(e) => setValRecorrente(e.target.value)}
+                        required
+                        className="flex-1"
+                      />
+                      <Select value={currencyRecorrente} onValueChange={setCurrencyRecorrente}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AOA">AOA</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Periodicidade</Label>
@@ -251,15 +283,28 @@ export default function Payments() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Valor do Estorno (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Ex: 150.00"
-                      value={valEstorno}
-                      onChange={(e) => setValEstorno(e.target.value)}
-                      required
-                    />
+                    <Label>Valor do Estorno</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Ex: 150.00"
+                        value={valEstorno}
+                        onChange={(e) => setValEstorno(e.target.value)}
+                        required
+                        className="flex-1"
+                      />
+                      <Select value={currencyEstorno} onValueChange={setCurrencyEstorno}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AOA">AOA</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full gap-2" variant="destructive">
                     <Undo2 className="w-4 h-4" /> Processar Refund
@@ -270,15 +315,28 @@ export default function Payments() {
               <TabsContent value="split">
                 <form onSubmit={handleSplit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Valor Total (R$)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Ex: 1000.00"
-                      value={valSplit}
-                      onChange={(e) => setValSplit(e.target.value)}
-                      required
-                    />
+                    <Label>Valor Total</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Ex: 1000.00"
+                        value={valSplit}
+                        onChange={(e) => setValSplit(e.target.value)}
+                        required
+                        className="flex-1"
+                      />
+                      <Select value={currencySplit} onValueChange={setCurrencySplit}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AOA">AOA</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Detalhes da Distribuição (Contas / %)</Label>
