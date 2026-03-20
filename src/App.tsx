@@ -50,6 +50,11 @@ import AIConcierge from './pages/AIConcierge'
 import FinanceCorporate from './pages/FinanceCorporate'
 import NightAudit from './pages/NightAudit'
 
+import HRIntelligence from './pages/HRIntelligence'
+import ITAdmin from './pages/ITAdmin'
+import FBOps from './pages/FBOps'
+import SalesCRM from './pages/SalesCRM'
+
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -125,6 +130,11 @@ const App = () => {
                           <Route path="/ai-concierge" element={<AIConcierge />} />
                           <Route path="/financeiro-corp" element={<FinanceCorporate />} />
                           <Route path="/auditoria-noturna" element={<NightAudit />} />
+
+                          <Route path="/hr" element={<HRIntelligence />} />
+                          <Route path="/it-admin" element={<ITAdmin />} />
+                          <Route path="/fb-ops" element={<FBOps />} />
+                          <Route path="/sales-crm" element={<SalesCRM />} />
                         </Route>
                         <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
                         <Route path="*" element={<NotFound />} />

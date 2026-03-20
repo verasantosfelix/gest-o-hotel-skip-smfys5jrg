@@ -42,6 +42,10 @@ import {
   BotMessageSquare,
   Landmark,
   MoonStar,
+  UserCog,
+  Server,
+  UtensilsCrossed,
+  LineChart,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -66,6 +70,7 @@ const navOperacional = [
 
 const navEstrategico = [
   { name: 'Analytics & BI', url: '/analytics', icon: BarChart },
+  { name: 'Vendas & Distribuição', url: '/sales-crm', icon: LineChart },
   { name: 'Relatórios (AI)', url: '/relatorios', icon: FileText },
   { name: 'Revenue Mgmt', url: '/revenue', icon: TrendingUp },
   { name: 'Governança IA', url: '/ia-governanca', icon: Bot },
@@ -110,9 +115,11 @@ export function AppSidebar() {
   navGestao.push({ name: 'Governança', url: '/governanca', icon: Sparkles })
 
   if (isManager) {
+    navGestao.push({ name: 'HR Intelligence', url: '/hr', icon: UserCog })
+    navGestao.push({ name: 'IT & Infraestrutura', url: '/it-admin', icon: Server })
+    navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
     navGestao.push({ name: 'Manutenção', url: '/manutencao', icon: Wrench })
     navGestao.push({ name: 'Segurança', url: '/seguranca', icon: ShieldAlert })
-    navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
     navGestao.push({ name: 'Contratos & Docs', url: '/documentos-contratos', icon: FileSignature })
     navGestao.push({ name: 'Grupos & MICE', url: '/mice', icon: Building })
     navGestao.push({ name: 'Lavanderia & Uniformes', url: '/lavanderia', icon: Shirt })
@@ -240,11 +247,11 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={location.pathname === '/fnb'}
+                      isActive={location.pathname === '/fnb' || location.pathname === '/fb-ops'}
                       tooltip="F&B"
                     >
-                      <Link to="/fnb" className="flex items-center gap-3">
-                        <Utensils className="h-4 w-4" />
+                      <Link to="/fb-ops" className="flex items-center gap-3">
+                        <UtensilsCrossed className="h-4 w-4" />
                         <span className="font-medium">F&B Restaurante</span>
                       </Link>
                     </SidebarMenuButton>
@@ -263,10 +270,26 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={location.pathname === '/fnb'} tooltip="F&B">
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === '/fb-ops'}
+                    tooltip="F&B Ops"
+                  >
+                    <Link to="/fb-ops" className="flex items-center gap-3">
+                      <UtensilsCrossed className="h-4 w-4" />
+                      <span className="font-medium">F&B Ops Avançado</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === '/fnb'}
+                    tooltip="F&B Básicos"
+                  >
                     <Link to="/fnb" className="flex items-center gap-3">
                       <Utensils className="h-4 w-4" />
-                      <span className="font-medium">F&B Restaurante</span>
+                      <span className="font-medium">F&B Lançamentos</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
