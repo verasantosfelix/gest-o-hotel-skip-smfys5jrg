@@ -47,6 +47,7 @@ import {
   Server,
   UtensilsCrossed,
   LineChart,
+  ShieldCheck,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -69,6 +70,7 @@ type NavItem = {
   url: string
   icon: any
   roles: Role[]
+  requiresManager?: boolean
 }
 
 const navGroups = [
@@ -193,6 +195,22 @@ const navGroups = [
   {
     label: 'Estratégico & Financeiro',
     items: [
+      {
+        name: 'Alçadas (Aprovações)',
+        url: '/alcadas',
+        icon: ShieldCheck,
+        roles: [
+          'Lavanderia_Limpeza',
+          'Restaurante_Bar',
+          'Spa_Wellness',
+          'Rececao_FrontOffice',
+          'Administrativo_Financeiro',
+          'Manutencao_Oficina',
+          'Tecnologia_TI',
+          'Direcao_Admin',
+        ],
+        requiresManager: true,
+      },
       {
         name: 'Analytics',
         url: '/analytics',
@@ -379,7 +397,7 @@ const navGroups = [
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
-  const { hasAccess } = useAccess()
+  const { hasAccess, isManager } = useAccess()
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
@@ -391,7 +409,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navGroups.map((group, idx) => {
-          const visibleItems = group.items.filter((item) => hasAccess(item.roles))
+          const visibleItems = group.items.filter((item) => {
+            if (item.requiresManager && !isManager()) return false
+            return hasAccess(item.roles)
+          })
 
           if (visibleItems.length === 0) return null
 

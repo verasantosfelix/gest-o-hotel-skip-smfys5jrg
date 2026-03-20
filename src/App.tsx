@@ -48,11 +48,10 @@ try {
   patch(jsxRuntime)
   patch(jsxDevRuntime)
 
-  // Vite pre-bundles dependencies as CJS, so the actual mutable exports are often on the default object
   if ('default' in jsxRuntime) patch((jsxRuntime as any).default)
   if ('default' in jsxDevRuntime) patch((jsxDevRuntime as any).default)
 } catch (e) {
-  // Silent fallback if module is completely sealed
+  // Silent fallback
 }
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
@@ -72,6 +71,7 @@ import Layout from './components/Layout'
 import ServiceGuestLookup from './pages/ServiceGuestLookup'
 import ServiceExpensePosting from './pages/ServiceExpensePosting'
 import Audit from './pages/Audit'
+import Alcadas from './pages/Alcadas'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
 import CRM from './pages/CRM'
@@ -152,6 +152,7 @@ const App = () => {
                           <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
                           <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
                           <Route path="/auditoria" element={<Audit />} />
+                          <Route path="/alcadas" element={<Alcadas />} />
                           <Route path="/analytics" element={<Analytics />} />
                           <Route path="/relatorios" element={<Reports />} />
                           <Route path="/configuracoes" element={<Settings />} />
