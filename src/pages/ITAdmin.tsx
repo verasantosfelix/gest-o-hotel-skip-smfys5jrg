@@ -1,7 +1,7 @@
 import { Server } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { ModuleCalendar } from '@/components/dashboard/ModuleCalendar'
 
 export default function ITAdmin() {
   const { hasAccess } = useAccess()
@@ -10,12 +10,10 @@ export default function ITAdmin() {
   }
   return (
     <div className="space-y-6 animate-fade-in pb-8">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Server /> Infraestrutura TI
+      <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-800">
+        <Server className="w-6 h-6 text-primary" /> Infraestrutura TI
       </h1>
-      <Card>
-        <CardContent className="pt-6">Painel de Sistemas</CardContent>
-      </Card>
+      <ModuleCalendar sector="it" title="Agendamentos de Downtime e Tarefas de TI" />
     </div>
   )
 }

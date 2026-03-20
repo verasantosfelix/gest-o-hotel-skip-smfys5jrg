@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T19:12:36.876Z",
+  "generatedAt": "2026-03-20T19:28:41.475Z",
   "collections": [
     {
       "name": "users",
@@ -1178,6 +1178,71 @@
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_rooms_number ON rooms (room_number)"]
+    },
+    {
+      "name": "calendar_events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "start_date",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "end_date",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["task", "training", "blockout", "maintenance", "urgent"]
+        },
+        {
+          "name": "sector",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_calendar_events_sector ON calendar_events (sector)"]
     }
   ]
 }
