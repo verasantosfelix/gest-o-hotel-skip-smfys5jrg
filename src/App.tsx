@@ -14,6 +14,12 @@ import ServiceGuestLookup from './pages/ServiceGuestLookup'
 import ServiceExpensePosting from './pages/ServiceExpensePosting'
 import Audit from './pages/Audit'
 import Settings from './pages/Settings'
+import CRM from './pages/CRM'
+import Staff from './pages/Staff'
+import Integrations from './pages/Integrations'
+import Marketing from './pages/Marketing'
+import FnB from './pages/FnB'
+import Events from './pages/Events'
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -43,6 +49,12 @@ const App = () => (
                       <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
                       <Route path="/auditoria" element={<Audit />} />
                       <Route path="/configuracoes" element={<Settings />} />
+                      <Route path="/crm" element={<CRM />} />
+                      <Route path="/equipe" element={<Staff />} />
+                      <Route path="/integracoes" element={<Integrations />} />
+                      <Route path="/marketing" element={<Marketing />} />
+                      <Route path="/fnb" element={<FnB />} />
+                      <Route path="/eventos" element={<Events />} />
                     </Route>
                     {/* Guest-facing routes */}
                     <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />

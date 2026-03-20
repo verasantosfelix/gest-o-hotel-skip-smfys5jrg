@@ -10,6 +10,12 @@ import {
   Sparkles,
   Search,
   Receipt,
+  HeartHandshake,
+  Megaphone,
+  CalendarRange,
+  Briefcase,
+  Plug,
+  Utensils,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -32,6 +38,13 @@ const navOperacional = [
   { name: 'Hóspedes', url: '/hospedes', icon: Users },
 ]
 
+const navEstrategico = [
+  { name: 'CRM & Experiência', url: '/crm', icon: HeartHandshake },
+  { name: 'Marketing', url: '/marketing', icon: Megaphone },
+  { name: 'Eventos', url: '/eventos', icon: CalendarRange },
+  { name: 'Integrações', url: '/integracoes', icon: Plug },
+]
+
 const navServicos = [
   { name: 'Busca de Hóspedes', url: '/busca-hospedes', icon: Search },
   { name: 'Lançamentos', url: '/lancamento-servicos', icon: Receipt },
@@ -44,6 +57,7 @@ export function AppSidebar() {
 
   const isManager = userRole === 'Admin' || userRole === 'Administrativa'
   const isLimpeza = userRole === 'Limpeza'
+  const isFnB = userRole === 'Restaurante' || userRole === 'Bar'
 
   const navGestao = []
 
@@ -52,6 +66,10 @@ export function AppSidebar() {
   }
 
   navGestao.push({ name: 'Governança', url: '/governanca', icon: Sparkles })
+
+  if (isManager) {
+    navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
+  }
 
   if (userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)) {
     navGestao.push({ name: 'Rastreabilidade', url: '/auditoria', icon: History })
@@ -79,6 +97,31 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navOperacional.map((item) => {
+                    const isActive = location.pathname === item.url
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                          <Link to={item.url} className="flex items-center gap-3">
+                            <item.icon className="h-4 w-4" />
+                            <span className="font-medium">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
+
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+                Estratégico
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navEstrategico.map((item) => {
                     const isActive = location.pathname === item.url
                     return (
                       <SidebarMenuItem key={item.name}>
@@ -144,6 +187,40 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   )
                 })}
+                {isFnB && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === '/fnb'}
+                      tooltip="F&B"
+                    >
+                      <Link to="/fnb" className="flex items-center gap-3">
+                        <Utensils className="h-4 w-4" />
+                        <span className="font-medium">F&B Restaurante</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {isManager && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+              Alimentos & Bebidas
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/fnb'} tooltip="F&B">
+                    <Link to="/fnb" className="flex items-center gap-3">
+                      <Utensils className="h-4 w-4" />
+                      <span className="font-medium">F&B Restaurante</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
