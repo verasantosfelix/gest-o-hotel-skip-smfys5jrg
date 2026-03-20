@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { History, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
@@ -11,12 +11,12 @@ export default function Audit() {
   const { logs } = useAuditStore()
   const navigate = useNavigate()
 
-  if (userRole === 'Limpeza') return <Navigate to="/governanca" replace />
-
   const canAccess = userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)
 
   useEffect(() => {
-    if (!canAccess) {
+    if (userRole === 'Limpeza') {
+      navigate('/governanca', { replace: true })
+    } else if (!canAccess) {
       toast({
         title: 'Acesso Negado',
         description: 'Você não tem permissão para visualizar relatórios e auditoria.',
@@ -24,7 +24,7 @@ export default function Audit() {
       })
       navigate('/', { replace: true })
     }
-  }, [canAccess, navigate])
+  }, [userRole, canAccess, navigate])
 
   if (!canAccess) return null
 
