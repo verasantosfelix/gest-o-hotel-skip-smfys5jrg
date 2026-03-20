@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
 import { BedDouble, Sparkles, AlertCircle, Wrench, Lock, Search, Wind } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,21 +21,23 @@ import {
 } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import useRoomStore, { Room, RoomStatus, CleaningStatus } from '@/stores/useRoomStore'
-import useAuthStore from '@/stores/useAuthStore'
+import { useAccess } from '@/hooks/use-access'
+import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function Rooms() {
-  const { userRole } = useAuthStore()
+  const { hasAccess } = useAccess()
   const { rooms, updateRoomStatus } = useRoomStore()
   const [filter, setFilter] = useState('Todos')
   const [search, setSearch] = useState('')
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [blockReason, setBlockReason] = useState('')
 
-  if (userRole === 'Limpeza') {
-    return <Navigate to="/governanca" replace />
-  }
-  if (userRole !== 'Admin' && userRole !== 'Administrativa') {
-    return <Navigate to="/" replace />
+  if (!hasAccess(['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin'])) {
+    return (
+      <RestrictedAccess
+        requiredRoles={['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin']}
+      />
+    )
   }
 
   const handleStatusChange = (newStatus: RoomStatus) => {
@@ -202,66 +203,6 @@ export default function Rooms() {
                     Marcar Ocupado
                   </Button>
                 </div>
-
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mt-2 space-y-3">
-                  <Label className="text-slate-700 font-bold">Bloquear Quarto (Interdição)</Label>
-                  <Input
-                    placeholder="Motivo do bloqueio (Obrigatório)"
-                    value={blockReason}
-                    onChange={(e) => setBlockReason(e.target.value)}
-                  />
-                  <Button
-                    variant="secondary"
-                    className="w-full bg-slate-800 text-white hover:bg-slate-900"
-                    disabled={!blockReason.trim()}
-                    onClick={() => handleStatusChange('Bloqueado')}
-                  >
-                    Confirmar Bloqueio
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <h4 className="text-sm font-semibold">Alterar Governança</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCleaningChange('Limpo')}
-                    disabled={selectedRoom.cleaningStatus === 'Limpo'}
-                  >
-                    Pronto / Limpo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCleaningChange('Sujo')}
-                    disabled={selectedRoom.cleaningStatus === 'Sujo'}
-                  >
-                    Marcar Sujo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-rose-600 hover:text-rose-700"
-                    onClick={() => handleCleaningChange('Manutenção')}
-                    disabled={selectedRoom.cleaningStatus === 'Manutenção'}
-                  >
-                    Enviar p/ Manutenção
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t">
-                <h4 className="text-sm font-semibold border-b pb-2">Histórico Recente</h4>
-                <ul className="space-y-1">
-                  {selectedRoom.history.slice(0, 5).map((h, i) => (
-                    <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                      <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                      {h}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           )}

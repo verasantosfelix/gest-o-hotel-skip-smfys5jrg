@@ -22,20 +22,18 @@ import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
 import { InventoryManagement } from '@/components/operations/InventoryManagement'
 
 export default function Index() {
-  const { userRole, allowReports } = useAuthStore()
+  const { userRole } = useAuthStore()
   const { selectedHotel } = useHotelStore()
   const { items } = useInventoryStore()
   const { rooms } = useRoomStore()
 
-  if (userRole === 'Limpeza') {
-    return <Navigate to="/governanca" replace />
-  }
+  if (userRole === 'Lavanderia_Limpeza') return <Navigate to="/governanca" replace />
+  if (userRole === 'Restaurante_Bar') return <Navigate to="/fnb" replace />
+  if (userRole === 'Spa_Wellness') return <Navigate to="/spa" replace />
+  if (userRole === 'Manutencao_Oficina') return <Navigate to="/manutencao" replace />
+  if (userRole === 'Tecnologia_TI') return <Navigate to="/it-admin" replace />
 
-  if (userRole !== 'Admin' && userRole !== 'Administrativa') {
-    return <Navigate to="/busca-hospedes" replace />
-  }
-
-  const canViewReports = userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)
+  const canViewReports = userRole === 'Direcao_Admin' || userRole === 'Administrativo_Financeiro'
   const lowStockCount = items.filter((i) => i.quantity < i.threshold).length
   const dirtyRooms = rooms.filter((r) => r.cleaningStatus === 'Sujo').length
 

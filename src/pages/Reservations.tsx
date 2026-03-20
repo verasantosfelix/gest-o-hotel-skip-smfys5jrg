@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   Search,
   Filter,
@@ -9,11 +9,7 @@ import {
   DoorOpen,
   BedDouble,
   AlertCircle,
-  Phone,
-  Mail,
-  Users as UsersIcon,
   CalendarCheck,
-  Clock,
   Terminal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,7 +29,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerDescription,
   DrawerFooter,
 } from '@/components/ui/drawer'
 import {
@@ -46,16 +41,17 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ReservationAssistant } from '@/components/ReservationAssistant'
 import useReservationStore, { Reservation } from '@/stores/useReservationStore'
-import useAuthStore from '@/stores/useAuthStore'
+import { useAccess } from '@/hooks/use-access'
+import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function Reservations() {
-  const { userRole } = useAuthStore()
+  const { hasAccess } = useAccess()
   const { reservations, getConsumptionsByReservation } = useReservationStore()
   const [selected, setSelected] = useState<Reservation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  if (userRole === 'Limpeza') {
-    return <Navigate to="/governanca" replace />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
+    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -80,29 +76,13 @@ export default function Reservations() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'checked-in':
-        return (
-          <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-200">
-            In-House
-          </Badge>
-        )
+        return <Badge className="bg-emerald-100 text-emerald-800">In-House</Badge>
       case 'confirmed':
-        return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200">
-            Confirmada
-          </Badge>
-        )
+        return <Badge className="bg-blue-100 text-blue-800">Confirmada</Badge>
       case 'checked-out':
-        return (
-          <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200">
-            Check-out
-          </Badge>
-        )
+        return <Badge className="bg-slate-100 text-slate-800">Check-out</Badge>
       case 'canceled':
-        return (
-          <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-rose-200">
-            Cancelada
-          </Badge>
-        )
+        return <Badge className="bg-rose-100 text-rose-800">Cancelada</Badge>
       default:
         return <Badge variant="outline">Pendente</Badge>
     }
@@ -114,19 +94,12 @@ export default function Reservations() {
     return `${d}/${m}/${y}`
   }
 
-  const getReservationTotal = (id: string) => {
-    const cons = getConsumptionsByReservation(id)
-    return cons.reduce((acc, c) => acc + c.valor, 0)
-  }
-
   return (
     <div className="space-y-6 animate-fade-in pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gestão de Reservas</h1>
-          <p className="text-muted-foreground text-sm">
-            Controle de estadias, operações e assistente PMS.
-          </p>
+          <p className="text-muted-foreground text-sm">Controle de estadias e assistente PMS.</p>
         </div>
       </div>
 
@@ -170,7 +143,7 @@ export default function Reservations() {
               <AlertCircle className="w-5 h-5 text-rose-700" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Validações Pendentes</p>
+              <p className="text-sm font-medium text-slate-500">Validações</p>
               <h3 className="text-2xl font-bold text-slate-900">{pendingValidations}</h3>
             </div>
           </CardContent>
@@ -184,7 +157,7 @@ export default function Reservations() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar hóspede, documento ou reserva..."
-                className="pl-9 h-9 border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                className="pl-9 h-9 border-slate-200 bg-slate-50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -207,85 +180,50 @@ export default function Reservations() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length > 0 ? (
-                  filtered.map((res) => (
-                    <TableRow key={res.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-medium font-mono text-xs text-slate-600">
-                        {res.id}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-slate-900">{res.guestName}</div>
-                        {res.guestDoc && (
-                          <div className="text-xs text-slate-500">{res.guestDoc}</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        <div>{formatDate(res.checkInDate)}</div>
-                        <div className="text-xs text-slate-400">
-                          até {formatDate(res.checkOutDate)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium">{res.room || '-'}</div>
-                        <div className="text-xs text-slate-500">{res.roomType}</div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(res.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-[200px]">
-                            <DropdownMenuLabel>Ações da Reserva</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setSelected(res)}
-                              className="cursor-pointer"
-                            >
-                              <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
-                            </DropdownMenuItem>
-                            {res.status === 'confirmed' && (
-                              <DropdownMenuItem className="cursor-pointer">
-                                <DoorOpen className="mr-2 h-4 w-4" /> Iniciar Check-in
-                              </DropdownMenuItem>
-                            )}
-                            {res.status === 'checked-in' && (
-                              <>
-                                <DropdownMenuItem className="cursor-pointer">
-                                  <CheckSquare className="mr-2 h-4 w-4" /> Registrar Consumo
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer text-amber-600 focus:text-amber-700">
-                                  <DoorOpen className="mr-2 h-4 w-4" /> Realizar Check-out
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                      Nenhuma reserva encontrada.
+                {filtered.map((res) => (
+                  <TableRow key={res.id} className="hover:bg-slate-50/50">
+                    <TableCell className="font-medium font-mono text-xs">{res.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium text-slate-900">{res.guestName}</div>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600">
+                      <div>{formatDate(res.checkInDate)}</div>
+                      <div className="text-xs text-slate-400">
+                        até {formatDate(res.checkOutDate)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">{res.room || '-'}</div>
+                      <div className="text-xs text-slate-500">{res.roomType}</div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(res.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setSelected(res)}>
+                            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
         </div>
 
         <div className="xl:col-span-1">
-          <Card className="border-primary/20 shadow-md overflow-hidden h-full flex flex-col">
-            <CardHeader className="bg-primary/5 pb-4 border-b">
+          <Card className="border-primary/20 shadow-md h-full flex flex-col">
+            <CardHeader className="bg-primary/5 border-b">
               <CardTitle className="text-lg flex items-center gap-2 font-mono">
-                <Terminal className="h-5 w-5 text-primary" />
-                Assistente SKIP
+                <Terminal className="h-5 w-5 text-primary" /> Assistente SKIP
               </CardTitle>
-              <CardDescription>Motor de linguagem natural para gerenciar reservas.</CardDescription>
             </CardHeader>
             <CardContent className="p-0 flex-1">
               <ReservationAssistant />
@@ -296,15 +234,11 @@ export default function Reservations() {
 
       <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DrawerContent className="max-w-4xl mx-auto h-[85vh]">
-          {/* Drawer content remains similar */}
           <DrawerHeader className="border-b pb-4 px-6">
             <DrawerTitle>Reserva {selected?.id}</DrawerTitle>
           </DrawerHeader>
           <div className="p-6">
-            {/* ... abbreviated for file size limits, standard reservation details view ... */}
-            <p className="text-slate-500">
-              Exibindo detalhes da reserva {selected?.id} para {selected?.guestName}
-            </p>
+            <p className="text-slate-500">Exibindo reserva de {selected?.guestName}</p>
           </div>
           <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-end">
             <Button onClick={() => setSelected(null)}>Fechar Ficha</Button>

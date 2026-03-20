@@ -13,14 +13,16 @@ import useApprovalStore from '@/stores/useApprovalStore'
 import useAuditStore from '@/stores/useAuditStore'
 import { UserCircle, Shield, Bell, Check, X } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { useAccess } from '@/hooks/use-access'
 
 export function AppHeader() {
   const { userRole, setUserRole, userName } = useAuthStore()
   const { approvals, resolveRequest } = useApprovalStore()
   const { addLog } = useAuditStore()
+  const { hasAccess } = useAccess()
 
   const pendingApprovals = approvals.filter((a) => a.status === 'pending')
-  const isManager = userRole === 'Admin' || userRole === 'Administrativa'
+  const canApprove = hasAccess(['Direcao_Admin', 'Administrativo_Financeiro'])
 
   const handleResolve = (id: string, status: 'approved' | 'denied') => {
     resolveRequest(id, status, userName)
@@ -39,7 +41,7 @@ export function AppHeader() {
         <SidebarTrigger />
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
-        {isManager && (
+        {canApprove && (
           <Popover>
             <PopoverTrigger asChild>
               <button className="relative p-2 rounded-full hover:bg-slate-100 transition-colors">
@@ -121,27 +123,33 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-slate-400 hidden sm:block" />
           <Select value={userRole} onValueChange={(v) => setUserRole(v as Role)}>
-            <SelectTrigger className="w-[160px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
+            <SelectTrigger className="w-[180px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
               <SelectValue placeholder="Perfil" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Admin" className="text-xs">
-                Admin (Gerência)
+              <SelectItem value="Direcao_Admin" className="text-xs">
+                Direção / Admin
               </SelectItem>
-              <SelectItem value="Administrativa" className="text-xs">
-                Administrativa
+              <SelectItem value="Rececao_FrontOffice" className="text-xs">
+                Recepção / Front
               </SelectItem>
-              <SelectItem value="Restaurante" className="text-xs">
-                Restaurante
+              <SelectItem value="Administrativo_Financeiro" className="text-xs">
+                Finanças / Adm
               </SelectItem>
-              <SelectItem value="Bar" className="text-xs">
-                Bar
+              <SelectItem value="Restaurante_Bar" className="text-xs">
+                Restaurante / Bar
               </SelectItem>
-              <SelectItem value="Spa" className="text-xs">
-                Spa
+              <SelectItem value="Lavanderia_Limpeza" className="text-xs">
+                Limpeza / Gov.
               </SelectItem>
-              <SelectItem value="Limpeza" className="text-xs">
-                Limpeza/Lavanderia
+              <SelectItem value="Spa_Wellness" className="text-xs">
+                Spa / Wellness
+              </SelectItem>
+              <SelectItem value="Manutencao_Oficina" className="text-xs">
+                Manutenção
+              </SelectItem>
+              <SelectItem value="Tecnologia_TI" className="text-xs">
+                Tecnologia / TI
               </SelectItem>
             </SelectContent>
           </Select>
