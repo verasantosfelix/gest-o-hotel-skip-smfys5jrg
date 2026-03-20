@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T22:30:05.389Z",
+  "generatedAt": "2026-03-20T22:34:29.600Z",
   "collections": [
     {
       "name": "users",
@@ -1175,6 +1175,27 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "assigned_staff",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "housekeeping_priority",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["normal", "vip", "early_checkin", "late_checkout"]
+        },
+        {
+          "name": "room_type",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["standard", "suite", "luxo"]
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_rooms_number ON rooms (room_number)"]
@@ -1364,6 +1385,135 @@
         },
         {
           "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "maintenance_tickets",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "room_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "rooms"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "priority",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["low", "medium", "high", "urgent"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["open", "in_progress", "resolved"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "housekeeping_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "room_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "rooms"
+        },
+        {
+          "name": "staff_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["checkout", "stayover", "deep_cleaning", "vip"]
+        },
+        {
+          "name": "checklist_progress",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "in_progress", "completed"]
+        },
+        {
+          "name": "started_at",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_at",
           "type": "text",
           "required": false,
           "system": false

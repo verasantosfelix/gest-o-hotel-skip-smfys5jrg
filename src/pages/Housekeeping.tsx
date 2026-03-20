@@ -1,22 +1,44 @@
-import { useState } from 'react'
-import { CheckCircle2, PlayCircle, SprayCan, Hammer, Wrench } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState, useEffect } from 'react'
+import { SprayCan, ListTodo, Activity, Route as RouteIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from '@/components/ui/use-toast'
-import useRoomStore, { CleaningStatus } from '@/stores/useRoomStore'
-import useAuthStore from '@/stores/useAuthStore'
-import { useIsMobile } from '@/hooks/use-mobile'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { getRooms, RoomRecord } from '@/services/rooms'
+import { useRealtime } from '@/hooks/use-realtime'
+import { HousekeepingGrid } from '@/components/housekeeping/HousekeepingGrid'
+import { ChecklistModal } from '@/components/housekeeping/ChecklistModal'
+import {
+  MaintenanceModal,
+  MinibarModal,
+  LostFoundModal,
+} from '@/components/housekeeping/ActionModals'
+import { ShiftRoutines } from '@/components/housekeeping/ShiftRoutines'
+import { KPIPanel } from '@/components/housekeeping/KPIPanel'
+
+type ActionState = {
+  type: 'checklist' | 'maintenance' | 'minibar' | 'lost_found' | ''
+  room: RoomRecord | null
+}
 
 export default function Housekeeping() {
-  const { userRole } = useAuthStore()
   const { hasAccess } = useAccess()
-  const { rooms, updateRoomStatus } = useRoomStore()
-  const [tab, setTab] = useState<CleaningStatus | 'Todas'>('Todas')
-  const isMobile = useIsMobile()
+  const [rooms, setRooms] = useState<RoomRecord[]>([])
+  const [action, setAction] = useState<ActionState>({ type: '', room: null })
+
+  const loadData = async () => {
+    try {
+      const data = await getRooms()
+      setRooms(data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('rooms', loadData)
 
   if (!hasAccess(['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin'])) {
     return (
@@ -26,110 +48,59 @@ export default function Housekeeping() {
     )
   }
 
-  const isLimpezaRole = userRole === 'Lavanderia_Limpeza'
-
-  const handleUpdateStatus = (id: string, newStatus: CleaningStatus, num: string) => {
-    updateRoomStatus(id, newStatus)
-    toast({
-      title: 'Status Atualizado',
-      description: `Quarto ${num} marcado como ${newStatus}.`,
-    })
+  const handleAction = (type: ActionState['type'], room: RoomRecord) => {
+    setAction({ type, room })
   }
 
-  if (isLimpezaRole && isMobile) {
-    return (
-      <div className="space-y-4 bg-slate-50 min-h-[calc(100vh-64px)] pb-24 -m-4 md:-m-6 p-4">
-        <h1 className="text-xl font-bold text-slate-900 px-1 pt-2">Meus Quartos (On-the-go)</h1>
-        <div className="grid gap-4">
-          {rooms.map((room) => (
-            <Card key={room.id} className="shadow-sm border-slate-200 overflow-hidden">
-              <div
-                className={`h-1.5 w-full ${room.cleaningStatus === 'Sujo' ? 'bg-rose-500' : 'bg-slate-500'}`}
-              />
-              <CardContent className="p-5 flex flex-col gap-5">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-3xl font-black text-slate-800 tracking-tighter">
-                    Q.{room.num}
-                  </h2>
-                  <Badge
-                    variant="outline"
-                    className="text-sm px-3 py-1 bg-slate-100 font-bold uppercase"
-                  >
-                    {room.cleaningStatus}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  <Button
-                    className="h-16 text-lg font-bold bg-emerald-600 text-white min-h-[44px]"
-                    onClick={() => handleUpdateStatus(room.id, 'Limpo', room.num)}
-                    disabled={room.cleaningStatus === 'Limpo'}
-                  >
-                    Cleaned (Pronto)
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  const filteredRooms = tab === 'Todas' ? rooms : rooms.filter((r) => r.cleaningStatus === tab)
+  const closeAction = () => setAction({ type: '', room: null })
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-emerald-100 rounded-lg">
+          <SprayCan className="w-6 h-6 text-emerald-700" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <SprayCan className="w-6 h-6 text-primary" /> Painel de Governança
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Dashboard de Governança
           </h1>
+          <p className="text-sm text-slate-500">Gestão operacional de limpeza e protocolos</p>
         </div>
       </div>
 
-      <Tabs defaultValue="Todas" className="w-full" onValueChange={(v) => setTab(v as any)}>
-        <TabsList className="mb-4 h-12 w-full sm:w-auto bg-slate-100 flex overflow-x-auto justify-start">
-          <TabsTrigger value="Todas" className="flex-1 h-9">
-            Todas
+      <Tabs defaultValue="operacao" className="w-full">
+        <TabsList className="mb-6 h-12 w-full sm:w-auto bg-slate-100 flex overflow-x-auto justify-start border border-slate-200">
+          <TabsTrigger value="operacao" className="flex items-center gap-2 h-9 px-4">
+            <ListTodo className="w-4 h-4" /> Operação e Quartos
           </TabsTrigger>
-          <TabsTrigger value="Sujo" className="flex-1 h-9">
-            Sujos
+          <TabsTrigger value="turnos" className="flex items-center gap-2 h-9 px-4">
+            <RouteIcon className="w-4 h-4" /> Rotinas por Turno
           </TabsTrigger>
-          <TabsTrigger value="Em Limpeza" className="flex-1 h-9">
-            Em Execução
+          <TabsTrigger value="kpis" className="flex items-center gap-2 h-9 px-4">
+            <Activity className="w-4 h-4" /> Performance (KPIs)
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={tab} className="mt-0 outline-none">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredRooms.map((room) => (
-              <Card key={room.id} className="border-slate-200 shadow-sm relative flex flex-col">
-                <CardHeader className="pb-3 pl-6">
-                  <CardTitle className="text-2xl font-bold text-slate-800">{room.num}</CardTitle>
-                </CardHeader>
-                <CardContent className="py-4 pl-6 flex-1">
-                  <Badge variant="outline">{room.cleaningStatus}</Badge>
-                </CardContent>
-                <CardFooter className="pt-2 pb-4 pl-6 flex flex-col gap-2">
-                  <Button
-                    className="w-full bg-slate-900 text-white"
-                    onClick={() => handleUpdateStatus(room.id, 'Em Limpeza', room.num)}
-                  >
-                    Iniciar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full text-slate-600"
-                    onClick={() => handleUpdateStatus(room.id, 'Manutenção', room.num)}
-                  >
-                    Manutenção
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="operacao" className="mt-0 outline-none">
+          <HousekeepingGrid rooms={rooms} onAction={handleAction} />
+        </TabsContent>
+
+        <TabsContent value="turnos" className="mt-0 outline-none">
+          <ShiftRoutines />
+        </TabsContent>
+
+        <TabsContent value="kpis" className="mt-0 outline-none">
+          <KPIPanel rooms={rooms} />
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      {action.type === 'checklist' && <ChecklistModal room={action.room} onClose={closeAction} />}
+      {action.type === 'maintenance' && (
+        <MaintenanceModal room={action.room} onClose={closeAction} />
+      )}
+      {action.type === 'minibar' && <MinibarModal room={action.room} onClose={closeAction} />}
+      {action.type === 'lost_found' && <LostFoundModal room={action.room} onClose={closeAction} />}
     </div>
   )
 }
