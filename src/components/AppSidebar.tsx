@@ -25,6 +25,13 @@ import {
   Bot,
   Compass,
   MessageSquare,
+  FileSignature,
+  Building,
+  ConciergeBell,
+  Car,
+  Heart,
+  Umbrella,
+  ShoppingBag,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -64,6 +71,11 @@ const navServicos = [
   { name: 'Lançamentos', url: '/lancamento-servicos', icon: Receipt },
   { name: 'Guest Journey', url: '/guest-journey', icon: Compass },
   { name: 'Tech Mobility', url: '/mobilidade', icon: Smartphone },
+  { name: 'Concierge Avançado', url: '/concierge', icon: ConciergeBell },
+  { name: 'Spa & Bem-estar', url: '/spa', icon: Heart },
+  { name: 'Lazer & Piscinas', url: '/lazer', icon: Umbrella },
+  { name: 'Frota & Transfers', url: '/frota', icon: Car },
+  { name: 'Loja & Conveniência', url: '/loja', icon: ShoppingBag },
 ]
 
 export function AppSidebar() {
@@ -87,6 +99,8 @@ export function AppSidebar() {
     navGestao.push({ name: 'Manutenção', url: '/manutencao', icon: Wrench })
     navGestao.push({ name: 'Segurança', url: '/seguranca', icon: ShieldAlert })
     navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
+    navGestao.push({ name: 'Contratos & Docs', url: '/documentos-contratos', icon: FileSignature })
+    navGestao.push({ name: 'Grupos & MICE', url: '/mice', icon: Building })
   }
 
   if (userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)) {
@@ -227,7 +241,7 @@ export function AppSidebar() {
         {isManager && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-              Alimentos & Bebidas
+              Extras & Operações
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -239,6 +253,19 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {navServicos.slice(4).map((item) => {
+                  const isActive = location.pathname === item.url
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link to={item.url} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          <span className="font-medium">{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

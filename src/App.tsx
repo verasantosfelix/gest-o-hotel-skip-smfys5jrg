@@ -29,6 +29,14 @@ import TechMobility from './pages/TechMobility'
 import AIGovernance from './pages/AIGovernance'
 import GuestJourney from './pages/GuestJourney'
 import Communication from './pages/Communication'
+import DocumentsContracts from './pages/DocumentsContracts'
+import AdvancedConcierge from './pages/AdvancedConcierge'
+import MICE from './pages/MICE'
+import FleetTransfers from './pages/FleetTransfers'
+import SpaWellness from './pages/SpaWellness'
+import PoolsLeisure from './pages/PoolsLeisure'
+import GiftShop from './pages/GiftShop'
+
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -75,6 +83,15 @@ const App = () => (
                         <Route path="/ia-governanca" element={<AIGovernance />} />
                         <Route path="/guest-journey" element={<GuestJourney />} />
                         <Route path="/comunicacao" element={<Communication />} />
+
+                        {/* New Modules */}
+                        <Route path="/documentos-contratos" element={<DocumentsContracts />} />
+                        <Route path="/concierge" element={<AdvancedConcierge />} />
+                        <Route path="/mice" element={<MICE />} />
+                        <Route path="/frota" element={<FleetTransfers />} />
+                        <Route path="/spa" element={<SpaWellness />} />
+                        <Route path="/lazer" element={<PoolsLeisure />} />
+                        <Route path="/loja" element={<GiftShop />} />
                       </Route>
                       <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
                       <Route path="*" element={<NotFound />} />
