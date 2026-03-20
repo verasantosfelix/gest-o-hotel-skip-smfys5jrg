@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { LineChart, Filter, ShoppingCart, Globe } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/ui/use-toast'
@@ -20,7 +19,9 @@ export default function SalesCRM() {
     try {
       setLeads(await getLeads())
       setOtas(await getOtaConnections())
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {
