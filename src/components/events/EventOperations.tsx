@@ -45,6 +45,7 @@ export function EventOperations() {
         description: 'Manutenção notificada via ticket de serviço.',
       })
     } catch (e) {
+      console.error(e)
       toast({ title: 'Erro', variant: 'destructive' })
     }
   }
@@ -54,7 +55,10 @@ export function EventOperations() {
       await updateEvent(evt.id, { status: 'ongoing' })
       if (evt.space_id) await updateEventSpace(evt.space_id, { status: 'occupied' })
       toast({ title: 'Evento em Execução', description: 'Status operacional atualizado.' })
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Erro', description: 'Falha ao atualizar evento.', variant: 'destructive' })
+    }
   }
 
   const handleFinishEvent = async (evt: HotelEvent) => {
@@ -83,7 +87,10 @@ export function EventOperations() {
         title: 'Evento Encerrado',
         description: 'Faturamento emitido e Housekeeping notificado.',
       })
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Erro', description: 'Falha ao encerrar evento.', variant: 'destructive' })
+    }
   }
 
   const renderColumn = (
