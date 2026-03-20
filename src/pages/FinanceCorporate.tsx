@@ -31,13 +31,19 @@ export default function FinanceCorporate() {
   const loadData = async () => {
     try {
       setDocs(await getFinancialDocs())
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
     try {
       setContracts(await getFinancialContracts())
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
     try {
       setAuditLogs(await getFinancialAuditLogs())
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {
