@@ -21,14 +21,15 @@ import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
 import { InventoryManagement } from '@/components/operations/InventoryManagement'
 
 export default function Index() {
-  const { userRole } = useAuthStore()
+  const { userRole, allowReports } = useAuthStore()
   const { selectedHotel } = useHotelStore()
   const { items } = useInventoryStore()
 
-  if (userRole !== 'Admin') {
+  if (userRole !== 'Admin' && userRole !== 'Administrativa') {
     return <Navigate to="/busca-hospedes" replace />
   }
 
+  const canViewReports = userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)
   const lowStockCount = items.filter((i) => i.quantity < i.threshold).length
 
   const kpis = [
@@ -99,12 +100,14 @@ export default function Index() {
           >
             Dashboard Central
           </TabsTrigger>
-          <TabsTrigger
-            value="financeiro"
-            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
-          >
-            Painel Financeiro
-          </TabsTrigger>
+          {canViewReports && (
+            <TabsTrigger
+              value="financeiro"
+              className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+            >
+              Painel Financeiro
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="checkin"
             className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
@@ -213,9 +216,11 @@ export default function Index() {
           </div>
         </TabsContent>
 
-        <TabsContent value="financeiro" className="outline-none focus:outline-none">
-          <FinancialDashboard />
-        </TabsContent>
+        {canViewReports && (
+          <TabsContent value="financeiro" className="outline-none focus:outline-none">
+            <FinancialDashboard />
+          </TabsContent>
+        )}
 
         <TabsContent value="checkin" className="outline-none focus:outline-none">
           <CheckIn />

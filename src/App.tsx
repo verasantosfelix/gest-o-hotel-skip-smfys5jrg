@@ -12,6 +12,8 @@ import GuestPortal from './pages/GuestPortal'
 import Layout from './components/Layout'
 import ServiceGuestLookup from './pages/ServiceGuestLookup'
 import ServiceExpensePosting from './pages/ServiceExpensePosting'
+import Audit from './pages/Audit'
+import Settings from './pages/Settings'
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
@@ -37,18 +39,8 @@ const App = () => (
                     <Route path="/governanca" element={<Housekeeping />} />
                     <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
                     <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
-                    <Route
-                      path="/auditoria"
-                      element={
-                        <div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>
-                      }
-                    />
-                    <Route
-                      path="/configuracoes"
-                      element={
-                        <div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>
-                      }
-                    />
+                    <Route path="/auditoria" element={<Audit />} />
+                    <Route path="/configuracoes" element={<Settings />} />
                   </Route>
                   {/* Guest-facing routes */}
                   <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />

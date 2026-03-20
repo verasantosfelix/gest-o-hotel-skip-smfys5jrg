@@ -25,12 +25,15 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-slate-400 hidden sm:block" />
           <Select value={userRole} onValueChange={(v) => setUserRole(v as Role)}>
-            <SelectTrigger className="w-[140px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
+            <SelectTrigger className="w-[150px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
               <SelectValue placeholder="Perfil" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Admin" className="text-xs">
                 Admin (Gerência)
+              </SelectItem>
+              <SelectItem value="Administrativa" className="text-xs">
+                Administrativa
               </SelectItem>
               <SelectItem value="Restaurante" className="text-xs">
                 Restaurante

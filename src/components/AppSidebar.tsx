@@ -32,13 +32,6 @@ const navOperacional = [
   { name: 'Hóspedes', url: '/hospedes', icon: Users },
 ]
 
-const navGestao = [
-  { name: 'Quartos', url: '/quartos', icon: BedDouble },
-  { name: 'Governança', url: '/governanca', icon: Sparkles },
-  { name: 'Rastreabilidade', url: '/auditoria', icon: History },
-  { name: 'Configurações', url: '/configuracoes', icon: Settings },
-]
-
 const navServicos = [
   { name: 'Busca de Hóspedes', url: '/busca-hospedes', icon: Search },
   { name: 'Lançamentos', url: '/lancamento-servicos', icon: Receipt },
@@ -47,7 +40,22 @@ const navServicos = [
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
-  const { userRole } = useAuthStore()
+  const { userRole, allowReports } = useAuthStore()
+
+  const isManager = userRole === 'Admin' || userRole === 'Administrativa'
+
+  const navGestao = [
+    { name: 'Quartos', url: '/quartos', icon: BedDouble },
+    { name: 'Governança', url: '/governanca', icon: Sparkles },
+  ]
+
+  if (userRole === 'Admin' || (userRole === 'Administrativa' && allowReports)) {
+    navGestao.push({ name: 'Rastreabilidade', url: '/auditoria', icon: History })
+  }
+
+  if (userRole === 'Admin') {
+    navGestao.push({ name: 'Configurações', url: '/configuracoes', icon: Settings })
+  }
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
@@ -58,7 +66,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {userRole === 'Admin' ? (
+        {isManager && (
           <>
             <SidebarGroup>
               <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
@@ -108,29 +116,34 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
           </>
-        ) : (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-              Serviços ({userRole})
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navServicos.map((item) => {
-                  const isActive = location.pathname === item.url
-                  return (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                        <Link to={item.url} className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          <span className="font-medium">{item.name}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        )}
+
+        {(userRole === 'Administrativa' || !isManager) && (
+          <>
+            {isManager && <SidebarSeparator className="mx-4 my-2 bg-slate-200" />}
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+                Serviços ({userRole})
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navServicos.map((item) => {
+                    const isActive = location.pathname === item.url
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                          <Link to={item.url} className="flex items-center gap-3">
+                            <item.icon className="h-4 w-4" />
+                            <span className="font-medium">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
     </Sidebar>

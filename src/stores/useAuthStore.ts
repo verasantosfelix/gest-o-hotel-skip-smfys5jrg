@@ -1,23 +1,31 @@
 import React, { createContext, useContext, useState } from 'react'
 
-export type Role = 'Admin' | 'Restaurante' | 'Bar' | 'Spa'
+export type Role = 'Admin' | 'Administrativa' | 'Restaurante' | 'Bar' | 'Spa'
 
 interface AuthStore {
   userRole: Role
   setUserRole: (role: Role) => void
   userName: string
+  allowReports: boolean
+  setAllowReports: (allow: boolean) => void
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<Role>('Admin')
+  const [allowReports, setAllowReports] = useState(false)
 
-  const userName = userRole === 'Admin' ? 'Gerente Geral' : `Atendente ${userRole}`
+  const userName =
+    userRole === 'Admin'
+      ? 'Gerente Geral'
+      : userRole === 'Administrativa'
+        ? 'Responsável de Reservas'
+        : `Atendente ${userRole}`
 
   return React.createElement(
     AuthContext.Provider,
-    { value: { userRole, setUserRole, userName } },
+    { value: { userRole, setUserRole, userName, allowReports, setAllowReports } },
     children,
   )
 }
