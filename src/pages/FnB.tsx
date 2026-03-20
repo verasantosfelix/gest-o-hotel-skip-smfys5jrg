@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Utensils, ChefHat, BellConcierge, ArrowRight } from 'lucide-react'
+import { Utensils, ChefHat, ConciergeBell, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -80,7 +80,7 @@ export default function FnB() {
           <Card className="max-w-xl shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BellConcierge className="w-5 h-5" /> Lançar Pedido Interno
+                <ConciergeBell className="w-5 h-5" /> Lançar Pedido Interno
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
