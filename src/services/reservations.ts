@@ -1,0 +1,51 @@
+import pb from '@/lib/pocketbase/client'
+import { RoomRecord } from './rooms'
+
+export interface PBReservation {
+  id: string
+  guest_name: string
+  room_id: string
+  check_in: string
+  check_out: string
+  status: 'previsto' | 'in_house' | 'checked_out' | 'cancelado' | 'no_show'
+  is_vip: boolean
+  balance: number
+  document_digitalization?: string
+  created: string
+  updated: string
+  expand?: {
+    room_id?: RoomRecord
+  }
+}
+
+export interface PBConsumption {
+  id: string
+  reservation_id: string
+  type:
+    | 'minibar'
+    | 'spa'
+    | 'restaurante'
+    | 'lavandaria'
+    | 'room_service'
+    | 'estacionamento'
+    | 'transfer'
+    | 'taxas'
+  amount: number
+  description: string
+  created: string
+  updated: string
+}
+
+export const getReservations = () =>
+  pb.collection('reservations').getFullList<PBReservation>({ expand: 'room_id' })
+export const updateReservation = (id: string, data: Partial<PBReservation>) =>
+  pb.collection('reservations').update<PBReservation>(id, data)
+export const createReservation = (data: Partial<PBReservation>) =>
+  pb.collection('reservations').create<PBReservation>(data)
+
+export const getConsumptions = (resId: string) =>
+  pb
+    .collection('consumptions')
+    .getFullList<PBConsumption>({ filter: `reservation_id = "${resId}"` })
+export const createConsumption = (data: Partial<PBConsumption>) =>
+  pb.collection('consumptions').create<PBConsumption>(data)
