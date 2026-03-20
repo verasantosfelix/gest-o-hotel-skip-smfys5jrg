@@ -31,7 +31,9 @@ export function AppHeader() {
         sort: '-created',
       })
       setNotifications(records)
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to load notifications', e)
+    }
   }
 
   useEffect(() => {
@@ -43,7 +45,9 @@ export function AppHeader() {
     try {
       await pb.collection('notifications').update(id, { status: 'read' })
       setNotifications((prev) => prev.filter((n) => n.id !== id))
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to mark notification as read', e)
+    }
   }
 
   return (
