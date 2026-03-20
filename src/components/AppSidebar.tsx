@@ -17,6 +17,13 @@ import {
   Plug,
   Utensils,
   BarChart,
+  FileText,
+  Wrench,
+  ShieldAlert,
+  TrendingUp,
+  Smartphone,
+  Bot,
+  Compass,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -41,6 +48,9 @@ const navOperacional = [
 
 const navEstrategico = [
   { name: 'Analytics & BI', url: '/analytics', icon: BarChart },
+  { name: 'Relatórios (AI)', url: '/relatorios', icon: FileText },
+  { name: 'Revenue Mgmt', url: '/revenue', icon: TrendingUp },
+  { name: 'Governança IA', url: '/ia-governanca', icon: Bot },
   { name: 'CRM & Experiência', url: '/crm', icon: HeartHandshake },
   { name: 'Marketing', url: '/marketing', icon: Megaphone },
   { name: 'Eventos', url: '/eventos', icon: CalendarRange },
@@ -50,6 +60,8 @@ const navEstrategico = [
 const navServicos = [
   { name: 'Busca de Hóspedes', url: '/busca-hospedes', icon: Search },
   { name: 'Lançamentos', url: '/lancamento-servicos', icon: Receipt },
+  { name: 'Guest Journey', url: '/guest-journey', icon: Compass },
+  { name: 'Tech Mobility', url: '/mobilidade', icon: Smartphone },
 ]
 
 export function AppSidebar() {
@@ -70,6 +82,8 @@ export function AppSidebar() {
   navGestao.push({ name: 'Governança', url: '/governanca', icon: Sparkles })
 
   if (isManager) {
+    navGestao.push({ name: 'Manutenção', url: '/manutencao', icon: Wrench })
+    navGestao.push({ name: 'Segurança', url: '/seguranca', icon: ShieldAlert })
     navGestao.push({ name: 'Equipe & RH', url: '/equipe', icon: Briefcase })
   }
 
