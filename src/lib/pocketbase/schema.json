@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-20T23:08:33.583Z",
+  "generatedAt": "2026-03-20T23:14:43.252Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
         "create": "",
-        "update": "id = @request.auth.id",
+        "update": "@request.auth.id != ''",
         "delete": "id = @request.auth.id"
       },
       "fields": [
@@ -44,11 +44,19 @@
           "required": false,
           "system": false,
           "collectionRef": "profiles"
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["manager", "user"]
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
-        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''",
+        "CREATE INDEX `idx_users_role` ON `users` (role)"
       ]
     },
     {
@@ -1119,7 +1127,7 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": null,
-        "update": null,
+        "update": "@request.auth.id != ''",
         "delete": null
       },
       "fields": [
@@ -1154,9 +1162,16 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "manager_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
-      "indexes": []
+      "indexes": ["CREATE INDEX `idx_profiles_manager` ON `profiles` (manager_id)"]
     },
     {
       "name": "rooms",
