@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Briefcase, User, Shield, Crown } from 'lucide-react'
+import { Briefcase, Shield, Crown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Select,
   SelectContent,
@@ -24,6 +25,9 @@ import { getUsers, getProfiles, updateUser, updateProfile } from '@/services/sta
 import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from '@/components/ui/use-toast'
 import { CreateUserDialog } from '@/components/staff/CreateUserDialog'
+import { EditUserDialog } from '@/components/staff/EditUserDialog'
+import { StaffDocumentsSheet } from '@/components/staff/StaffDocumentsSheet'
+import pb from '@/lib/pocketbase/client'
 
 export default function Staff() {
   const { hasAccess, isManager } = useAccess()
@@ -100,7 +104,7 @@ export default function Staff() {
               Gestão de Equipe e Departamentos
             </h1>
             <p className="text-sm text-slate-500">
-              Defina líderes e permissões estruturais para cada perfil
+              Defina líderes, documentos e permissões para cada perfil
             </p>
           </div>
         </div>
@@ -148,10 +152,10 @@ export default function Staff() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {profileUsers.length > 0 ? (
-                  <Table className="min-w-[600px]">
+                  <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow className="bg-white hover:bg-white">
-                        <TableHead className="pl-6">Membro</TableHead>
+                        <TableHead className="pl-6 w-[250px]">Membro</TableHead>
                         <TableHead>Identificação (Email)</TableHead>
                         <TableHead>Cargo (Role)</TableHead>
                         <TableHead className="text-right pr-6">Ações</TableHead>
@@ -160,27 +164,34 @@ export default function Staff() {
                     <TableBody>
                       {profileUsers.map((u) => {
                         const isProfileManager = profile.manager_id === u.id
+                        const avatarUrl = u.avatar
+                          ? pb.files.getUrl(u, u.avatar, { thumb: '100x100' })
+                          : undefined
+                        const initials = u.name ? u.name.substring(0, 2).toUpperCase() : 'U'
+
                         return (
                           <TableRow key={u.id}>
                             <TableCell className="pl-6 font-medium">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="p-1.5 bg-slate-100 rounded-full">
-                                    <User className="w-4 h-4 text-slate-500" />
-                                  </div>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="w-9 h-9 border border-slate-200">
+                                  <AvatarImage src={avatarUrl} className="object-cover" />
+                                  <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-semibold">
+                                    {initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col">
                                   <span className="truncate max-w-[150px]">
                                     {u.name || 'Sem Nome'}
                                   </span>
+                                  {isProfileManager && (
+                                    <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[9px] px-1.5 py-0 uppercase gap-1 flex items-center w-fit mt-0.5">
+                                      <Crown className="w-2.5 h-2.5" /> Lead
+                                    </Badge>
+                                  )}
                                 </div>
-                                {isProfileManager && (
-                                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[10px] uppercase gap-1 flex items-center w-fit">
-                                    <Crown className="w-3 h-3" />
-                                    Lead
-                                  </Badge>
-                                )}
                               </div>
                             </TableCell>
-                            <TableCell className="text-slate-500 text-sm truncate max-w-[150px]">
+                            <TableCell className="text-slate-500 text-sm truncate max-w-[180px]">
                               {u.email}
                             </TableCell>
                             <TableCell>
@@ -201,18 +212,22 @@ export default function Staff() {
                               )}
                             </TableCell>
                             <TableCell className="text-right pr-6">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRoleToggle(u)}
-                                className={`h-8 text-xs font-medium transition-colors ${
-                                  u.role === 'manager'
-                                    ? 'border-slate-200 text-slate-600 hover:bg-slate-100'
-                                    : 'border-blue-200 text-blue-600 hover:bg-blue-50'
-                                }`}
-                              >
-                                {u.role === 'manager' ? 'Rebaixar' : 'Promover p/ Manager'}
-                              </Button>
+                              <div className="flex justify-end items-center gap-2">
+                                <StaffDocumentsSheet user={u} />
+                                <EditUserDialog user={u} />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRoleToggle(u)}
+                                  className={`h-8 px-2 text-[11px] font-medium transition-colors ${
+                                    u.role === 'manager'
+                                      ? 'border-slate-200 text-slate-600 hover:bg-slate-100'
+                                      : 'border-blue-200 text-blue-600 hover:bg-blue-50'
+                                  }`}
+                                >
+                                  {u.role === 'manager' ? 'Rebaixar' : 'Promover'}
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         )
@@ -242,8 +257,17 @@ export default function Staff() {
                   <Badge
                     key={u.id}
                     variant="secondary"
-                    className="px-3 py-1 font-normal border border-slate-200 bg-white"
+                    className="px-3 py-1 font-normal border border-slate-200 bg-white shadow-sm flex items-center gap-2"
                   >
+                    <Avatar className="w-4 h-4 border border-slate-200">
+                      <AvatarImage
+                        src={u.avatar ? pb.files.getUrl(u, u.avatar) : undefined}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-[8px] bg-slate-100">
+                        {u.name ? u.name.substring(0, 2).toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                     {u.name || u.email}
                   </Badge>
                 ))}

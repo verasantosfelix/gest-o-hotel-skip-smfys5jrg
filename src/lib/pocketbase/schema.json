@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T23:26:31.614Z",
+  "generatedAt": "2026-03-20T23:32:06.824Z",
   "collections": [
     {
       "name": "users",
@@ -2978,6 +2978,60 @@
         }
       ],
       "indexes": ["CREATE INDEX `idx_notif_recipient` ON `notifications` (recipient_id)"]
+    },
+    {
+      "name": "staff_documents",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.role = 'manager'",
+        "update": "@request.auth.id != '' && @request.auth.role = 'manager'",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'manager'"
+      },
+      "fields": [
+        {
+          "name": "staff_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "document_file",
+          "type": "file",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["contract", "certificate", "identification", "training", "other"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX `idx_staff_documents_staff_id` ON `staff_documents` (staff_id)"]
     }
   ]
 }

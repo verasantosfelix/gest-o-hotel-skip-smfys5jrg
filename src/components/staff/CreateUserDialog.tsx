@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Upload, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -29,9 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/components/ui/use-toast'
 import { createUser } from '@/services/staff'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
 
 const formSchema = z
   .object({
@@ -51,6 +55,9 @@ type FormValues = z.infer<typeof formSchema>
 export function CreateUserDialog() {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -63,19 +70,60 @@ export function CreateUserDialog() {
     },
   })
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast({
+        title: 'Erro',
+        description: 'Formato não suportado. Use JPG ou PNG.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'Erro',
+        description: 'O arquivo excede o limite de 2MB.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  const clearFile = () => {
+    setAvatarFile(null)
+    setAvatarPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
     try {
-      await createUser({
-        name: values.name,
-        email: values.email,
-        password: values.password,
-        passwordConfirm: values.passwordConfirm,
-        role: values.role,
+      await createUser(
+        {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          passwordConfirm: values.passwordConfirm,
+          role: values.role,
+        },
+        avatarFile,
+      )
+
+      toast({
+        title: 'Sucesso',
+        description: 'User created and invitation email sent successfully.',
       })
-      toast({ title: 'Sucesso', description: 'Membro adicionado com sucesso.' })
+
       setOpen(false)
       form.reset()
+      clearFile()
     } catch (error: any) {
       const errors = extractFieldErrors(error)
       if (errors.email) {
@@ -103,7 +151,10 @@ export function CreateUserDialog() {
       open={open}
       onOpenChange={(val) => {
         setOpen(val)
-        if (!val) form.reset()
+        if (!val) {
+          form.reset()
+          clearFile()
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -112,15 +163,55 @@ export function CreateUserDialog() {
           Add Member
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Membro</DialogTitle>
           <DialogDescription>
-            Crie um novo acesso para a equipe. O usuário será adicionado imediatamente ao sistema.
+            Crie um novo acesso para a equipe. O usuário receberá um email com as credenciais.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex flex-col items-center justify-center py-4 space-y-3">
+          <Avatar className="w-20 h-20 border-2 border-slate-100 shadow-sm">
+            <AvatarImage src={avatarPreview || undefined} className="object-cover" />
+            <AvatarFallback className="text-xl text-slate-500 bg-slate-100">
+              {form.watch('name') ? form.watch('name').substring(0, 2).toUpperCase() : 'UP'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Foto
+            </Button>
+            {avatarFile && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={clearFile}
+                className="text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 text-center">JPG, PNG. Max 2MB.</p>
+        </div>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
             <FormField
               control={form.control}
               name="name"
@@ -173,7 +264,7 @@ export function CreateUserDialog() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Senha (Password)</FormLabel>
+                  <FormLabel>Senha Temporária (Password)</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="Mínimo 8 caracteres" {...field} />
                   </FormControl>
@@ -186,7 +277,7 @@ export function CreateUserDialog() {
               name="passwordConfirm"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirmar Senha (Confirm Password)</FormLabel>
+                  <FormLabel>Confirmar Senha</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="Confirme a senha" {...field} />
                   </FormControl>
@@ -194,10 +285,10 @@ export function CreateUserDialog() {
                 </FormItem>
               )}
             />
-            <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={isLoading}>
+            <div className="flex justify-end pt-4 pb-2">
+              <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Create Account
+                Create Account & Send Invite
               </Button>
             </div>
           </form>
