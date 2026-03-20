@@ -5,7 +5,7 @@ console.error = (...args: any[]) => {
   if (
     typeof args[0] === 'string' &&
     args[0].includes('Invalid prop') &&
-    args[0].includes('React.Fragment') &&
+    (args[0].includes('React.Fragment') || args[0].includes('Fragment')) &&
     args.some(
       (arg: any) =>
         typeof arg === 'string' && (arg.includes('data-uid') || arg.includes('data-prohibitions')),
@@ -24,25 +24,35 @@ try {
     if (!rt) return
     const methods = ['jsx', 'jsxs', 'jsxDEV']
     methods.forEach((m) => {
-      if (rt[m]) {
+      if (typeof rt[m] === 'function') {
         const orig = rt[m]
-        rt[m] = function (t: any, p: any, ...args: any[]) {
-          const isFragment =
-            t === React.Fragment ||
-            (typeof t === 'symbol' && t.toString() === 'Symbol(react.fragment)')
-          if (isFragment && p && ('data-uid' in p || 'data-prohibitions' in p)) {
-            const { 'data-uid': _, 'data-prohibitions': __, ...rest } = p
-            return orig(t, rest, ...args)
+        try {
+          rt[m] = function (t: any, p: any, ...args: any[]) {
+            const isFragment =
+              t === React.Fragment ||
+              t === Symbol.for('react.fragment') ||
+              (typeof t === 'symbol' && t.toString().includes('react.fragment'))
+            if (isFragment && p && ('data-uid' in p || 'data-prohibitions' in p)) {
+              const { 'data-uid': _, 'data-prohibitions': __, ...rest } = p
+              return orig(t, rest, ...args)
+            }
+            return orig(t, p, ...args)
           }
-          return orig(t, p, ...args)
+        } catch (e) {
+          // Silent fallback for frozen properties
         }
       }
     })
   }
+
   patch(jsxRuntime)
   patch(jsxDevRuntime)
+
+  // Vite pre-bundles dependencies as CJS, so the actual mutable exports are often on the default object
+  if ('default' in jsxRuntime) patch((jsxRuntime as any).default)
+  if ('default' in jsxDevRuntime) patch((jsxDevRuntime as any).default)
 } catch (e) {
-  // Silent fallback if module is sealed
+  // Silent fallback if module is completely sealed
 }
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
