@@ -23,6 +23,19 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function ServiceExpensePosting() {
   const { hasAccess } = useAccess()
+  const [searchParams] = useSearchParams()
+  const { reservations, addConsumption } = useReservationStore()
+  const { userRole, userName } = useAuthStore()
+  const { addLog } = useAuditStore()
+  const { addRequest } = useApprovalStore()
+
+  const [reservaId, setReservaId] = useState(searchParams.get('reserva_id') || '')
+  const [descricao, setDescricao] = useState('')
+  const [valor, setValor] = useState('')
+  const [desconto, setDesconto] = useState('')
+  const [assinatura, setAssinatura] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+
   if (
     !hasAccess([
       'Restaurante_Bar',
@@ -44,19 +57,6 @@ export default function ServiceExpensePosting() {
       />
     )
   }
-
-  const [searchParams] = useSearchParams()
-  const { reservations, addConsumption } = useReservationStore()
-  const { userRole, userName } = useAuthStore()
-  const { addLog } = useAuditStore()
-  const { addRequest } = useApprovalStore()
-
-  const [reservaId, setReservaId] = useState(searchParams.get('reserva_id') || '')
-  const [descricao, setDescricao] = useState('')
-  const [valor, setValor] = useState('')
-  const [desconto, setDesconto] = useState('')
-  const [assinatura, setAssinatura] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
 
   const inHouse = reservations.filter((r) => r.status === 'checked-in')
 
