@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-20T23:01:22.134Z",
+  "generatedAt": "2026-03-20T23:08:33.583Z",
   "collections": [
     {
       "name": "users",
@@ -2519,6 +2519,300 @@
           "required": true,
           "system": false,
           "selectValues": ["fb", "equipment", "staff", "extra"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "security_incidents",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "date_time",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "involved",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "investigation", "resolved", "closed"]
+        },
+        {
+          "name": "intervention_details",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "area_isolated",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "management_notified",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "resolution",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preventive_measures",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "protocol_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "security_protocols"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "security_protocols",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["emergency", "fire", "first_aid", "security", "loss"]
+        },
+        {
+          "name": "steps",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "security_access_logs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "staff_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "access_type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["authorized", "denied", "bypass"]
+        },
+        {
+          "name": "device_source",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["keycard", "elevator", "biometric"]
+        },
+        {
+          "name": "timestamp",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "security_audits",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["shift", "compliance", "equipment"]
+        },
+        {
+          "name": "findings",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "anomalies_detected",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "auditor_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         },
         {
           "name": "created",
