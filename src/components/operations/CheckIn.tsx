@@ -55,8 +55,13 @@ export function CheckIn() {
         addReservation({
           id: form.reserva_id,
           guestName: form.nome,
+          guestDoc: form.documento,
           room: roomNumber,
+          roomType: 'Standard',
           status: 'checked-in',
+          checkInDate: new Date().toISOString().split('T')[0],
+          checkOutDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
         })
       }
 

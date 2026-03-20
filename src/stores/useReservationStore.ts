@@ -1,13 +1,20 @@
 import React, { createContext, useContext, useState } from 'react'
 
-export type ReservationStatus = 'pending' | 'checked-in' | 'checked-out'
+export type ReservationStatus = 'pending' | 'confirmed' | 'checked-in' | 'checked-out' | 'canceled'
 export type ConsumptionCategory = 'Minibar' | 'Restaurante' | 'Serviços Extras'
 
 export type Reservation = {
   id: string
   guestName: string
-  room: string
+  guestDoc?: string
+  guestEmail?: string
+  guestPhone?: string
+  room?: string
+  roomType?: string
   status: ReservationStatus
+  checkInDate: string
+  checkOutDate: string
+  createdAt: string
 }
 
 export type Consumption = {
@@ -35,8 +42,53 @@ interface ReservationStore {
 }
 
 const INITIAL_RESERVATIONS: Reservation[] = [
-  { id: '12345', guestName: 'João Silva', room: '304', status: 'checked-in' },
-  { id: '99999', guestName: 'Maria Oliveira', room: '102', status: 'checked-in' },
+  {
+    id: '12345',
+    guestName: 'João Silva',
+    guestDoc: '123.456.789-00',
+    guestEmail: 'joao.silva@email.com',
+    guestPhone: '(11) 98765-4321',
+    room: '304',
+    roomType: 'Luxo',
+    status: 'checked-in',
+    checkInDate: new Date().toISOString().split('T')[0],
+    checkOutDate: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+  },
+  {
+    id: '99999',
+    guestName: 'Maria Oliveira',
+    guestDoc: '987.654.321-11',
+    guestEmail: 'maria.o@email.com',
+    guestPhone: '(11) 91234-5678',
+    room: '102',
+    roomType: 'Standard',
+    status: 'checked-in',
+    checkInDate: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    checkOutDate: new Date().toISOString().split('T')[0],
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+  },
+  {
+    id: 'RES-003',
+    guestName: 'Carlos Mendes',
+    guestDoc: '456.123.789-22',
+    guestEmail: 'carlos.m@email.com',
+    roomType: 'Suite',
+    status: 'confirmed',
+    checkInDate: new Date().toISOString().split('T')[0],
+    checkOutDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: 'RES-004',
+    guestName: 'Fernanda Costa',
+    guestDoc: '321.654.987-33',
+    roomType: 'Standard',
+    status: 'confirmed',
+    checkInDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    checkOutDate: new Date(Date.now() + 86400000 * 4).toISOString().split('T')[0],
+    createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
 ]
 
 const INITIAL_CONSUMPTIONS: Consumption[] = [
