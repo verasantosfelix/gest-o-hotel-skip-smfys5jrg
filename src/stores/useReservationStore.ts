@@ -15,7 +15,12 @@ export type Consumption = {
   reserva_id: string
   categoria: ConsumptionCategory
   descricao: string
+  quantidade: number
+  preco_unitario: number
+  desconto: number
+  motivo_desconto?: string
   valor: number
+  validacao_hospede: boolean
   data_registro: string
 }
 
@@ -39,7 +44,11 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     reserva_id: '12345',
     categoria: 'Minibar',
     descricao: 'Água sem gás',
+    quantidade: 1,
+    preco_unitario: 8.5,
+    desconto: 0,
     valor: 8.5,
+    validacao_hospede: true,
     data_registro: new Date().toISOString(),
   },
   {
@@ -47,7 +56,24 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     reserva_id: '12345',
     categoria: 'Restaurante',
     descricao: 'Jantar Executivo',
-    valor: 142.0,
+    quantidade: 2,
+    preco_unitario: 75.0,
+    desconto: 15.0,
+    motivo_desconto: 'Perfil VIP (10%)',
+    valor: 135.0,
+    validacao_hospede: true,
+    data_registro: new Date().toISOString(),
+  },
+  {
+    id: 'c3',
+    reserva_id: '99999',
+    categoria: 'Serviços Extras',
+    descricao: 'Massagem Relaxante',
+    quantidade: 1,
+    preco_unitario: 120.0,
+    desconto: 0,
+    valor: 120.0,
+    validacao_hospede: true,
     data_registro: new Date().toISOString(),
   },
 ]

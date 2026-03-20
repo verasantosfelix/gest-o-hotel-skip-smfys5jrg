@@ -17,12 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import useReservationStore, {
   ConsumptionCategory,
   Consumption as IConsumption,
 } from '@/stores/useReservationStore'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, Info, ShieldCheck } from 'lucide-react'
 
 export function Consumption() {
   const { reservations, addConsumption, getConsumptionsByReservation } = useReservationStore()
@@ -31,8 +32,11 @@ export function Consumption() {
     reserva_id: '',
     descricao_item: '',
     categoria: '' as ConsumptionCategory | '',
-    valor: '',
+    preco_unitario: '',
+    quantidade: '1',
+    regra_desconto: 'none' as 'none' | 'vip' | 'promo',
   })
+  const [assinatura, setAssinatura] = useState(false)
   const [error, setError] = useState('')
   const [lastSaved, setLastSaved] = useState<IConsumption | null>(null)
 
@@ -40,20 +44,44 @@ export function Consumption() {
     (r) => r.id === form.reserva_id && r.status === 'checked-in',
   )
   const activeConsumptions = activeReservation
-    ? getConsumptionsByReservation(activeReservation.id)
+    ? getConsumptionsByReservation(activeReservation.id).filter((c) => c.validacao_hospede)
     : []
+
+  const preco = parseFloat(form.preco_unitario.replace(',', '.')) || 0
+  const qtd = parseInt(form.quantidade, 10) || 1
+  const subtotal = preco * qtd
+
+  let desconto = 0
+  let motivo = ''
+  if (form.regra_desconto === 'vip') {
+    desconto = subtotal * 0.1
+    motivo = 'Perfil VIP (10%)'
+  } else if (form.regra_desconto === 'promo') {
+    desconto = subtotal * 0.15
+    motivo = 'Promoção Ativa (15%)'
+  }
+  const total = subtotal - desconto
 
   const handleNext = () => {
     if (step === 1) {
-      if (!form.reserva_id || !form.descricao_item || !form.categoria || !form.valor) {
-        setError('<erro>Todos os campos são obrigatórios.</erro>')
+      if (
+        !form.reserva_id ||
+        !form.descricao_item ||
+        !form.categoria ||
+        !form.preco_unitario ||
+        !form.quantidade
+      ) {
+        setError('<erro>Todos os campos obrigatórios devem ser preenchidos.</erro>')
         return
       }
 
-      const valStr = form.valor.replace(',', '.')
-      const val = parseFloat(valStr)
-      if (isNaN(val) || val <= 0) {
-        setError('<erro tipo="valor-invalido">O valor do item deve ser superior a zero.</erro>')
+      if (isNaN(preco) || preco <= 0) {
+        setError('<erro tipo="valor-invalido">O preço unitário deve ser superior a zero.</erro>')
+        return
+      }
+
+      if (isNaN(qtd) || qtd <= 0) {
+        setError('<erro tipo="quantidade-invalida">A quantidade deve ser pelo menos 1.</erro>')
         return
       }
 
@@ -68,16 +96,29 @@ export function Consumption() {
       setError('')
       setStep(2)
     } else if (step === 2) {
+      if (!assinatura) {
+        setError(
+          '<erro tipo="assinatura-pendente">A confirmação e assinatura do hóspede são obrigatórias.</erro>',
+        )
+        return
+      }
+
       const cons: IConsumption = {
         id: `ITEM-${Math.floor(Math.random() * 10000)}`,
         reserva_id: form.reserva_id,
         categoria: form.categoria as ConsumptionCategory,
         descricao: form.descricao_item,
-        valor: parseFloat(form.valor.replace(',', '.')),
+        quantidade: qtd,
+        preco_unitario: preco,
+        desconto,
+        motivo_desconto: motivo || undefined,
+        valor: total,
+        validacao_hospede: assinatura,
         data_registro: new Date().toISOString(),
       }
       addConsumption(cons)
       setLastSaved(cons)
+      setError('')
       setStep(3)
     }
   }
@@ -97,7 +138,11 @@ export function Consumption() {
   <item_id>${lastSaved?.id}</item_id>
   <reserva_id>${lastSaved?.reserva_id}</reserva_id>
   <categoria>${lastSaved?.categoria}</categoria>
-  <valor>${lastSaved?.valor.toFixed(2)}</valor>
+  <quantidade>${lastSaved?.quantidade}</quantidade>
+  <preco_unitario>${lastSaved?.preco_unitario.toFixed(2)}</preco_unitario>
+  <desconto>${lastSaved?.desconto.toFixed(2)}</desconto>
+  ${lastSaved?.motivo_desconto ? `<motivo_desconto>${lastSaved.motivo_desconto}</motivo_desconto>\n  ` : ''}<valor_final>${lastSaved?.valor.toFixed(2)}</valor_final>
+  <validacao_hospede>${lastSaved?.validacao_hospede}</validacao_hospede>
   <data_registro>${lastSaved?.data_registro}</data_registro>
   <status>Item registrado com sucesso</status>
 </OUTPUT>`}
@@ -107,7 +152,15 @@ export function Consumption() {
           <Button
             onClick={() => {
               setStep(1)
-              setForm((prev) => ({ ...prev, descricao_item: '', categoria: '', valor: '' }))
+              setForm((prev) => ({
+                ...prev,
+                descricao_item: '',
+                categoria: '',
+                preco_unitario: '',
+                quantidade: '1',
+                regra_desconto: 'none',
+              }))
+              setAssinatura(false)
               setLastSaved(null)
             }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -124,7 +177,7 @@ export function Consumption() {
       <CardHeader>
         <CardTitle className="text-slate-800 font-display">Lançamento de Consumo</CardTitle>
         <CardDescription>
-          Registre itens na conta do hóspede (Minibar, Restaurante, Serviços)
+          Registre itens na conta do hóspede com motor de descontos e assinatura digital.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 min-h-[250px]">
@@ -168,15 +221,44 @@ export function Consumption() {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-700">Quantidade</Label>
+                <Input
+                  className="border-slate-300 focus-visible:ring-slate-500"
+                  type="number"
+                  min="1"
+                  value={form.quantidade}
+                  onChange={(e) => setForm({ ...form, quantidade: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-700">Preço Unitário (R$)</Label>
+                <Input
+                  className="border-slate-300 focus-visible:ring-slate-500"
+                  placeholder="0.00"
+                  type="text"
+                  value={form.preco_unitario}
+                  onChange={(e) => setForm({ ...form, preco_unitario: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label className="text-slate-700">Valor (R$)</Label>
-              <Input
-                className="border-slate-300 focus-visible:ring-slate-500"
-                placeholder="0.00"
-                type="text"
-                value={form.valor}
-                onChange={(e) => setForm({ ...form, valor: e.target.value })}
-              />
+              <Label className="text-slate-700">Regra de Desconto</Label>
+              <Select
+                value={form.regra_desconto}
+                onValueChange={(v) => setForm({ ...form, regra_desconto: v as any })}
+              >
+                <SelectTrigger className="border-slate-300">
+                  <SelectValue placeholder="Sem desconto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  <SelectItem value="vip">Perfil VIP (10% de desconto)</SelectItem>
+                  <SelectItem value="promo">Promoção Ativa (15% de desconto)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {error && (
@@ -188,10 +270,10 @@ export function Consumption() {
             {activeReservation && (
               <div className="mt-8 space-y-4 animate-fade-in">
                 <h3 className="font-semibold text-slate-800 border-b pb-2">
-                  Extrato Atual - Quarto {activeReservation.room}
+                  Extrato Atual (Apenas Validados) - Quarto {activeReservation.room}
                 </h3>
                 {activeConsumptions.length === 0 ? (
-                  <p className="text-sm text-slate-500">Nenhum consumo registrado ainda.</p>
+                  <p className="text-sm text-slate-500">Nenhum consumo validado ainda.</p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                     {activeConsumptions.map((c) => (
@@ -200,8 +282,12 @@ export function Consumption() {
                         className="flex justify-between items-center bg-slate-50 p-3 rounded-md border border-slate-100"
                       >
                         <div>
-                          <p className="text-sm font-medium text-slate-800">{c.descricao}</p>
-                          <p className="text-xs text-slate-500">{c.categoria}</p>
+                          <p className="text-sm font-medium text-slate-800">
+                            {c.quantidade}x {c.descricao}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {c.categoria} {c.motivo_desconto && `• ${c.motivo_desconto}`}
+                          </p>
                         </div>
                         <span className="font-semibold text-slate-700">
                           R$ {c.valor.toFixed(2)}
@@ -224,15 +310,64 @@ export function Consumption() {
         {step === 2 && (
           <div className="space-y-4 animate-fade-in">
             <Alert className="bg-slate-50 border-slate-200 shadow-sm">
+              <Info className="w-4 h-4 text-slate-500" />
               <AlertTitle className="text-slate-800 font-bold mb-2">
-                Confirmar Lançamento
+                Resumo do Lançamento
               </AlertTitle>
-              <AlertDescription className="text-slate-700">
-                Confirma o registro de <strong>{form.descricao_item}</strong> no valor de{' '}
-                <strong>R$ {parseFloat(form.valor.replace(',', '.')).toFixed(2)}</strong> para o
-                hóspede da reserva <strong>{form.reserva_id}</strong>?
+              <AlertDescription className="text-slate-700 space-y-2">
+                <div className="flex justify-between">
+                  <span>
+                    Subtotal ({qtd}x R$ {preco.toFixed(2)}):
+                  </span>
+                  <span>R$ {subtotal.toFixed(2)}</span>
+                </div>
+                {desconto > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Desconto ({motivo}):</span>
+                    <span>- R$ {desconto.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
+                  <span>Total Final:</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
               </AlertDescription>
             </Alert>
+
+            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm text-center space-y-4 mt-6">
+              <div className="flex justify-center mb-2">
+                <div className="bg-slate-100 p-3 rounded-full">
+                  <ShieldCheck className="w-6 h-6 text-slate-600" />
+                </div>
+              </div>
+              <h3 className="font-medium text-slate-800">Assinatura Digital do Hóspede</h3>
+              <p className="text-sm text-slate-500 mb-4">
+                Confirmo o consumo acima no valor total de <strong>R$ {total.toFixed(2)}</strong>.
+              </p>
+
+              <div className="max-w-sm mx-auto p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-md transition-colors hover:border-slate-400">
+                <div className="flex items-center space-x-3 justify-center">
+                  <Checkbox
+                    id="assinatura"
+                    checked={assinatura}
+                    onCheckedChange={(c) => setAssinatura(!!c)}
+                    className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600 w-5 h-5"
+                  />
+                  <Label
+                    htmlFor="assinatura"
+                    className="text-slate-700 font-medium cursor-pointer text-base"
+                  >
+                    Confirmar e Autorizar Cobrança
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+                {error}
+              </pre>
+            )}
           </div>
         )}
       </CardContent>
@@ -240,7 +375,10 @@ export function Consumption() {
         <Button
           variant="outline"
           className="text-slate-600 border-slate-300"
-          onClick={() => setStep((s) => Math.max(1, s - 1))}
+          onClick={() => {
+            setStep((s) => Math.max(1, s - 1))
+            setError('')
+          }}
           disabled={step === 1}
         >
           Voltar
@@ -249,7 +387,7 @@ export function Consumption() {
           onClick={handleNext}
           className="bg-slate-800 hover:bg-slate-900 text-white shadow-sm"
         >
-          {step === 2 ? 'Confirmar Lançamento' : 'Avançar'}
+          {step === 2 ? 'Registrar Consumo' : 'Avançar'}
         </Button>
       </CardFooter>
     </Card>

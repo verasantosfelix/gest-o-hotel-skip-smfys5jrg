@@ -23,6 +23,7 @@ export function CheckOut() {
   const [error, setError] = useState('')
   const [reserva, setReserva] = useState<Reservation | null>(null)
   const [consumoTotal, setConsumoTotal] = useState(0)
+  const [descontoTotal, setDescontoTotal] = useState(0)
 
   const values = {
     diarias: 1200.0,
@@ -56,11 +57,13 @@ export function CheckOut() {
         return
       }
 
-      const cons = getConsumptionsByReservation(res.id)
+      const cons = getConsumptionsByReservation(res.id).filter((c) => c.validacao_hospede)
       const total = cons.reduce((acc, c) => acc + c.valor, 0)
+      const descontos = cons.reduce((acc, c) => acc + (c.desconto || 0), 0)
 
       setReserva(res)
       setConsumoTotal(total)
+      setDescontoTotal(descontos)
       setError('')
       setStep(2)
     } else if (step === 4) {
@@ -146,11 +149,19 @@ export function CheckOut() {
                   <span className="text-slate-600">Diárias (3 noites):</span>
                   <span className="font-medium text-slate-900">R$ {values.diarias.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-600">Consumos (Lançamentos):</span>
-                  <span className="font-medium text-slate-900">
-                    R$ {values.consumos.toFixed(2)}
-                  </span>
+                <div className="flex flex-col border-b border-slate-200 pb-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Consumos (Apenas Validados):</span>
+                    <span className="font-medium text-slate-900">
+                      R$ {values.consumos.toFixed(2)}
+                    </span>
+                  </div>
+                  {descontoTotal > 0 && (
+                    <div className="flex justify-between text-xs text-emerald-600 mt-1">
+                      <span>* Economia com descontos nas regras:</span>
+                      <span>R$ {descontoTotal.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-slate-600">Taxas (ISS/Turismo):</span>

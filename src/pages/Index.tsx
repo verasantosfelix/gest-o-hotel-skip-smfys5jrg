@@ -7,6 +7,7 @@ import useHotelStore from '@/stores/useHotelStore'
 import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
 import { Consumption } from '@/components/operations/Consumption'
+import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
 
 export default function Index() {
   const { selectedHotel } = useHotelStore()
@@ -70,6 +71,12 @@ export default function Index() {
             className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
           >
             Dashboard Central
+          </TabsTrigger>
+          <TabsTrigger
+            value="financeiro"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+          >
+            Painel Financeiro
           </TabsTrigger>
           <TabsTrigger
             value="checkin"
@@ -165,6 +172,10 @@ export default function Index() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="financeiro" className="outline-none focus:outline-none">
+          <FinancialDashboard />
         </TabsContent>
 
         <TabsContent value="checkin" className="outline-none focus:outline-none">
