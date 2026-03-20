@@ -10,50 +10,57 @@ import Housekeeping from './pages/Housekeeping'
 import NotFound from './pages/NotFound'
 import GuestPortal from './pages/GuestPortal'
 import Layout from './components/Layout'
+import ServiceGuestLookup from './pages/ServiceGuestLookup'
+import ServiceExpensePosting from './pages/ServiceExpensePosting'
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
 import { InventoryProvider } from './stores/useInventoryStore'
 import { AuditProvider } from './stores/useAuditStore'
+import { AuthProvider } from './stores/useAuthStore'
 
 const App = () => (
-  <AuditProvider>
-    <InventoryProvider>
-      <HotelProvider>
-        <ReservationProvider>
-          <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/reservas" element={<Reservations />} />
-                  <Route path="/quartos" element={<Rooms />} />
-                  <Route path="/hospedes" element={<Guests />} />
-                  <Route path="/governanca" element={<Housekeeping />} />
-                  <Route
-                    path="/auditoria"
-                    element={
-                      <div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>
-                    }
-                  />
-                  <Route
-                    path="/configuracoes"
-                    element={
-                      <div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>
-                    }
-                  />
-                </Route>
-                {/* Guest-facing routes */}
-                <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </BrowserRouter>
-        </ReservationProvider>
-      </HotelProvider>
-    </InventoryProvider>
-  </AuditProvider>
+  <AuthProvider>
+    <AuditProvider>
+      <InventoryProvider>
+        <HotelProvider>
+          <ReservationProvider>
+            <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/reservas" element={<Reservations />} />
+                    <Route path="/quartos" element={<Rooms />} />
+                    <Route path="/hospedes" element={<Guests />} />
+                    <Route path="/governanca" element={<Housekeeping />} />
+                    <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
+                    <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
+                    <Route
+                      path="/auditoria"
+                      element={
+                        <div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>
+                      }
+                    />
+                    <Route
+                      path="/configuracoes"
+                      element={
+                        <div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>
+                      }
+                    />
+                  </Route>
+                  {/* Guest-facing routes */}
+                  <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </BrowserRouter>
+          </ReservationProvider>
+        </HotelProvider>
+      </InventoryProvider>
+    </AuditProvider>
+  </AuthProvider>
 )
 
 export default App

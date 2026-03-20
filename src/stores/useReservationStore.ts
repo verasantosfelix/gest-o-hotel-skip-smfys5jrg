@@ -29,6 +29,9 @@ export type Consumption = {
   valor: number
   validacao_hospede: boolean
   data_registro: string
+  attachment?: string
+  createdByRole?: string
+  createdBy?: string
 }
 
 interface ReservationStore {
@@ -103,6 +106,8 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     valor: 8.5,
     validacao_hospede: true,
     data_registro: new Date().toISOString(),
+    createdByRole: 'Admin',
+    createdBy: 'Gerente Geral',
   },
   {
     id: 'c2',
@@ -116,6 +121,8 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     valor: 135.0,
     validacao_hospede: true,
     data_registro: new Date().toISOString(),
+    createdByRole: 'Admin',
+    createdBy: 'Gerente Geral',
   },
   {
     id: 'c4',
@@ -128,6 +135,8 @@ const INITIAL_CONSUMPTIONS: Consumption[] = [
     valor: 15.0,
     validacao_hospede: false,
     data_registro: new Date().toISOString(),
+    createdByRole: 'Admin',
+    createdBy: 'Gerente Geral',
   },
 ]
 

@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom'
 import {
   BedDouble,
   Clock,
@@ -12,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useHotelStore from '@/stores/useHotelStore'
 import useInventoryStore from '@/stores/useInventoryStore'
+import useAuthStore from '@/stores/useAuthStore'
 import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
 import { Consumption } from '@/components/operations/Consumption'
@@ -19,8 +21,13 @@ import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
 import { InventoryManagement } from '@/components/operations/InventoryManagement'
 
 export default function Index() {
+  const { userRole } = useAuthStore()
   const { selectedHotel } = useHotelStore()
   const { items } = useInventoryStore()
+
+  if (userRole !== 'Admin') {
+    return <Navigate to="/busca-hospedes" replace />
+  }
 
   const lowStockCount = items.filter((i) => i.quantity < i.threshold).length
 

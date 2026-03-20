@@ -8,6 +8,8 @@ import {
   Settings,
   Hotel,
   Sparkles,
+  Search,
+  Receipt,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -22,6 +24,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import useHotelStore from '@/stores/useHotelStore'
+import useAuthStore from '@/stores/useAuthStore'
 
 const navOperacional = [
   { name: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -36,9 +39,15 @@ const navGestao = [
   { name: 'Configurações', url: '/configuracoes', icon: Settings },
 ]
 
+const navServicos = [
+  { name: 'Busca de Hóspedes', url: '/busca-hospedes', icon: Search },
+  { name: 'Lançamentos', url: '/lancamento-servicos', icon: Receipt },
+]
+
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
+  const { userRole } = useAuthStore()
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
@@ -49,53 +58,80 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-            Operacional
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navOperacional.map((item) => {
-                const isActive = location.pathname === item.url
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                      <Link to={item.url} className="flex items-center gap-3">
-                        <item.icon className="h-4 w-4" />
-                        <span className="font-medium">{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {userRole === 'Admin' ? (
+          <>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+                Operacional
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navOperacional.map((item) => {
+                    const isActive = location.pathname === item.url
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                          <Link to={item.url} className="flex items-center gap-3">
+                            <item.icon className="h-4 w-4" />
+                            <span className="font-medium">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
+            <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-            Gestão
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navGestao.map((item) => {
-                const isActive = location.pathname === item.url
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                      <Link to={item.url} className="flex items-center gap-3">
-                        <item.icon className="h-4 w-4" />
-                        <span className="font-medium">{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+                Gestão
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navGestao.map((item) => {
+                    const isActive = location.pathname === item.url
+                    return (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                          <Link to={item.url} className="flex items-center gap-3">
+                            <item.icon className="h-4 w-4" />
+                            <span className="font-medium">{item.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
+              Serviços ({userRole})
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navServicos.map((item) => {
+                  const isActive = location.pathname === item.url
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link to={item.url} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          <span className="font-medium">{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   )
