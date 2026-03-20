@@ -2,8 +2,10 @@ routerAdd(
   'POST',
   '/backend/v1/ai-chat',
   (e) => {
-    const body = e.requestInfo().body || {}
-    const msg = (body.message || '').toLowerCase()
+    const info = e.requestInfo()
+    const body = info && info.body ? info.body : {}
+    const msg = String(body.message || '').toLowerCase()
+
     let reply = 'Como posso ajudar?'
 
     if (msg.includes('informações') || msg.includes('informacoes') || msg.includes('hotel')) {
@@ -16,7 +18,7 @@ routerAdd(
         "Entendido. Registrei sua solicitação. Se precisar de algo mais específico, pergunte sobre nossas 'informações' ou 'recomendações'."
     }
 
-    return e.json(200, { reply })
+    return e.json(200, { reply: reply })
   },
   $apis.requireAuth(),
 )
