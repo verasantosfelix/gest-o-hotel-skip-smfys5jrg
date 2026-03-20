@@ -12,8 +12,10 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CheckCircle } from 'lucide-react'
+import useReservationStore from '@/stores/useReservationStore'
 
 export function CheckIn() {
+  const { addReservation, updateReservationStatus, reservations } = useReservationStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
     reserva_id: '',
@@ -22,6 +24,7 @@ export function CheckIn() {
     adicionais: [] as string[],
   })
   const [error, setError] = useState('')
+  const [assignedRoom, setAssignedRoom] = useState('')
 
   const toggleAdicional = (item: string) => {
     setForm((prev) => ({
@@ -33,14 +36,33 @@ export function CheckIn() {
   }
 
   const nextStep = () => {
-    if (step === 1 && form.reserva_id !== '12345') {
-      setError(
-        '<erro tipo="reserva-nao-encontrada">Não encontramos a reserva. Pode verificar o ID?</erro>',
-      )
-      return
+    if (step === 1) {
+      if (!form.reserva_id) {
+        setError('<erro>Informe o ID da reserva (Ex: 12345).</erro>')
+        return
+      }
+      setError('')
+      setStep((s) => s + 1)
+    } else if (step === 2) {
+      setStep((s) => s + 1)
+    } else if (step === 3) {
+      const existing = reservations.find((r) => r.id === form.reserva_id)
+      const roomNumber = String(Math.floor(Math.random() * 100) + 200)
+
+      if (existing) {
+        updateReservationStatus(form.reserva_id, 'checked-in', roomNumber)
+      } else {
+        addReservation({
+          id: form.reserva_id,
+          guestName: form.nome || 'Hóspede',
+          room: roomNumber,
+          status: 'checked-in',
+        })
+      }
+
+      setAssignedRoom(roomNumber)
+      setStep(4)
     }
-    setError('')
-    setStep((s) => s + 1)
   }
 
   if (step === 4) {
@@ -52,7 +74,7 @@ export function CheckIn() {
         <CardContent>
           <pre className="bg-slate-900 text-emerald-400 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner">
             {`<OUTPUT>
-  <quarto>${Math.floor(Math.random() * 100) + 200}</quarto>
+  <quarto>${assignedRoom}</quarto>
   <horarios>${new Date().toLocaleTimeString()}</horarios>
   <itens_contratados>${form.adicionais.length ? form.adicionais.join(', ') : 'Nenhum'}</itens_contratados>
   <status>Check-in realizado</status>
@@ -85,8 +107,7 @@ export function CheckIn() {
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <Label className="text-slate-700">
-                ID da Reserva{' '}
-                <span className="text-slate-400 font-normal">(Use 12345 para sucesso)</span>
+                ID da Reserva <span className="text-slate-400 font-normal">(Ex: 12345)</span>
               </Label>
               <Input
                 className="border-slate-300 focus-visible:ring-slate-500"
@@ -169,7 +190,7 @@ export function CheckIn() {
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-slate-500">Hóspede:</span>
                   <span className="font-medium text-slate-900">
-                    {form.nome} ({form.documento})
+                    {form.nome || 'Hóspede'} ({form.documento || 'Não informado'})
                   </span>
                 </div>
                 <div className="flex justify-between pb-2">

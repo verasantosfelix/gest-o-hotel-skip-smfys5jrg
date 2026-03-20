@@ -9,33 +9,36 @@ import Guests from './pages/Guests'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { HotelProvider } from './stores/useHotelStore'
+import { ReservationProvider } from './stores/useReservationStore'
 
 const App = () => (
   <HotelProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/reservas" element={<Reservations />} />
-            <Route path="/quartos" element={<Rooms />} />
-            <Route path="/hospedes" element={<Guests />} />
-            {/* Placeholder routes for completeness of sidebar */}
-            <Route
-              path="/auditoria"
-              element={<div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>}
-            />
-            <Route
-              path="/configuracoes"
-              element={<div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>}
-            />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
+    <ReservationProvider>
+      <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/reservas" element={<Reservations />} />
+              <Route path="/quartos" element={<Rooms />} />
+              <Route path="/hospedes" element={<Guests />} />
+              {/* Placeholder routes for completeness of sidebar */}
+              <Route
+                path="/auditoria"
+                element={<div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>}
+              />
+              <Route
+                path="/configuracoes"
+                element={<div className="p-4">Configurações do Sistema (Em desenvolvimento)</div>}
+              />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
+    </ReservationProvider>
   </HotelProvider>
 )
 

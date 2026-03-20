@@ -13,21 +13,64 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CreditCard, Banknote, Wallet } from 'lucide-react'
+import useReservationStore, { Reservation } from '@/stores/useReservationStore'
 
 export function CheckOut() {
+  const { reservations, getConsumptionsByReservation, updateReservationStatus } =
+    useReservationStore()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({ quarto: '', pagamento: 'credito' })
+  const [error, setError] = useState('')
+  const [reserva, setReserva] = useState<Reservation | null>(null)
+  const [consumoTotal, setConsumoTotal] = useState(0)
 
   const values = {
     diarias: 1200.0,
-    consumos: 150.5,
+    consumos: consumoTotal,
     taxas: 67.5,
-    total: 1418.0,
+    get total() {
+      return this.diarias + this.consumos + this.taxas
+    },
   }
 
   const nextStep = () => {
-    if (step === 1 && !form.quarto) return
-    setStep((s) => s + 1)
+    if (step === 1) {
+      if (!form.quarto) return
+
+      const res = reservations.find(
+        (r) =>
+          r.room === form.quarto ||
+          r.id === form.quarto ||
+          r.guestName.toLowerCase().includes(form.quarto.toLowerCase()),
+      )
+
+      if (!res) {
+        setError('<erro>Reserva não encontrada. Tente o quarto 304 ou ID 12345.</erro>')
+        return
+      }
+
+      if (res.status !== 'checked-in') {
+        setError(
+          '<erro>A reserva não está com check-in ativo (não é possível fazer check-out).</erro>',
+        )
+        return
+      }
+
+      const cons = getConsumptionsByReservation(res.id)
+      const total = cons.reduce((acc, c) => acc + c.valor, 0)
+
+      setReserva(res)
+      setConsumoTotal(total)
+      setError('')
+      setStep(2)
+    } else if (step === 4) {
+      if (reserva) {
+        updateReservationStatus(reserva.id, 'checked-out')
+      }
+      setStep(5)
+    } else {
+      setStep((s) => s + 1)
+    }
   }
 
   if (step === 5) {
@@ -55,6 +98,7 @@ export function CheckOut() {
             onClick={() => {
               setStep(1)
               setForm({ quarto: '', pagamento: 'credito' })
+              setReserva(null)
             }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
@@ -75,14 +119,19 @@ export function CheckOut() {
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
-              <Label className="text-slate-700">Número do Quarto ou Nome do Hóspede</Label>
+              <Label className="text-slate-700">Número do Quarto, Nome ou ID</Label>
               <Input
                 className="border-slate-300 focus-visible:ring-slate-500"
-                placeholder="Ex: 304 ou João Silva"
+                placeholder="Ex: 304, 12345 ou João Silva"
                 value={form.quarto}
                 onChange={(e) => setForm({ ...form, quarto: e.target.value })}
               />
             </div>
+            {error && (
+              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+                {error}
+              </pre>
+            )}
           </div>
         )}
 
@@ -90,7 +139,7 @@ export function CheckOut() {
           <div className="space-y-4 animate-fade-in">
             <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-4">
-                Cálculo de Fechamento (Quarto {form.quarto})
+                Cálculo de Fechamento (Quarto {reserva?.room})
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between border-b border-slate-200 pb-2">
@@ -98,7 +147,7 @@ export function CheckOut() {
                   <span className="font-medium text-slate-900">R$ {values.diarias.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-600">Consumos (Frigobar/Restaurante):</span>
+                  <span className="text-slate-600">Consumos (Lançamentos):</span>
                   <span className="font-medium text-slate-900">
                     R$ {values.consumos.toFixed(2)}
                   </span>
@@ -176,7 +225,7 @@ export function CheckOut() {
                 Deseja concluir o check-out agora? <br />
                 Esta ação emitirá a nota fiscal, registrará o pagamento de{' '}
                 <strong>R$ {values.total.toFixed(2)}</strong> e liberará o quarto{' '}
-                <strong>{form.quarto}</strong> para a equipe de limpeza.
+                <strong>{reserva?.room}</strong> para a equipe de limpeza.
               </AlertDescription>
             </Alert>
           </div>

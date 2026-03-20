@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useHotelStore from '@/stores/useHotelStore'
 import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
+import { Consumption } from '@/components/operations/Consumption'
 
 export default function Index() {
   const { selectedHotel } = useHotelStore()
@@ -63,7 +64,7 @@ export default function Index() {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="bg-slate-100 p-1 mb-4 inline-flex">
+        <TabsList className="bg-slate-100 p-1 mb-4 inline-flex flex-wrap h-auto">
           <TabsTrigger
             value="dashboard"
             className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
@@ -75,6 +76,12 @@ export default function Index() {
             className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
           >
             Check-in
+          </TabsTrigger>
+          <TabsTrigger
+            value="consumo"
+            className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+          >
+            Consumo
           </TabsTrigger>
           <TabsTrigger
             value="checkout"
@@ -162,6 +169,10 @@ export default function Index() {
 
         <TabsContent value="checkin" className="outline-none focus:outline-none">
           <CheckIn />
+        </TabsContent>
+
+        <TabsContent value="consumo" className="outline-none focus:outline-none">
+          <Consumption />
         </TabsContent>
 
         <TabsContent value="checkout" className="outline-none focus:outline-none">
