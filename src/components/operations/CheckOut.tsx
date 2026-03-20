@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { CreditCard, Banknote, Wallet } from 'lucide-react'
+import { CreditCard, Banknote, Wallet, AlertTriangle } from 'lucide-react'
 import useReservationStore, { Reservation } from '@/stores/useReservationStore'
 
 export function CheckOut() {
@@ -46,13 +46,15 @@ export function CheckOut() {
       )
 
       if (!res) {
-        setError('<erro>Reserva não encontrada. Tente o quarto 304 ou ID 12345.</erro>')
+        setError(
+          '<erro tipo="reserva-nao-encontrada">Reserva não encontrada. Tente quarto 304 ou ID 12345.</erro>',
+        )
         return
       }
 
       if (res.status !== 'checked-in') {
         setError(
-          '<erro>A reserva não está com check-in ativo (não é possível fazer check-out).</erro>',
+          '<erro tipo="status-invalido">Não é possível fazer check-out sem check-in ativo.</erro>',
         )
         return
       }
@@ -85,14 +87,21 @@ export function CheckOut() {
         <CardContent>
           <pre className="bg-slate-900 text-emerald-400 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner">
             {`<OUTPUT>
-  <recibo>REC-${Math.floor(Math.random() * 10000)}</recibo>
-  <valores>
-    <diarias>R$ ${values.diarias.toFixed(2)}</diarias>
-    <consumos>R$ ${values.consumos.toFixed(2)}</consumos>
-    <taxas>R$ ${values.taxas.toFixed(2)}</taxas>
-    <total>R$ ${values.total.toFixed(2)}</total>
-  </valores>
-  <status>Check-out concluído</status>
+  <resumo>Check-out finalizado. Quarto liberado para limpeza.</resumo>
+  <dados>
+    <recibo>REC-${Math.floor(Math.random() * 10000)}</recibo>
+    <quarto>${reserva?.room}</quarto>
+    <metodo_pagamento>${form.pagamento}</metodo_pagamento>
+    <valores>
+      <diarias>R$ ${values.diarias.toFixed(2)}</diarias>
+      <consumos>R$ ${values.consumos.toFixed(2)}</consumos>
+      <descontos_aplicados>R$ ${descontoTotal.toFixed(2)}</descontos_aplicados>
+      <taxas>R$ ${values.taxas.toFixed(2)}</taxas>
+      <total_pago>R$ ${values.total.toFixed(2)}</total_pago>
+    </valores>
+    <status>Check-out concluído</status>
+  </dados>
+  <proximos-passos>Notificar Governança para higienização do quarto ${reserva?.room}.</proximos-passos>
 </OUTPUT>`}
           </pre>
         </CardContent>
@@ -122,18 +131,19 @@ export function CheckOut() {
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
-              <Label className="text-slate-700">Número do Quarto, Nome ou ID</Label>
+              <Label className="text-slate-700">Número do Quarto, Nome ou ID da Reserva</Label>
               <Input
-                className="border-slate-300 focus-visible:ring-slate-500"
+                className="border-slate-300"
                 placeholder="Ex: 304, 12345 ou João Silva"
                 value={form.quarto}
                 onChange={(e) => setForm({ ...form, quarto: e.target.value })}
               />
             </div>
             {error && (
-              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+              <div className="text-xs text-rose-600 bg-rose-50 p-3 rounded font-mono border border-rose-200 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 {error}
-              </pre>
+              </div>
             )}
           </div>
         )}
@@ -142,28 +152,30 @@ export function CheckOut() {
           <div className="space-y-4 animate-fade-in">
             <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-4">
-                Cálculo de Fechamento (Quarto {reserva?.room})
+                Extrato Consolidado (Quarto {reserva?.room})
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-600">Diárias (3 noites):</span>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-600">Diárias:</span>
                   <span className="font-medium text-slate-900">R$ {values.diarias.toFixed(2)}</span>
                 </div>
-                <div className="flex flex-col border-b border-slate-200 pb-2">
+                <div className="flex flex-col border-b pb-2">
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Consumos (Apenas Validados):</span>
+                    <span className="text-slate-600">
+                      Consumos (Apenas com assinatura digital):
+                    </span>
                     <span className="font-medium text-slate-900">
                       R$ {values.consumos.toFixed(2)}
                     </span>
                   </div>
                   {descontoTotal > 0 && (
                     <div className="flex justify-between text-xs text-emerald-600 mt-1">
-                      <span>* Economia com descontos nas regras:</span>
-                      <span>R$ {descontoTotal.toFixed(2)}</span>
+                      <span>Descontos aplicados (Perfil/Promo):</span>
+                      <span>- R$ {descontoTotal.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
-                <div className="flex justify-between border-b border-slate-200 pb-2">
+                <div className="flex justify-between border-b pb-2">
                   <span className="text-slate-600">Taxas (ISS/Turismo):</span>
                   <span className="font-medium text-slate-900">R$ {values.taxas.toFixed(2)}</span>
                 </div>
@@ -188,39 +200,27 @@ export function CheckOut() {
             >
               <Label
                 htmlFor="credito"
-                className="flex items-center space-x-3 p-4 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50 transition-colors"
+                className="flex items-center space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50"
               >
-                <RadioGroupItem
-                  value="credito"
-                  id="credito"
-                  className="text-slate-800 border-slate-400"
-                />
-                <CreditCard className="w-5 h-5 text-slate-600" />
-                <span className="font-medium text-slate-700">Cartão de Crédito</span>
+                <RadioGroupItem value="credito" id="credito" />
+                <CreditCard className="w-5 h-5" />
+                <span className="font-medium">Cartão de Crédito</span>
               </Label>
               <Label
                 htmlFor="debito"
-                className="flex items-center space-x-3 p-4 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50 transition-colors"
+                className="flex items-center space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50"
               >
-                <RadioGroupItem
-                  value="debito"
-                  id="debito"
-                  className="text-slate-800 border-slate-400"
-                />
-                <Banknote className="w-5 h-5 text-slate-600" />
-                <span className="font-medium text-slate-700">Cartão de Débito</span>
+                <RadioGroupItem value="debito" id="debito" />
+                <Banknote className="w-5 h-5" />
+                <span className="font-medium">Cartão de Débito</span>
               </Label>
               <Label
                 htmlFor="dinheiro"
-                className="flex items-center space-x-3 p-4 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50 transition-colors"
+                className="flex items-center space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-slate-50 [&:has([data-state=checked])]:border-slate-800 [&:has([data-state=checked])]:bg-slate-50"
               >
-                <RadioGroupItem
-                  value="dinheiro"
-                  id="dinheiro"
-                  className="text-slate-800 border-slate-400"
-                />
-                <Wallet className="w-5 h-5 text-slate-600" />
-                <span className="font-medium text-slate-700">Dinheiro / Pix</span>
+                <RadioGroupItem value="dinheiro" id="dinheiro" />
+                <Wallet className="w-5 h-5" />
+                <span className="font-medium">Dinheiro / Pix</span>
               </Label>
             </RadioGroup>
           </div>
@@ -228,24 +228,20 @@ export function CheckOut() {
 
         {step === 4 && (
           <div className="space-y-4 animate-fade-in">
-            <Alert className="bg-rose-50 border-rose-200 shadow-sm">
-              <AlertTitle className="text-rose-800 font-bold text-lg mb-2">
-                Confirmação de Check-out
-              </AlertTitle>
-              <AlertDescription className="text-rose-700 text-sm leading-relaxed">
-                Deseja concluir o check-out agora? <br />
-                Esta ação emitirá a nota fiscal, registrará o pagamento de{' '}
-                <strong>R$ {values.total.toFixed(2)}</strong> e liberará o quarto{' '}
-                <strong>{reserva?.room}</strong> para a equipe de limpeza.
+            <Alert className="bg-rose-50 border-rose-200">
+              <AlertTitle className="text-rose-800 font-bold mb-2">Confirmação Final</AlertTitle>
+              <AlertDescription className="text-rose-700 text-sm">
+                Tem certeza que deseja processar o pagamento de{' '}
+                <strong>R$ {values.total.toFixed(2)}</strong> via {form.pagamento} e concluir o
+                check-out do quarto <strong>{reserva?.room}</strong>?
               </AlertDescription>
             </Alert>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t border-slate-100 pt-6">
+      <CardFooter className="flex justify-between border-t pt-6">
         <Button
           variant="outline"
-          className="text-slate-600 border-slate-300"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
         >
@@ -254,9 +250,9 @@ export function CheckOut() {
         <Button
           onClick={nextStep}
           disabled={step === 1 && !form.quarto}
-          className="bg-slate-800 hover:bg-slate-900 text-white shadow-sm"
+          className="bg-slate-800 text-white"
         >
-          {step === 4 ? 'Concluir Check-out' : 'Avançar Passo'}
+          {step === 4 ? 'Concluir Check-out' : 'Avançar'}
         </Button>
       </CardFooter>
     </Card>

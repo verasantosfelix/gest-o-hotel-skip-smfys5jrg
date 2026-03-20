@@ -7,6 +7,7 @@ import {
   History,
   Settings,
   Hotel,
+  Sparkles,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Reservas', url: '/reservas', icon: CalendarDays },
   { name: 'Quartos', url: '/quartos', icon: BedDouble },
   { name: 'Hóspedes', url: '/hospedes', icon: Users },
+  { name: 'Governança', url: '/governanca', icon: Sparkles },
   { name: 'Rastreabilidade', url: '/auditoria', icon: History },
   { name: 'Configurações', url: '/configuracoes', icon: Settings },
 ]

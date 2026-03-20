@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, AlertTriangle } from 'lucide-react'
 import useReservationStore from '@/stores/useReservationStore'
 
 export function CheckIn() {
@@ -37,8 +37,8 @@ export function CheckIn() {
 
   const nextStep = () => {
     if (step === 1) {
-      if (!form.reserva_id) {
-        setError('<erro>Informe o ID da reserva (Ex: 12345).</erro>')
+      if (!form.reserva_id || !form.nome || !form.documento) {
+        setError('<erro tipo="faltam-dados">Reserva ID, Nome e Documento são obrigatórios.</erro>')
         return
       }
       setError('')
@@ -54,7 +54,7 @@ export function CheckIn() {
       } else {
         addReservation({
           id: form.reserva_id,
-          guestName: form.nome || 'Hóspede',
+          guestName: form.nome,
           room: roomNumber,
           status: 'checked-in',
         })
@@ -74,10 +74,15 @@ export function CheckIn() {
         <CardContent>
           <pre className="bg-slate-900 text-emerald-400 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner">
             {`<OUTPUT>
-  <quarto>${assignedRoom}</quarto>
-  <horarios>${new Date().toLocaleTimeString()}</horarios>
-  <itens_contratados>${form.adicionais.length ? form.adicionais.join(', ') : 'Nenhum'}</itens_contratados>
-  <status>Check-in realizado</status>
+  <resumo>Check-in concluído com sucesso.</resumo>
+  <dados>
+    <quarto>${assignedRoom}</quarto>
+    <hospede>${form.nome}</hospede>
+    <horarios>${new Date().toLocaleTimeString()}</horarios>
+    <itens_contratados>${form.adicionais.length ? form.adicionais.join(', ') : 'Nenhum'}</itens_contratados>
+    <status>Check-in realizado</status>
+  </dados>
+  <proximos-passos>Entregar chaves ao hóspede.</proximos-passos>
 </OUTPUT>`}
           </pre>
         </CardContent>
@@ -106,11 +111,9 @@ export function CheckIn() {
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
-              <Label className="text-slate-700">
-                ID da Reserva <span className="text-slate-400 font-normal">(Ex: 12345)</span>
-              </Label>
+              <Label className="text-slate-700">ID da Reserva</Label>
               <Input
-                className="border-slate-300 focus-visible:ring-slate-500"
+                className="border-slate-300"
                 value={form.reserva_id}
                 onChange={(e) => setForm({ ...form, reserva_id: e.target.value })}
               />
@@ -119,7 +122,7 @@ export function CheckIn() {
               <div className="space-y-2">
                 <Label className="text-slate-700">Nome Completo</Label>
                 <Input
-                  className="border-slate-300 focus-visible:ring-slate-500"
+                  className="border-slate-300"
                   value={form.nome}
                   onChange={(e) => setForm({ ...form, nome: e.target.value })}
                 />
@@ -127,30 +130,26 @@ export function CheckIn() {
               <div className="space-y-2">
                 <Label className="text-slate-700">Documento (CPF/Passaporte)</Label>
                 <Input
-                  className="border-slate-300 focus-visible:ring-slate-500"
+                  className="border-slate-300"
                   value={form.documento}
                   onChange={(e) => setForm({ ...form, documento: e.target.value })}
                 />
               </div>
             </div>
             {error && (
-              <pre className="text-rose-600 bg-rose-50 p-3 rounded-md text-sm whitespace-pre-wrap font-mono border border-rose-200 shadow-sm animate-fade-in">
+              <div className="text-xs text-rose-600 bg-rose-50 p-3 rounded font-mono border border-rose-200 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 {error}
-              </pre>
+              </div>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4 animate-fade-in">
-            <h3 className="font-medium text-slate-800">Adicionais Oferecidos</h3>
+            <h3 className="font-medium text-slate-800">Serviços Adicionais Oferecidos</h3>
             <div className="grid gap-3">
-              {[
-                'Café da Manhã Premium',
-                'Estacionamento Valet',
-                'Acesso ao Spa',
-                'Late Check-out',
-              ].map((item) => (
+              {['café', 'estacionamento', 'late checkout'].map((item) => (
                 <div
                   key={item}
                   className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
@@ -159,12 +158,8 @@ export function CheckIn() {
                     id={item}
                     checked={form.adicionais.includes(item)}
                     onCheckedChange={() => toggleAdicional(item)}
-                    className="data-[state=checked]:bg-slate-800 data-[state=checked]:border-slate-800"
                   />
-                  <Label
-                    htmlFor={item}
-                    className="cursor-pointer flex-1 font-medium text-slate-700"
-                  >
+                  <Label htmlFor={item} className="cursor-pointer flex-1 font-medium capitalize">
                     {item}
                   </Label>
                 </div>
@@ -183,23 +178,26 @@ export function CheckIn() {
                 Confirmação Final
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between border-b border-slate-200 pb-2">
+                <div className="flex justify-between border-b pb-2">
                   <span className="text-slate-500">Reserva:</span>
                   <span className="font-medium text-slate-900">{form.reserva_id}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200 pb-2">
+                <div className="flex justify-between border-b pb-2">
                   <span className="text-slate-500">Hóspede:</span>
                   <span className="font-medium text-slate-900">
-                    {form.nome || 'Hóspede'} ({form.documento || 'Não informado'})
+                    {form.nome} ({form.documento})
                   </span>
                 </div>
                 <div className="flex justify-between pb-2">
-                  <span className="text-slate-500">Adicionais:</span>
-                  <span className="font-medium text-slate-900 text-right">
+                  <span className="text-slate-500">Serviços:</span>
+                  <span className="font-medium text-slate-900 text-right capitalize">
                     {form.adicionais.length ? form.adicionais.join(', ') : 'Nenhum'}
                   </span>
                 </div>
               </div>
+            </div>
+            <div className="text-xs text-slate-500 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" /> Ao confirmar, o sistema gerará o Output final.
             </div>
           </div>
         )}
@@ -207,14 +205,13 @@ export function CheckIn() {
       <CardFooter className="flex justify-between border-t border-slate-100 pt-6">
         <Button
           variant="outline"
-          className="text-slate-600 border-slate-300"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
         >
           Voltar
         </Button>
-        <Button onClick={nextStep} className="bg-slate-800 hover:bg-slate-900 text-white shadow-sm">
-          {step === 3 ? 'Confirmar Entrada' : 'Avançar Passo'}
+        <Button onClick={nextStep} className="bg-slate-800 hover:bg-slate-900 text-white">
+          {step === 3 ? 'Confirmar Check-in' : 'Avançar'}
         </Button>
       </CardFooter>
     </Card>

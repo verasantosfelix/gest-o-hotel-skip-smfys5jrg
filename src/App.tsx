@@ -6,6 +6,7 @@ import Index from './pages/Index'
 import Reservations from './pages/Reservations'
 import Rooms from './pages/Rooms'
 import Guests from './pages/Guests'
+import Housekeeping from './pages/Housekeeping'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import { HotelProvider } from './stores/useHotelStore'
@@ -24,7 +25,7 @@ const App = () => (
               <Route path="/reservas" element={<Reservations />} />
               <Route path="/quartos" element={<Rooms />} />
               <Route path="/hospedes" element={<Guests />} />
-              {/* Placeholder routes for completeness of sidebar */}
+              <Route path="/governanca" element={<Housekeeping />} />
               <Route
                 path="/auditoria"
                 element={<div className="p-4">Módulo de Rastreabilidade (Em desenvolvimento)</div>}

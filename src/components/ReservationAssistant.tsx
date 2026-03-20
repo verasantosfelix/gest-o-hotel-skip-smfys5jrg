@@ -25,7 +25,7 @@ export function ReservationAssistant() {
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: 'assistant',
-      text: 'Assistente Operacional pronto. Digite "nova reserva", "disponibilidade", "alterar" ou "cancelar".',
+      text: 'Assistente Operacional. Digite "nova reserva", "disponibilidade", "alterar" ou "cancelar".',
     },
   ])
   const [input, setInput] = useState('')
@@ -59,12 +59,15 @@ export function ReservationAssistant() {
       } else if (mTxt.includes('disponibilidade') || mTxt.includes('disponíveis')) {
         setMessages((m) => [
           ...m,
-          { role: 'assistant', text: 'Disponibilidade atual: 4 Standard, 2 Luxo, 1 Suite.' },
-        ])
-      } else if (mTxt.includes('alterar') || mTxt.includes('cancelar')) {
-        setMessages((m) => [
-          ...m,
-          { role: 'assistant', text: 'Por favor, informe o ID da reserva para esta operação.' },
+          {
+            role: 'system',
+            type: 'output',
+            data: {
+              resumo: 'Disponibilidade verificada.',
+              status: 'Sucesso',
+              quartos_livres: '4 Standard, 2 Luxo, 1 Suite',
+            },
+          },
         ])
       } else {
         setMessages((m) => [
@@ -76,6 +79,20 @@ export function ReservationAssistant() {
       const missing = FIELDS.find((f) => !draft[f])
       if (!missing) return
 
+      if (!userTxt) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: 'system',
+            type: 'error',
+            errType: 'faltam-dados',
+            text: 'Dado obrigatório não preenchido.',
+          },
+          { role: 'assistant', text: PROMPTS[missing] },
+        ])
+        return
+      }
+
       if (missing === 'checkout') {
         const d1 = parseDate(draft.checkin!)
         const d2 = parseDate(userTxt)
@@ -86,7 +103,7 @@ export function ReservationAssistant() {
               role: 'system',
               type: 'error',
               errType: 'datas-invalidas',
-              text: 'Data de checkout deve ser posterior ao check-in.',
+              text: 'A data de checkout deve ser posterior ao check-in.',
             },
             { role: 'assistant', text: PROMPTS.checkout },
           ])
@@ -121,7 +138,7 @@ export function ReservationAssistant() {
           ...m,
           {
             role: 'assistant',
-            text: `Confirma a reserva de ${newDraft.nome}, de ${newDraft.checkin} a ${newDraft.checkout}, quarto ${newDraft.tipo_quarto}, para ${newDraft.numero_hospedes} hóspedes?`,
+            text: `Confirma a reserva de ${newDraft.nome}, de ${newDraft.checkin} a ${newDraft.checkout}, quarto ${newDraft.tipo_quarto}, para ${newDraft.numero_hospedes} hóspedes? (sim/não)`,
           },
         ])
       }
@@ -133,13 +150,17 @@ export function ReservationAssistant() {
             role: 'system',
             type: 'output',
             data: {
-              id: `RES-${Math.floor(Math.random() * 10000)}`,
-              datas: `${draft.checkin} a ${draft.checkout}`,
-              tipo: draft.tipo_quarto,
-              valor: 'R$ 850,00',
-              status: 'Confirmada',
               resumo: 'Reserva registrada e confirmada com sucesso.',
-              passos: 'Preparar quarto e enviar confirmação.',
+              dados: {
+                reserva_id: `RES-${Math.floor(Math.random() * 10000)}`,
+                nome: draft.nome,
+                datas: `${draft.checkin} a ${draft.checkout}`,
+                tipo_quarto: draft.tipo_quarto,
+                hospedes: draft.numero_hospedes,
+                status: 'Confirmada',
+              },
+              perguntas: 'Deseja enviar o voucher por e-mail?',
+              passos: 'Preparar quarto e aguardar chegada.',
             },
           },
         ])
@@ -184,21 +205,39 @@ export function ReservationAssistant() {
                 <span className="text-accent">&lt;OUTPUT&gt;</span>
                 <div className="pl-4 mt-2 space-y-2 opacity-90">
                   <p>
-                    <span className="text-blue-400">Resumo:</span> {m.data.resumo}
+                    <span className="text-blue-400">&lt;resumo&gt;</span> {m.data.resumo}{' '}
+                    <span className="text-blue-400">&lt;/resumo&gt;</span>
                   </p>
-                  <div>
-                    <span className="text-blue-400">Dados:</span>
-                    <div className="pl-4 text-emerald-400 flex flex-col gap-0.5 mt-1">
-                      <span>&lt;reserva_id /&gt; {m.data.id}</span>
-                      <span>&lt;datas /&gt; {m.data.datas}</span>
-                      <span>&lt;tipo_quarto /&gt; {m.data.tipo}</span>
-                      <span>&lt;valor_total /&gt; {m.data.valor}</span>
-                      <span>&lt;status&gt;{m.data.status}&lt;/status&gt;</span>
+                  {m.data.dados && (
+                    <div>
+                      <span className="text-blue-400">&lt;dados&gt;</span>
+                      <div className="pl-4 text-emerald-400 flex flex-col gap-0.5 mt-1">
+                        {Object.entries(m.data.dados).map(([k, v]) => (
+                          <span key={k}>
+                            &lt;{k}&gt;{String(v)}&lt;/{k}&gt;
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-blue-400">&lt;/dados&gt;</span>
                     </div>
-                  </div>
-                  <p>
-                    <span className="text-accent">Próximos Passos:</span> {m.data.passos}
-                  </p>
+                  )}
+                  {m.data.quartos_livres && (
+                    <p className="text-emerald-400">
+                      &lt;quartos_livres&gt;{m.data.quartos_livres}&lt;/quartos_livres&gt;
+                    </p>
+                  )}
+                  {m.data.perguntas && (
+                    <p>
+                      <span className="text-accent">&lt;perguntas&gt;</span> {m.data.perguntas}{' '}
+                      <span className="text-accent">&lt;/perguntas&gt;</span>
+                    </p>
+                  )}
+                  {m.data.passos && (
+                    <p>
+                      <span className="text-accent">&lt;proximos-passos&gt;</span> {m.data.passos}{' '}
+                      <span className="text-accent">&lt;/proximos-passos&gt;</span>
+                    </p>
+                  )}
                 </div>
                 <span className="text-accent mt-2 block">&lt;/OUTPUT&gt;</span>
               </div>
