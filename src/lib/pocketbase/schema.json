@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T02:45:36.759Z",
+  "generatedAt": "2026-03-21T02:53:05.142Z",
   "collections": [
     {
       "name": "users",
@@ -1733,7 +1733,7 @@
       "apiRules": {
         "list": "",
         "view": "",
-        "create": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
         "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
         "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },

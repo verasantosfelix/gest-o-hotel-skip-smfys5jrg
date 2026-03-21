@@ -319,22 +319,12 @@ export default function SpaAgendaDaily() {
                       >
                         <div
                           onClick={(e) => {
-                            if (isFrontDesk) {
-                              toast({
-                                title: 'Acesso Restrito',
-                                description:
-                                  'Apenas leitura de detalhes permitida para o seu perfil.',
-                              })
-                              e.stopPropagation()
-                              return
-                            }
                             setSelectedAppt(a)
                             setFormOpen(true)
                           }}
                           className={cn(
-                            'w-full h-full rounded-md border p-2 text-xs shadow-sm overflow-hidden transition-all relative',
+                            'w-full h-full rounded-md border p-2 text-xs shadow-sm overflow-hidden transition-all relative cursor-pointer hover:shadow-md hover:-translate-y-0.5',
                             getStatusColor(a.status),
-                            !isFrontDesk && 'cursor-pointer hover:shadow-md hover:-translate-y-0.5',
                           )}
                         >
                           <div className="font-bold truncate flex items-center gap-1">

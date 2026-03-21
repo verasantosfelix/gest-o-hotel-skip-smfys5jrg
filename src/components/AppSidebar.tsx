@@ -254,7 +254,7 @@ const navGroups = [
         name: 'Menu Digital',
         url: '/restaurante/menu-digital',
         icon: BookOpen,
-        roles: ['Restaurante_Bar', 'Direcao_Admin'],
+        roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Menu Impresso (PDF)',
@@ -382,7 +382,7 @@ const navGroups = [
         name: 'Marketing',
         url: '/marketing',
         icon: Megaphone,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
       },
       {
         name: 'Eventos & MICE',

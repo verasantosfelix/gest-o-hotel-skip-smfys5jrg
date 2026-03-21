@@ -385,9 +385,11 @@ export function SpaAppointmentForm({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                {isConflict && !initialData ? 'Salvar (Pendente)' : 'Salvar Agendamento'}
-              </Button>
+              {!(isFrontDesk && initialData) && (
+                <Button type="submit">
+                  {isConflict && !initialData ? 'Salvar (Pendente)' : 'Salvar Agendamento'}
+                </Button>
+              )}
             </div>
           </DialogFooter>
         </form>

@@ -3,6 +3,7 @@ import { BookOpen, Utensils, Tag, QrCode, ClipboardCheck } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import useAuthStore from '@/stores/useAuthStore'
 
 import { MenuCategoriesManager } from '@/components/fnb/MenuCategoriesManager'
 import { MenuItemsManager } from '@/components/fnb/MenuItemsManager'
@@ -11,10 +12,13 @@ import { MenuQRGenerator } from '@/components/fnb/MenuQRGenerator'
 
 export default function DigitalMenuAdmin() {
   const { hasAccess } = useAccess()
-  const isDirector = hasAccess(['Direcao_Admin'])
+  const { userRole } = useAuthStore()
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Digital')) {
-    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
+  const isDirector = hasAccess(['Direcao_Admin'])
+  const isFrontDesk = userRole === 'Front_Desk'
+
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'], 'Menu Digital')) {
+    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk']} />
   }
 
   return (
@@ -38,9 +42,11 @@ export default function DigitalMenuAdmin() {
           <TabsTrigger value="items" className="px-4 py-2 font-medium gap-2">
             <Utensils className="w-4 h-4" /> Itens do Menu
           </TabsTrigger>
-          <TabsTrigger value="categories" className="px-4 py-2 font-medium gap-2">
-            <Tag className="w-4 h-4" /> Categorias
-          </TabsTrigger>
+          {!isFrontDesk && (
+            <TabsTrigger value="categories" className="px-4 py-2 font-medium gap-2">
+              <Tag className="w-4 h-4" /> Categorias
+            </TabsTrigger>
+          )}
           {isDirector && (
             <TabsTrigger
               value="publish"
@@ -57,9 +63,11 @@ export default function DigitalMenuAdmin() {
         <TabsContent value="items" className="mt-0 outline-none">
           <MenuItemsManager />
         </TabsContent>
-        <TabsContent value="categories" className="mt-0 outline-none">
-          <MenuCategoriesManager />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="categories" className="mt-0 outline-none">
+            <MenuCategoriesManager />
+          </TabsContent>
+        )}
         {isDirector && (
           <TabsContent value="publish" className="mt-0 outline-none">
             <MenuPublishManager />

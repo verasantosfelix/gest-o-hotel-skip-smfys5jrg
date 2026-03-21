@@ -37,6 +37,7 @@ import { formatCurrency } from '@/lib/utils'
 export function MenuItemsManager() {
   const { userRole } = useAuthStore()
   const isDirector = userRole === 'Direcao_Admin'
+  const isFrontDesk = userRole === 'Front_Desk'
 
   const [products, setProducts] = useState<FBProduct[]>([])
   const [categories, setCategories] = useState<FBMenuCategory[]>([])
@@ -180,9 +181,11 @@ export function MenuItemsManager() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button onClick={() => openModal()} className="gap-2 bg-slate-900 text-white">
-          <Plus className="w-4 h-4" /> Novo Item
-        </Button>
+        {!isFrontDesk && (
+          <Button onClick={() => openModal()} className="gap-2 bg-slate-900 text-white">
+            <Plus className="w-4 h-4" /> Novo Item
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -230,24 +233,26 @@ export function MenuItemsManager() {
                 {p.expand?.category_id?.name || 'Sem Categoria'}
               </p>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2"
-                  onClick={() => openModal(p)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2 text-rose-600 hover:text-rose-700"
-                  onClick={() => handleDelete(p)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              {!isFrontDesk && (
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => openModal(p)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 text-rose-600 hover:text-rose-700"
+                    onClick={() => handleDelete(p)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
