@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -59,11 +59,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
-import { Role } from '@/stores/useAuthStore'
+import useAuthStore, { Role } from '@/stores/useAuthStore'
+import pb from '@/lib/pocketbase/client'
 
 type NavItem = {
   name: string
@@ -397,7 +398,68 @@ const navGroups = [
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
-  const { hasAccess, isManager } = useAccess()
+  const { isManager } = useAccess()
+  const { userRole } = useAuthStore()
+
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const user = pb.authStore.record
+      if (user?.profile) {
+        try {
+          const p = await pb.collection('profiles').getOne(user.profile)
+          setProfile(p)
+        } catch (e) {
+          console.error('Failed to load profile for sidebar filtering', e)
+        }
+      }
+      setLoading(false)
+    }
+    fetchProfile()
+  }, [])
+
+  const hasModuleAccess = (item: NavItem) => {
+    if (item.requiresManager && !isManager()) return false
+
+    if (profile) {
+      const allowed = Array.isArray(profile.allowed_actions) ? profile.allowed_actions : []
+      const denied = Array.isArray(profile.denied_actions) ? profile.denied_actions : []
+
+      if (denied.includes(item.name) || denied.includes('*')) return false
+      if (allowed.includes(item.name) || allowed.includes('*')) return true
+
+      if (allowed.length > 0) return false
+    }
+
+    if (userRole === 'Direcao_Admin' || pb.authStore.record?.role === 'manager') return true
+    return item.roles.includes(userRole)
+  }
+
+  if (loading) {
+    return (
+      <Sidebar variant="sidebar" collapsible="offcanvas">
+        <SidebarHeader className="h-16 flex items-center justify-center border-b px-4">
+          <div className="flex items-center gap-2 w-full font-bold text-primary">
+            <Hotel className="h-5 w-5 text-accent" />
+            <span className="truncate tracking-tight">SKIP {selectedHotel.name.split(' ')[1]}</span>
+          </div>
+        </SidebarHeader>
+        <SidebarContent className="p-4 space-y-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-3">
+              <div className="h-4 bg-slate-100 rounded w-1/2 animate-pulse" />
+              <div className="space-y-2 pl-2">
+                <div className="h-8 bg-slate-50 rounded w-full animate-pulse" />
+                <div className="h-8 bg-slate-50 rounded w-full animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </SidebarContent>
+      </Sidebar>
+    )
+  }
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
@@ -407,43 +469,49 @@ export function AppSidebar() {
           <span className="truncate tracking-tight">SKIP {selectedHotel.name.split(' ')[1]}</span>
         </div>
       </SidebarHeader>
-      <SidebarContent>
-        {navGroups.map((group, idx) => {
-          const visibleItems = group.items.filter((item) => {
-            if (item.requiresManager && !isManager()) return false
-            return hasAccess(item.roles)
-          })
+      <SidebarContent className="px-2 py-4">
+        {navGroups.map((group) => {
+          const visibleItems = group.items.filter(hasModuleAccess)
 
           if (visibleItems.length === 0) return null
 
           return (
-            <React.Fragment key={group.label}>
-              <SidebarGroup>
-                <SidebarGroupLabel className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">
-                  {group.label}
+            <Collapsible
+              key={group.label}
+              defaultOpen={false}
+              className="group/collapsible mb-4 last:mb-0"
+            >
+              <SidebarGroup className="p-0">
+                <SidebarGroupLabel asChild>
+                  <CollapsibleTrigger className="cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-between w-full">
+                    <span>{group.label}</span>
+                    <span className="text-slate-400 text-[12px] font-mono leading-none">
+                      <span className="group-data-[state=open]/collapsible:hidden">▸</span>
+                      <span className="hidden group-data-[state=open]/collapsible:inline">▾</span>
+                    </span>
+                  </CollapsibleTrigger>
                 </SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {visibleItems.map((item) => {
-                      const isActive = location.pathname === item.url
-                      return (
-                        <SidebarMenuItem key={item.name}>
-                          <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                            <Link to={item.url} className="flex items-center gap-3">
-                              <item.icon className="h-4 w-4" />
-                              <span className="font-medium">{item.name}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      )
-                    })}
-                  </SidebarMenu>
-                </SidebarGroupContent>
+                <CollapsibleContent className="data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in">
+                  <SidebarGroupContent className="pt-1">
+                    <SidebarMenu>
+                      {visibleItems.map((item) => {
+                        const isActive = location.pathname === item.url
+                        return (
+                          <SidebarMenuItem key={item.name}>
+                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                              <Link to={item.url} className="flex items-center gap-3">
+                                <item.icon className="h-4 w-4" />
+                                <span className="font-medium">{item.name}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        )
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
               </SidebarGroup>
-              {idx < navGroups.length - 1 && (
-                <SidebarSeparator className="mx-4 my-2 bg-slate-200" />
-              )}
-            </React.Fragment>
+            </Collapsible>
           )
         })}
       </SidebarContent>
