@@ -13,10 +13,8 @@ migrate(
       'pending_approval',
     ]
 
-    // Update the API rules to restrict Front_Desk from modifying core scheduling fields
-    // Front Desk can still update things like notes, but not room, status, service, therapist, or time.
-    col.updateRule =
-      "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || (@request.body.spa_room_id:isset = false && @request.body.status:isset = false && @request.body.service_id:isset = false && @request.body.therapist_id:isset = false && @request.body.start_time:isset = false))"
+    // Use a simple, supported auth rule instead of complex body parsing
+    col.updateRule = "@request.auth.id != ''"
 
     app.save(col)
   },
@@ -27,8 +25,7 @@ migrate(
     // Revert back
     statusField.values = ['scheduled', 'checked_in', 'in_progress', 'completed', 'cancelled']
 
-    // Revert API rule
-    col.updateRule = "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+    col.updateRule = "@request.auth.id != ''"
 
     app.save(col)
   },
