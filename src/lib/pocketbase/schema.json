@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T01:53:51.590Z",
+  "generatedAt": "2026-03-21T02:20:28.762Z",
   "collections": [
     {
       "name": "users",
@@ -1411,6 +1411,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "is_corporate",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "signature_file",
+          "type": "file",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []

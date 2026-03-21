@@ -9,6 +9,8 @@ export interface PBReservation {
   check_out: string
   status: 'previsto' | 'in_house' | 'checked_out' | 'cancelado' | 'no_show'
   is_vip: boolean
+  is_corporate?: boolean
+  signature_file?: string
   balance: number
   document_digitalization?: string
   created: string
@@ -38,8 +40,10 @@ export interface PBConsumption {
 
 export const getReservations = () =>
   pb.collection('reservations').getFullList<PBReservation>({ expand: 'room_id' })
-export const updateReservation = (id: string, data: Partial<PBReservation>) =>
+
+export const updateReservation = (id: string, data: FormData | Partial<PBReservation>) =>
   pb.collection('reservations').update<PBReservation>(id, data)
+
 export const createReservation = (data: Partial<PBReservation>) =>
   pb.collection('reservations').create<PBReservation>(data)
 
@@ -47,5 +51,6 @@ export const getConsumptions = (resId: string) =>
   pb
     .collection('consumptions')
     .getFullList<PBConsumption>({ filter: `reservation_id = "${resId}"` })
+
 export const createConsumption = (data: Partial<PBConsumption>) =>
   pb.collection('consumptions').create<PBConsumption>(data)
