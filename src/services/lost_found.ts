@@ -17,6 +17,8 @@ export const getLostFoundItems = () =>
 export const createLostFoundItem = (data: Partial<LostFoundItem>) =>
   pb.collection('lost_found_items').create<LostFoundItem>(data)
 
+export const createLostAndFound = createLostFoundItem
+
 export const updateLostFoundItem = (id: string, data: Partial<LostFoundItem>) =>
   pb.collection('lost_found_items').update<LostFoundItem>(id, data)
 
