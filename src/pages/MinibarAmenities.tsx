@@ -63,7 +63,9 @@ export default function MinibarAmenities() {
           : 'pending'
     try {
       await updateAmenityRequest(req.id, { status: nextStatus })
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
