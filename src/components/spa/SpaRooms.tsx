@@ -25,14 +25,22 @@ export function SpaRooms() {
   const [checks, setChecks] = useState({ c1: false, c2: false, c3: false, c4: false })
 
   const loadData = async () => {
-    const data = await getSpaRooms()
-    setRooms(data)
+    if (isFrontDesk) return
+    try {
+      const data = await getSpaRooms()
+      setRooms(data)
+    } catch (e) {
+      setRooms([])
+    }
   }
 
   useEffect(() => {
     loadData()
-  }, [])
-  useRealtime('spa_rooms', loadData)
+  }, [isFrontDesk])
+
+  useRealtime('spa_rooms', loadData, !isFrontDesk)
+
+  if (isFrontDesk) return null
 
   const handleChecklistSubmit = async () => {
     if (checklistRoom) {
@@ -72,7 +80,7 @@ export function SpaRooms() {
                   <AlertTriangle className="w-4 h-4" /> DND ATIVO (Em Sessão)
                 </div>
               )}
-              {!isFrontDesk && r.status === 'cleaning' && (
+              {r.status === 'cleaning' && (
                 <Button
                   size="sm"
                   className="w-full mt-2 gap-2 bg-amber-600 hover:bg-amber-700"

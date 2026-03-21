@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { CalendarHeart, Filter, Plus, Clock, User, AlertCircle } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAccess } from '@/hooks/use-access'
@@ -45,20 +45,29 @@ export default function SpaAgendaDaily() {
 
   const loadData = async () => {
     try {
-      const [appts, r, s, t, res, bo] = await Promise.all([
+      const [appts, s, t, res, bo] = await Promise.all([
         getSpaAppointments(),
-        getSpaRooms(),
         getSpaServices("status='published'"),
         getUsers(),
         getActiveReservations(),
         getSpaBlockouts(),
       ])
       setAppointments(appts)
-      setRooms(r)
       setServices(s)
       setTherapists(t)
       setReservations(res)
       setBlockouts(bo)
+
+      if (!isFrontDesk) {
+        try {
+          const r = await getSpaRooms()
+          setRooms(r)
+        } catch (e) {
+          setRooms([])
+        }
+      } else {
+        setRooms([])
+      }
     } catch (e) {
       console.error(e)
     }
@@ -66,10 +75,10 @@ export default function SpaAgendaDaily() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isFrontDesk])
 
   useRealtime('spa_appointments', loadData)
-  useRealtime('spa_rooms', loadData)
+  useRealtime('spa_rooms', loadData, !isFrontDesk)
   useRealtime('calendar_events', loadData)
 
   if (
@@ -318,13 +327,16 @@ export default function SpaAgendaDaily() {
                         style={{ top: `${topOffset}px`, height: `${duration}px`, zIndex: 5 }}
                       >
                         <div
-                          onClick={(e) => {
-                            setSelectedAppt(a)
-                            setFormOpen(true)
+                          onClick={() => {
+                            if (!isFrontDesk) {
+                              setSelectedAppt(a)
+                              setFormOpen(true)
+                            }
                           }}
                           className={cn(
-                            'w-full h-full rounded-md border p-2 text-xs shadow-sm overflow-hidden transition-all relative cursor-pointer hover:shadow-md hover:-translate-y-0.5',
+                            'w-full h-full rounded-md border p-2 text-xs shadow-sm overflow-hidden transition-all relative',
                             getStatusColor(a.status),
+                            !isFrontDesk && 'cursor-pointer hover:shadow-md hover:-translate-y-0.5',
                           )}
                         >
                           <div className="font-bold truncate flex items-center gap-1">

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T02:53:05.142Z",
+  "generatedAt": "2026-03-21T03:00:50.526Z",
   "collections": [
     {
       "name": "users",
@@ -2132,11 +2132,11 @@
       "name": "spa_rooms",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "list": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "view": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "create": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {

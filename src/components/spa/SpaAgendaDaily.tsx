@@ -3,7 +3,6 @@ import { CalendarHeart, Filter, Plus, Clock, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -43,18 +42,27 @@ export default function SpaAgendaDaily() {
 
   const loadData = async () => {
     try {
-      const [appts, r, s, t, res] = await Promise.all([
+      const [appts, s, t, res] = await Promise.all([
         getSpaAppointments(),
-        getSpaRooms(),
         getSpaServices("status='published'"),
         getUsers(),
         getActiveReservations(),
       ])
       setAppointments(appts)
-      setRooms(r)
       setServices(s)
       setTherapists(t)
       setReservations(res)
+
+      if (!isFrontDesk) {
+        try {
+          const r = await getSpaRooms()
+          setRooms(r)
+        } catch (e) {
+          setRooms([])
+        }
+      } else {
+        setRooms([])
+      }
     } catch (e) {
       console.error(e)
     }
@@ -62,10 +70,10 @@ export default function SpaAgendaDaily() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isFrontDesk])
 
   useRealtime('spa_appointments', loadData)
-  useRealtime('spa_rooms', loadData)
+  useRealtime('spa_rooms', loadData, !isFrontDesk)
 
   if (
     !hasAccess(
@@ -333,6 +341,9 @@ export default function SpaAgendaDaily() {
         rooms={rooms}
         therapists={therapists}
         reservations={reservations}
+        appointments={appointments}
+        blockouts={[]}
+        isFrontDesk={isFrontDesk}
         onSubmit={handleFormSubmit}
       />
 

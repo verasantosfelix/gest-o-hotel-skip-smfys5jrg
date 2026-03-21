@@ -37,6 +37,7 @@ import { SpaAuditTab } from '@/components/spa/SpaAuditTab'
 
 export default function SpaOperations() {
   const { hasAccess } = useAccess()
+  const hasAccessToOps = hasAccess(['Spa_Wellness', 'Direcao_Admin'], 'Operações & Salas')
 
   const [rooms, setRooms] = useState<SpaRoom[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
@@ -49,6 +50,7 @@ export default function SpaOperations() {
   const [boForm, setBoForm] = useState({ user_id: '', start: '', end: '', desc: '' })
 
   const loadData = async () => {
+    if (!hasAccessToOps) return
     try {
       setRooms(await getSpaRooms())
       setTherapists(await getUsers())
@@ -60,9 +62,9 @@ export default function SpaOperations() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [hasAccessToOps])
 
-  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin'], 'Operações & Salas')) {
+  if (!hasAccessToOps) {
     return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin']} />
   }
 

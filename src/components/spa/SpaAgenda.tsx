@@ -60,20 +60,29 @@ export function SpaAgenda() {
 
   const loadData = async () => {
     try {
-      const [appts, r, s, t, res, bo] = await Promise.all([
+      const [appts, s, t, res, bo] = await Promise.all([
         getSpaAppointments(),
-        getSpaRooms(),
         getSpaServices(),
         getUsers(),
         getActiveReservations(),
         getSpaBlockouts(),
       ])
       setAppointments(appts)
-      setRooms(r)
       setServices(s)
       setTherapists(t)
       setReservations(res)
       setBlockouts(bo)
+
+      if (!isFrontDesk) {
+        try {
+          const r = await getSpaRooms()
+          setRooms(r)
+        } catch (e) {
+          setRooms([])
+        }
+      } else {
+        setRooms([])
+      }
     } catch (e) {
       console.error('Failed to load SPA data')
     }
@@ -81,10 +90,10 @@ export function SpaAgenda() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [isFrontDesk])
 
   useRealtime('spa_appointments', loadData)
-  useRealtime('spa_rooms', loadData)
+  useRealtime('spa_rooms', loadData, !isFrontDesk)
   useRealtime('calendar_events', loadData)
 
   const handleFormSubmit = async (data: any) => {
@@ -208,7 +217,7 @@ export function SpaAgenda() {
               <TableHead>Hóspede (Qto)</TableHead>
               <TableHead>Serviço</TableHead>
               <TableHead>Terapeuta</TableHead>
-              <TableHead>Sala SPA</TableHead>
+              {!isFrontDesk && <TableHead>Sala SPA</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -247,7 +256,9 @@ export function SpaAgenda() {
                       {a.expand?.therapist_id?.name || 'Não atri.'}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm">{a.expand?.spa_room_id?.name || '-'}</TableCell>
+                  {!isFrontDesk && (
+                    <TableCell className="text-sm">{a.expand?.spa_room_id?.name || '-'}</TableCell>
+                  )}
                   <TableCell>
                     <Badge variant="outline" className={statusColors[a.status] || ''}>
                       {statusLabels[a.status] || a.status.toUpperCase()}
@@ -316,7 +327,10 @@ export function SpaAgenda() {
             })}
             {appointments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                <TableCell
+                  colSpan={isFrontDesk ? 6 : 7}
+                  className="text-center py-8 text-slate-500"
+                >
                   Nenhum agendamento encontrado.
                 </TableCell>
               </TableRow>
