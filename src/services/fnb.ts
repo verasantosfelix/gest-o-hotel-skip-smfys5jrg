@@ -52,6 +52,8 @@ export interface FBOrder {
   id: string
   type: 'table' | 'room_service'
   status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'closed' | 'cancelled'
+  payment_method?: 'immediate' | 'room_charge' | 'deferred'
+  signature_file?: string
   table_id?: string
   reservation_id?: string
   room_id?: string
@@ -99,7 +101,7 @@ export const getFBOrders = (filter?: string) =>
     .getFullList<FBOrder>({ filter, expand: 'table_id,room_id,reservation_id', sort: '-created' })
 export const createFBOrder = (data: Partial<FBOrder>) =>
   pb.collection('fb_orders').create<FBOrder>(data)
-export const updateFBOrder = (id: string, data: Partial<FBOrder>) =>
+export const updateFBOrder = (id: string, data: FormData | Partial<FBOrder>) =>
   pb.collection('fb_orders').update<FBOrder>(id, data)
 
 export const getFBOrderItems = (filter?: string) =>

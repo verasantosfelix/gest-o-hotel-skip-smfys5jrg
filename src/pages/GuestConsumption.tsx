@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Printer, ReceiptText } from 'lucide-react'
+import { Printer, ReceiptText, PenTool } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -19,6 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { formatCurrency } from '@/lib/utils'
@@ -27,6 +34,7 @@ import {
   getActiveReservations,
   ConsolidatedData,
 } from '@/services/guest_consumptions'
+import pb from '@/lib/pocketbase/client'
 
 export default function GuestConsumption() {
   const { hasAccess } = useAccess()
@@ -69,6 +77,8 @@ export default function GuestConsumption() {
           desc: `F&B Order (${f.type})`,
           amount: f.total_amount,
           source: 'F&B',
+          signatureFile: f.signature_file,
+          originalRecord: f,
         })),
         ...data.cons.map((c) => ({
           id: c.id,
@@ -76,6 +86,8 @@ export default function GuestConsumption() {
           desc: c.description || c.type,
           amount: c.amount,
           source: 'Geral',
+          signatureFile: null,
+          originalRecord: c,
         })),
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : []
@@ -96,8 +108,8 @@ export default function GuestConsumption() {
 
       <div className="print:hidden max-w-md">
         <Select value={selectedId} onValueChange={setSelectedId}>
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Selecione uma reserva..." />
+          <SelectTrigger className="bg-white border-slate-300">
+            <SelectValue placeholder="Selecione uma reserva ativa..." />
           </SelectTrigger>
           <SelectContent>
             {reservations.map((r) => (
@@ -110,48 +122,89 @@ export default function GuestConsumption() {
       </div>
 
       {loading && (
-        <div className="text-center py-10 text-slate-500 print:hidden">Carregando dados...</div>
+        <div className="text-center py-10 text-slate-500 print:hidden animate-pulse">
+          Carregando dados consolidados...
+        </div>
       )}
 
       {data && !loading && (
-        <div className="space-y-6">
-          <Card className="print:border-none print:shadow-none">
-            <CardHeader className="pb-4">
-              <CardTitle>Resumo Financeiro</CardTitle>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <Card className="print:border-none print:shadow-none border-slate-200">
+            <CardHeader className="pb-4 border-b border-slate-100">
+              <CardTitle className="text-xl">Resumo Financeiro</CardTitle>
               <CardDescription>
                 Total consolidado de todos os departamentos (F&B e Consumos Gerais)
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold text-slate-900 mb-6">
+            <CardContent className="pt-6">
+              <div className="text-4xl font-bold text-emerald-700 mb-6 font-mono">
                 {formatCurrency(totalPending, 'AOA')}
               </div>
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
                     <TableHead>Data</TableHead>
                     <TableHead>Origem</TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-right">Valor & Comprovante</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {combinedCharges.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        Nenhum consumo registado.
+                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                        Nenhum consumo registado na conta deste hóspede.
                       </TableCell>
                     </TableRow>
                   )}
                   {combinedCharges.map((c) => (
                     <TableRow key={c.id}>
-                      <TableCell>{f(c.date)}</TableCell>
+                      <TableCell className="text-slate-500">{f(c.date)}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{c.source}</Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-slate-50 text-slate-600 border-slate-200"
+                        >
+                          {c.source}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="capitalize">{c.desc}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(c.amount, 'AOA')}
+                      <TableCell className="capitalize font-medium text-slate-800">
+                        {c.desc}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <span className="font-mono">{formatCurrency(c.amount, 'AOA')}</span>
+                          {c.signatureFile && (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 rounded-md text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+                                  title="Ver Assinatura do Cliente"
+                                >
+                                  <PenTool className="w-4 h-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Assinatura Digital (Comprovante)</DialogTitle>
+                                </DialogHeader>
+                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center">
+                                  <img
+                                    src={pb.files.getURL(c.originalRecord, c.signatureFile)}
+                                    alt="Assinatura Capturada"
+                                    className="max-w-full max-h-[30vh] object-contain mix-blend-multiply"
+                                  />
+                                </div>
+                                <p className="text-center text-xs text-slate-400 mt-2">
+                                  Assinatura capturada em {new Date(c.date).toLocaleString('pt-PT')}
+                                </p>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                          {!c.signatureFile && <div className="w-7"></div>}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -161,29 +214,55 @@ export default function GuestConsumption() {
           </Card>
 
           <Tabs defaultValue="spa" className="mt-6 print:hidden">
-            <TabsList className="bg-white border">
-              <TabsTrigger value="spa">SPA & Wellness</TabsTrigger>
-              <TabsTrigger value="amenities">Amenities</TabsTrigger>
-              <TabsTrigger value="laundry">Lavanderia</TabsTrigger>
+            <TabsList className="bg-white border w-full justify-start h-auto flex-wrap p-1">
+              <TabsTrigger
+                value="spa"
+                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700"
+              >
+                SPA & Wellness
+              </TabsTrigger>
+              <TabsTrigger
+                value="amenities"
+                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700"
+              >
+                Amenities & Solicitações
+              </TabsTrigger>
+              <TabsTrigger
+                value="laundry"
+                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700"
+              >
+                Lavanderia
+              </TabsTrigger>
             </TabsList>
-            <TabsContent value="spa">
+            <TabsContent value="spa" className="mt-4">
               <Card>
                 <CardContent className="pt-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Data</TableHead>
+                        <TableHead>Data/Hora</TableHead>
                         <TableHead>Serviço</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {data.spa.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-slate-400 py-6">
+                            Nenhum serviço de SPA agendado.
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {data.spa.map((s) => (
                         <TableRow key={s.id}>
                           <TableCell>{new Date(s.start_time).toLocaleString('pt-PT')}</TableCell>
-                          <TableCell>{s.expand?.service_id?.name || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">
+                            {s.expand?.service_id?.name || 'N/A'}
+                          </TableCell>
                           <TableCell>
-                            <Badge>{s.status}</Badge>
+                            <Badge variant={s.status === 'completed' ? 'default' : 'secondary'}>
+                              {s.status}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -192,26 +271,44 @@ export default function GuestConsumption() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="amenities">
+            <TabsContent value="amenities" className="mt-4">
               <Card>
                 <CardContent className="pt-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Data</TableHead>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Qtd</TableHead>
+                        <TableHead>Item Solicitado</TableHead>
+                        <TableHead>Quantidade</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {data.amenities.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-slate-400 py-6">
+                            Nenhuma solicitação de amenities.
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {data.amenities.map((a) => (
                         <TableRow key={a.id}>
-                          <TableCell>{f(a.created)}</TableCell>
-                          <TableCell className="capitalize">{a.item.replace('_', ' ')}</TableCell>
+                          <TableCell className="text-slate-500">{f(a.created)}</TableCell>
+                          <TableCell className="capitalize font-medium">
+                            {a.item.replace('_', ' ')}
+                          </TableCell>
                           <TableCell>{a.quantity}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{a.status}</Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                a.status === 'delivered'
+                                  ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
+                                  : ''
+                              }
+                            >
+                              {a.status}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -220,23 +317,30 @@ export default function GuestConsumption() {
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="laundry">
+            <TabsContent value="laundry" className="mt-4">
               <Card>
                 <CardContent className="pt-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Data</TableHead>
-                        <TableHead>Item</TableHead>
+                        <TableHead>Peça</TableHead>
                         <TableHead>Qtd</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+                      {data.laundry.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-slate-400 py-6">
+                            Nenhum registo de lavanderia.
+                          </TableCell>
+                        </TableRow>
+                      )}
                       {data.laundry.map((l) => (
                         <TableRow key={l.id}>
-                          <TableCell>{f(l.created)}</TableCell>
-                          <TableCell>{l.item}</TableCell>
+                          <TableCell className="text-slate-500">{f(l.created)}</TableCell>
+                          <TableCell className="font-medium">{l.item}</TableCell>
                           <TableCell>{l.quantity}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">{l.status}</Badge>

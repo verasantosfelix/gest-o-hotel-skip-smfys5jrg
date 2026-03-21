@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T02:20:28.762Z",
+  "generatedAt": "2026-03-21T02:26:58.350Z",
   "collections": [
     {
       "name": "users",
@@ -1896,7 +1896,7 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "update": "@request.auth.id != ''",
         "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
@@ -1960,6 +1960,19 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "payment_method",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["immediate", "room_charge", "deferred"]
+        },
+        {
+          "name": "signature_file",
+          "type": "file",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
