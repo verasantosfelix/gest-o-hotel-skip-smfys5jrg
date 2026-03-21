@@ -33,6 +33,7 @@ export interface SpaInventory {
 export interface SpaAppointment {
   id: string
   guest_name: string
+  guest_phone?: string
   hotel_reservation_id?: string
   spa_room_id: string
   service_id: string
@@ -99,3 +100,10 @@ export const getSpaBlockouts = () =>
   pb.collection('calendar_events').getFullList({ filter: "sector='spa'", expand: 'user_id' })
 export const createSpaBlockout = (data: any) => pb.collection('calendar_events').create(data)
 export const deleteSpaBlockout = (id: string) => pb.collection('calendar_events').delete(id)
+
+export const getSpaAuditLogs = () =>
+  pb.collection('action_audit_logs').getFullList({
+    filter: "module='spa_appointments'",
+    sort: '-created',
+    expand: 'user_id',
+  })

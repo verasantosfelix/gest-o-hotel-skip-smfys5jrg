@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, MessageCircle } from 'lucide-react'
 import { SpaAppointment } from '@/services/spa'
 
 interface Props {
@@ -49,6 +49,7 @@ export function SpaAppointmentForm({
 }: Props) {
   const [form, setForm] = useState({
     guest_name: initialData?.guest_name || '',
+    guest_phone: initialData?.guest_phone || '',
     hotel_reservation_id: initialData?.hotel_reservation_id || '',
     service_id: initialData?.service_id || '',
     spa_room_id: initialData?.spa_room_id || '',
@@ -160,6 +161,22 @@ export function SpaAppointmentForm({
     setForm({ ...form, hotel_reservation_id: resId, guest_name: res ? res.guest_name : '' })
   }
 
+  const handleWhatsApp = () => {
+    const svc = services.find((s) => s.id === form.service_id)
+    const svcName = svc ? svc.name : 'Serviço'
+    let dateStr = form.start_time
+    try {
+      dateStr = new Date(form.start_time).toLocaleString('pt-PT', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      })
+    } catch (e) {}
+    const msg = `Olá ${form.guest_name}, a sua reserva de ${svcName} no Complexo Agroturístico de Cacuso para o dia ${dateStr} foi confirmada! Vemo-nos em breve.`
+    const cleanPhone = form.guest_phone.replace(/\D/g, '')
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
+    window.open(url, '_blank')
+  }
+
   const availableRooms = rooms.filter((r) => r.status !== 'maintenance')
 
   return (
@@ -177,8 +194,7 @@ export function SpaAppointmentForm({
                 <p className="mt-1">
                   O terapeuta selecionado já possui um agendamento ou bloqueio neste horário. Se
                   você prosseguir, a reserva será criada com status{' '}
-                  <strong>Pendente de Aprovação</strong>
-                  para avaliação da gerência.
+                  <strong>Pendente de Aprovação</strong> para avaliação da gerência.
                 </p>
               </div>
             </div>
@@ -208,6 +224,15 @@ export function SpaAppointmentForm({
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Telefone / WhatsApp</Label>
+            <Input
+              value={form.guest_phone}
+              onChange={(e) => setForm({ ...form, guest_phone: e.target.value })}
+              placeholder="Ex: 9XX XXX XXX"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -340,13 +365,28 @@ export function SpaAppointmentForm({
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {isConflict && !initialData ? 'Salvar (Pendente)' : 'Salvar Agendamento'}
-            </Button>
+          <DialogFooter className="flex justify-between items-center sm:justify-between w-full mt-4">
+            <div>
+              {form.status === 'scheduled' && form.guest_phone && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  onClick={handleWhatsApp}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Enviar WhatsApp
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {isConflict && !initialData ? 'Salvar (Pendente)' : 'Salvar Agendamento'}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

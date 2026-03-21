@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T02:39:18.427Z",
+  "generatedAt": "2026-03-21T02:45:36.759Z",
   "collections": [
     {
       "name": "users",
@@ -2269,6 +2269,12 @@
         {
           "name": "preparation_time_buffer",
           "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "guest_phone",
+          "type": "text",
           "required": false,
           "system": false
         }
