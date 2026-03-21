@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Receipt, UserCheck } from 'lucide-react'
+import { Search, Receipt, UserCheck, FileText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -80,7 +80,7 @@ export default function ServiceGuestLookup() {
               <TableRow>
                 <TableHead className="w-24">Quarto</TableHead>
                 <TableHead>Hóspede</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,7 +90,12 @@ export default function ServiceGuestLookup() {
                     <Badge variant="outline">{res.room || '-'}</Badge>
                   </TableCell>
                   <TableCell className="font-medium">{res.guestName}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex justify-end gap-2">
+                    <Button size="sm" variant="outline" asChild className="gap-2">
+                      <Link to="/extrato-hospede">
+                        <FileText className="w-4 h-4" /> Extrato
+                      </Link>
+                    </Button>
                     <Button size="sm" asChild className="gap-2">
                       <Link to={`/lancamento-servicos?reserva_id=${res.id}`}>
                         <Receipt className="w-4 h-4" /> Lançar Consumo

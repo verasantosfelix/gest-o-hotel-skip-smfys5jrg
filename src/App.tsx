@@ -70,6 +70,7 @@ import GuestPortal from './pages/GuestPortal'
 import Layout from './components/Layout'
 import ServiceGuestLookup from './pages/ServiceGuestLookup'
 import ServiceExpensePosting from './pages/ServiceExpensePosting'
+import GuestConsumption from './pages/GuestConsumption'
 import Audit from './pages/Audit'
 import Alcadas from './pages/Alcadas'
 import Analytics from './pages/Analytics'
@@ -167,6 +168,7 @@ const App = () => {
                           <Route path="/governanca" element={<Housekeeping />} />
                           <Route path="/busca-hospedes" element={<ServiceGuestLookup />} />
                           <Route path="/lancamento-servicos" element={<ServiceExpensePosting />} />
+                          <Route path="/extrato-hospede" element={<GuestConsumption />} />
                           <Route path="/auditoria" element={<Audit />} />
                           <Route path="/alcadas" element={<Alcadas />} />
                           <Route path="/analytics" element={<Analytics />} />
