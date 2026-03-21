@@ -5,10 +5,8 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function MICE() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Grupos (MICE)')) {
-    return (
-      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
-    )
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'], 'Grupos (MICE)')) {
+    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
   }
   return (
     <div className="space-y-6 animate-fade-in pb-8">

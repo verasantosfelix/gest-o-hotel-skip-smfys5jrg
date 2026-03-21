@@ -46,7 +46,9 @@ const ITEMS = [
 
 export default function SpaLaundry() {
   const { hasAccess } = useAccess()
-  const { userName } = useAuthStore()
+  const { userName, userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [logs, setLogs] = useState<LaundryLog[]>([])
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ item: '', quantity: '', urgency: 'normal' })
@@ -114,12 +116,14 @@ export default function SpaLaundry() {
             <p className="text-sm text-slate-500">Pipeline direto com a governança</p>
           </div>
         </div>
-        <Button
-          onClick={() => setOpen(true)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Plus className="w-4 h-4" /> Solicitar Enxoval
-        </Button>
+        {!isFrontDesk && (
+          <Button
+            onClick={() => setOpen(true)}
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="w-4 h-4" /> Solicitar Enxoval
+          </Button>
+        )}
       </div>
 
       <Card className="border-slate-200 shadow-sm overflow-hidden">

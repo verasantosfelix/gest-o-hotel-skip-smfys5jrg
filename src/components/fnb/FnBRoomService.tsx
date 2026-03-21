@@ -23,8 +23,12 @@ import { toast } from '@/components/ui/use-toast'
 import { formatCurrency } from '@/lib/utils'
 import { useRealtime } from '@/hooks/use-realtime'
 import { BellRing, CheckCircle2 } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function FnBRoomService() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [products, setProducts] = useState<FBProduct[]>([])
   const [reservations, setReservations] = useState<PBReservation[]>([])
   const [selRes, setSelRes] = useState('')
@@ -188,9 +192,9 @@ export function FnBRoomService() {
                 </div>
                 <Button
                   size="lg"
-                  disabled={!isReady}
+                  disabled={!isReady || isFrontDesk}
                   onClick={() => handleDeliver(o)}
-                  className={`w-full sm:w-auto font-bold ${isReady ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+                  className={`w-full sm:w-auto font-bold ${isReady && !isFrontDesk ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
                 >
                   {isReady ? (
                     <>

@@ -145,6 +145,7 @@ export default function ServiceExpensePosting() {
               placeholder="Desconto (%)"
               value={desconto}
               onChange={(e) => setDesconto(e.target.value)}
+              disabled={userRole === 'Front_Desk'}
             />
           </div>
         </CardContent>

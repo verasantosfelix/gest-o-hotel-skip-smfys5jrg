@@ -16,9 +16,12 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { getLaundryLogs, updateLaundryLog, LaundryLog } from '@/services/laundry'
 import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from '@/components/ui/use-toast'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Laundry() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
   const [logs, setLogs] = useState<LaundryLog[]>([])
 
   const loadData = async () => {
@@ -43,6 +46,7 @@ export default function Laundry() {
   }
 
   const toggleStatus = async (id: string, currentStatus: string) => {
+    if (isFrontDesk) return
     const newStatus = currentStatus === 'Concluído' ? 'Pendente' : 'Concluído'
     try {
       await updateLaundryLog(id, { status: newStatus })
@@ -73,6 +77,7 @@ export default function Laundry() {
                 checked={log.status === 'Concluído'}
                 onCheckedChange={() => toggleStatus(log.id, log.status)}
                 className="mt-1 h-5 w-5"
+                disabled={isFrontDesk}
               />
               <div className="flex-1">
                 <div className="flex justify-between items-start">
@@ -115,12 +120,14 @@ export default function Laundry() {
                   <p className="text-xs text-slate-400">Quantidade</p>
                   <p className="font-mono font-bold text-lg">{log.quantity}</p>
                 </div>
-                <button
-                  onClick={() => toggleStatus(log.id, log.status)}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                >
-                  Alternar Status
-                </button>
+                {!isFrontDesk && (
+                  <button
+                    onClick={() => toggleStatus(log.id, log.status)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    Alternar Status
+                  </button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -147,6 +154,7 @@ export default function Laundry() {
                   <Checkbox
                     checked={log.status === 'Concluído'}
                     onCheckedChange={() => toggleStatus(log.id, log.status)}
+                    disabled={isFrontDesk}
                   />
                 </TableCell>
                 <TableCell className="font-medium">{log.item}</TableCell>

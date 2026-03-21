@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings, DoorOpen, CalendarOff } from 'lucide-react'
+import { Settings, DoorOpen, CalendarOff, Plus } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,9 +32,13 @@ import {
 } from '@/services/spa'
 import { toast } from '@/components/ui/use-toast'
 import { format } from 'date-fns'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function SpaOperations() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [rooms, setRooms] = useState<SpaRoom[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
   const [blockouts, setBlockouts] = useState<any[]>([])
@@ -136,10 +140,12 @@ export default function SpaOperations() {
             {rooms.map((r) => (
               <Card
                 key={r.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className={`transition-all ${!isFrontDesk ? 'cursor-pointer hover:shadow-md hover:-translate-y-1' : ''}`}
                 onClick={() => {
-                  setRoomOpen(r)
-                  setNewStatus(r.status)
+                  if (!isFrontDesk) {
+                    setRoomOpen(r)
+                    setNewStatus(r.status)
+                  }
                 }}
               >
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
@@ -162,9 +168,11 @@ export default function SpaOperations() {
             <h2 className="text-lg font-bold flex items-center gap-2">
               <CalendarOff className="w-5 h-5" /> Bloqueios & Escalas
             </h2>
-            <Button size="sm" onClick={() => setBlockoutOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
-            </Button>
+            {!isFrontDesk && (
+              <Button size="sm" onClick={() => setBlockoutOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
+              </Button>
+            )}
           </div>
           <div className="space-y-2">
             {blockouts.map((b) => (
@@ -179,14 +187,16 @@ export default function SpaOperations() {
                       {format(new Date(b.end_date), 'dd/MM HH:mm')}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelBo(b.id)}
-                    className="text-rose-500 h-8 w-8"
-                  >
-                    &times;
-                  </Button>
+                  {!isFrontDesk && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelBo(b.id)}
+                      className="text-rose-500 h-8 w-8"
+                    >
+                      &times;
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}

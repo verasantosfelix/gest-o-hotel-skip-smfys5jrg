@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T00:47:21.046Z",
+  "generatedAt": "2026-03-21T00:56:11.834Z",
   "collections": [
     {
       "name": "users",
@@ -379,8 +379,8 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {
@@ -1722,8 +1722,8 @@
         "list": "",
         "view": "",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {

@@ -388,13 +388,13 @@ const navGroups = [
         name: 'Eventos & MICE',
         url: '/eventos',
         icon: CalendarRange,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
       },
       {
         name: 'Grupos (MICE)',
         url: '/mice',
         icon: Building,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
       },
       {
         name: 'Concierge',
