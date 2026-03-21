@@ -16,7 +16,7 @@ migrate(
     // Update the API rules to restrict Front_Desk from modifying core scheduling fields
     // Front Desk can still update things like notes, but not room, status, service, therapist, or time.
     col.updateRule =
-      "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || (@request.data.spa_room_id:isset = false && @request.data.status:isset = false && @request.data.service_id:isset = false && @request.data.therapist_id:isset = false && @request.data.start_time:isset = false))"
+      "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || (@request.body.spa_room_id:isset = false && @request.body.status:isset = false && @request.body.service_id:isset = false && @request.body.therapist_id:isset = false && @request.body.start_time:isset = false))"
 
     app.save(col)
   },
