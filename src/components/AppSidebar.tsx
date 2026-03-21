@@ -67,6 +67,7 @@ import {
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
 import { Role } from '@/stores/useAuthStore'
+import { cn } from '@/lib/utils'
 
 type NavItem = {
   name: string
@@ -421,11 +422,16 @@ export function AppSidebar() {
   const { selectedHotel } = useHotelStore()
   const { isManager, hasAccess } = useAccess()
 
-  const [accordionValue, setAccordionValue] = useState<string[]>([])
+  const [accordionValue, setAccordionValue] = useState<string>('')
 
   useEffect(() => {
-    // Keep accordion fully collapsed by default upon page load or route change
-    setAccordionValue([])
+    // Automatically expand the group that contains the current active route
+    const activeGroup = navGroups.find((group) =>
+      group.items.some((item) => item.url === location.pathname),
+    )
+    if (activeGroup) {
+      setAccordionValue(activeGroup.label)
+    }
   }, [location.pathname])
 
   const hasModuleAccess = (item: NavItem) => {
@@ -443,7 +449,8 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
         <Accordion
-          type="multiple"
+          type="single"
+          collapsible
           value={accordionValue}
           onValueChange={setAccordionValue}
           className="w-full space-y-1"
@@ -453,9 +460,16 @@ export function AppSidebar() {
 
             if (visibleItems.length === 0) return null
 
+            const isGroupActive = group.items.some((item) => item.url === location.pathname)
+
             return (
               <AccordionItem key={group.label} value={group.label} className="border-none">
-                <AccordionTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground py-2 px-2 rounded-md hover:no-underline text-sm font-medium">
+                <AccordionTrigger
+                  className={cn(
+                    'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground py-2 px-2 rounded-md hover:no-underline text-sm font-medium',
+                    isGroupActive && 'text-primary font-semibold',
+                  )}
+                >
                   {group.label}
                 </AccordionTrigger>
                 <AccordionContent className="pb-1 pt-1 px-1">
