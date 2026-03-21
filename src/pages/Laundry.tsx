@@ -36,8 +36,10 @@ export default function Laundry() {
 
   useRealtime('laundry_logs', loadData)
 
-  if (!hasAccess(['Lavanderia_Limpeza', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Lavanderia_Limpeza', 'Direcao_Admin']} />
+  if (!hasAccess(['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'])) {
+    return (
+      <RestrictedAccess requiredRoles={['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   const toggleStatus = async (id: string, currentStatus: string) => {

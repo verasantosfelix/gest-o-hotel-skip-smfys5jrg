@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
+import useAuthStore from '@/stores/useAuthStore'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 import { MaintenanceDashboard } from '@/components/maintenance/MaintenanceDashboard'
@@ -24,6 +25,9 @@ import { getRooms, RoomRecord } from '@/services/rooms'
 
 export default function Maintenance() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [tickets, setTickets] = useState<any[]>([])
   const [sensors, setSensors] = useState<any[]>([])
   const [assets, setAssets] = useState<any[]>([])
@@ -55,8 +59,10 @@ export default function Maintenance() {
   useRealtime('it_assets', loadData)
   useRealtime('rooms', loadData)
 
-  if (!hasAccess(['Manutencao_Oficina', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Manutencao_Oficina', 'Direcao_Admin']} />
+  if (!hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'])) {
+    return (
+      <RestrictedAccess requiredRoles={['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   return (
@@ -87,9 +93,11 @@ export default function Maintenance() {
           <TabsTrigger value="inventario" className="flex items-center gap-2 h-9 px-4">
             <Settings className="w-4 h-4" /> Ativos & Preventiva
           </TabsTrigger>
-          <TabsTrigger value="turnos" className="flex items-center gap-2 h-9 px-4">
-            <RouteIcon className="w-4 h-4" /> Rotinas de Turno
-          </TabsTrigger>
+          {!isFrontDesk && (
+            <TabsTrigger value="turnos" className="flex items-center gap-2 h-9 px-4">
+              <RouteIcon className="w-4 h-4" /> Rotinas de Turno
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-0 outline-none">
@@ -104,9 +112,11 @@ export default function Maintenance() {
         <TabsContent value="inventario" className="mt-0 outline-none">
           <MaintenanceInventory assets={assets} />
         </TabsContent>
-        <TabsContent value="turnos" className="mt-0 outline-none">
-          <MaintenanceShifts />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="turnos" className="mt-0 outline-none">
+            <MaintenanceShifts />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

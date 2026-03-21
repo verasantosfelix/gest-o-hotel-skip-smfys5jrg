@@ -9,6 +9,7 @@ export type Role =
   | 'Manutencao_Oficina'
   | 'Tecnologia_TI'
   | 'Direcao_Admin'
+  | 'Front_Desk'
 
 interface AuthStore {
   userRole: Role
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const userNameMap: Record<Role, string> = {
     Direcao_Admin: 'Gerente Geral',
     Rececao_FrontOffice: 'Atendente Front-Desk',
+    Front_Desk: 'Operação Front Desk',
     Lavanderia_Limpeza: 'Equipe de Governança',
     Restaurante_Bar: 'Equipe F&B',
     Spa_Wellness: 'Terapeuta Spa',

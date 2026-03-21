@@ -10,17 +10,23 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarIcon, Settings2, Plus } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function MaintenanceInventory({ assets }: { assets: any[] }) {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   return (
     <div className="space-y-4 animate-fade-in-up">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
           <Settings2 className="w-5 h-5 text-primary" /> Inventário Técnico & Preventivas
         </h2>
-        <Button size="sm" className="gap-2">
-          <Plus className="w-4 h-4" /> Novo Ativo
-        </Button>
+        {!isFrontDesk && (
+          <Button size="sm" className="gap-2">
+            <Plus className="w-4 h-4" /> Novo Ativo
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -33,7 +39,7 @@ export function MaintenanceInventory({ assets }: { assets: any[] }) {
                 <TableHead>Localização</TableHead>
                 <TableHead>Última Manutenção</TableHead>
                 <TableHead>Próxima Preventiva</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+                {!isFrontDesk && <TableHead className="text-right">Ação</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -55,16 +61,21 @@ export function MaintenanceInventory({ assets }: { assets: any[] }) {
                       {a.next_maintenance_date || 'A agendar'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="outline">
-                      Intervenção
-                    </Button>
-                  </TableCell>
+                  {!isFrontDesk && (
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline">
+                        Intervenção
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {assets.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-slate-500">
+                  <TableCell
+                    colSpan={isFrontDesk ? 5 : 6}
+                    className="text-center py-6 text-slate-500"
+                  >
                     Nenhum equipamento registrado.
                   </TableCell>
                 </TableRow>

@@ -12,8 +12,12 @@ import {
 import { Package, Plus, Minus, AlertCircle } from 'lucide-react'
 import { getSpaInventory, updateSpaInventory, SpaInventory as ISpaInv } from '@/services/spa'
 import { useRealtime } from '@/hooks/use-realtime'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function SpaInventory() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [items, setItems] = useState<ISpaInv[]>([])
 
   const loadData = async () => {
@@ -47,7 +51,7 @@ export function SpaInventory() {
               <TableRow>
                 <TableHead className="pl-4">Item</TableHead>
                 <TableHead className="text-center">Quantidade</TableHead>
-                <TableHead className="text-right pr-4">Ação</TableHead>
+                {!isFrontDesk && <TableHead className="text-right pr-4">Ação</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -69,26 +73,28 @@ export function SpaInventory() {
                         {i.quantity}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right pr-4">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleQty(i.id, i.quantity - 1)}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleQty(i.id, i.quantity + 1)}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!isFrontDesk && (
+                      <TableCell className="text-right pr-4">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleQty(i.id, i.quantity - 1)}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleQty(i.id, i.quantity + 1)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })}

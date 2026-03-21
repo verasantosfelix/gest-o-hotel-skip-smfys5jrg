@@ -14,8 +14,12 @@ import { getSpaRooms, updateSpaRoom, SpaRoom } from '@/services/spa'
 import { useRealtime } from '@/hooks/use-realtime'
 import { DoorOpen, Sparkles, AlertTriangle } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function SpaRooms() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [rooms, setRooms] = useState<SpaRoom[]>([])
   const [checklistRoom, setChecklistRoom] = useState<SpaRoom | null>(null)
   const [checks, setChecks] = useState({ c1: false, c2: false, c3: false, c4: false })
@@ -68,7 +72,7 @@ export function SpaRooms() {
                   <AlertTriangle className="w-4 h-4" /> DND ATIVO (Em Sessão)
                 </div>
               )}
-              {r.status === 'cleaning' && (
+              {!isFrontDesk && r.status === 'cleaning' && (
                 <Button
                   size="sm"
                   className="w-full mt-2 gap-2 bg-amber-600 hover:bg-amber-700"

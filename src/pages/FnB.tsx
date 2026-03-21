@@ -1,6 +1,7 @@
 import { Utensils } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
+import useAuthStore from '@/stores/useAuthStore'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 import { FnBDashboard } from '@/components/fnb/FnBDashboard'
@@ -13,8 +14,11 @@ import { FnBKPIs } from '@/components/fnb/FnBKPIs'
 
 export default function FnB() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'])) {
+    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk']} />
   }
 
   return (
@@ -41,21 +45,27 @@ export default function FnB() {
           <TabsTrigger value="orders" className="px-4 py-2 font-medium">
             Mesas & Pedidos
           </TabsTrigger>
-          <TabsTrigger value="kds" className="px-4 py-2 font-medium">
-            KDS (Cozinha)
-          </TabsTrigger>
+          {!isFrontDesk && (
+            <TabsTrigger value="kds" className="px-4 py-2 font-medium">
+              KDS (Cozinha)
+            </TabsTrigger>
+          )}
           <TabsTrigger value="room_service" className="px-4 py-2 font-medium">
             Room Service
           </TabsTrigger>
           <TabsTrigger value="reservations" className="px-4 py-2 font-medium">
             Reservas
           </TabsTrigger>
-          <TabsTrigger value="routines" className="px-4 py-2 font-medium">
-            Rotinas
-          </TabsTrigger>
-          <TabsTrigger value="kpis" className="px-4 py-2 font-medium">
-            Analytics
-          </TabsTrigger>
+          {!isFrontDesk && (
+            <TabsTrigger value="routines" className="px-4 py-2 font-medium">
+              Rotinas
+            </TabsTrigger>
+          )}
+          {!isFrontDesk && (
+            <TabsTrigger value="kpis" className="px-4 py-2 font-medium">
+              Analytics
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-0 outline-none">
@@ -64,21 +74,27 @@ export default function FnB() {
         <TabsContent value="orders" className="mt-0 outline-none">
           <FnBOrderManagement />
         </TabsContent>
-        <TabsContent value="kds" className="mt-0 outline-none">
-          <FnBKDS />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="kds" className="mt-0 outline-none">
+            <FnBKDS />
+          </TabsContent>
+        )}
         <TabsContent value="room_service" className="mt-0 outline-none">
           <FnBRoomService />
         </TabsContent>
         <TabsContent value="reservations" className="mt-0 outline-none">
           <FnBReservations />
         </TabsContent>
-        <TabsContent value="routines" className="mt-0 outline-none">
-          <FnBRoutines />
-        </TabsContent>
-        <TabsContent value="kpis" className="mt-0 outline-none">
-          <FnBKPIs />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="routines" className="mt-0 outline-none">
+            <FnBRoutines />
+          </TabsContent>
+        )}
+        {!isFrontDesk && (
+          <TabsContent value="kpis" className="mt-0 outline-none">
+            <FnBKPIs />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

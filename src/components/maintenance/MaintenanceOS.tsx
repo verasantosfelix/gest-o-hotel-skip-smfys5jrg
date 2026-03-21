@@ -30,8 +30,12 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { createMaintenanceTicket, updateMaintenanceTicket } from '@/services/maintenance'
 import { RoomRecord } from '@/services/rooms'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomRecord[] }) {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [isNewOSOpen, setIsNewOSOpen] = useState(false)
   const [selectedTicket, setSelectedTicket] = useState<any>(null)
   const [usedMaterials, setUsedMaterials] = useState('')
@@ -271,7 +275,7 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
                 </div>
               </div>
 
-              {selectedTicket.status === 'in_progress' && (
+              {!isFrontDesk && selectedTicket.status === 'in_progress' && (
                 <div className="space-y-2 pt-4 border-t border-slate-100">
                   <Label>Registro de Intervenção e Peças Usadas</Label>
                   <Input
@@ -284,7 +288,7 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
             </div>
           )}
           <DialogFooter>
-            {selectedTicket?.status === 'open' && (
+            {!isFrontDesk && selectedTicket?.status === 'open' && (
               <Button
                 onClick={() => handleStatusChange(selectedTicket.id, 'in_progress')}
                 className="bg-blue-600 hover:bg-blue-700 w-full"
@@ -292,7 +296,7 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
                 <Play className="w-4 h-4 mr-2" /> Iniciar Execução
               </Button>
             )}
-            {selectedTicket?.status === 'in_progress' && (
+            {!isFrontDesk && selectedTicket?.status === 'in_progress' && (
               <Button
                 onClick={() =>
                   handleStatusChange(selectedTicket.id, 'resolved', {

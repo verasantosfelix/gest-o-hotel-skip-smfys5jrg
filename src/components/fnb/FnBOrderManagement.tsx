@@ -4,8 +4,12 @@ import { Badge } from '@/components/ui/badge'
 import { getFBTables, FBTable } from '@/services/fnb'
 import { useRealtime } from '@/hooks/use-realtime'
 import { FnBTableDialog } from './FnBTableDialog'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function FnBOrderManagement() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [tables, setTables] = useState<FBTable[]>([])
   const [selectedTable, setSelectedTable] = useState<FBTable | null>(null)
 
@@ -46,7 +50,9 @@ export function FnBOrderManagement() {
             <Card
               key={t.id}
               className={`cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg ${isOcc ? 'border-orange-300 bg-orange-50/50' : isRes ? 'border-blue-300 bg-blue-50/50' : 'border-emerald-200 bg-emerald-50/20'}`}
-              onClick={() => setSelectedTable(t)}
+              onClick={() => {
+                if (!isFrontDesk) setSelectedTable(t)
+              }}
             >
               <CardContent className="p-6 text-center flex flex-col items-center">
                 <div

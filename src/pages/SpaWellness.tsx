@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Heart, Activity, CheckSquare, Settings } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
+import useAuthStore from '@/stores/useAuthStore'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 import { SpaAgenda } from '@/components/spa/SpaAgenda'
@@ -15,6 +16,8 @@ import { useRealtime } from '@/hooks/use-realtime'
 
 export default function SpaWellness() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
 
   const [availableRooms, setAvailableRooms] = useState(0)
   const [availableTherapists, setAvailableTherapists] = useState(0)
@@ -43,8 +46,8 @@ export default function SpaWellness() {
   useRealtime('spa_rooms', loadHeaderData)
   useRealtime('spa_appointments', loadHeaderData)
 
-  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin']} />
+  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'])) {
+    return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin', 'Front_Desk']} />
   }
 
   return (
@@ -79,12 +82,16 @@ export default function SpaWellness() {
           <TabsTrigger value="rooms" className="px-4 py-2 gap-2">
             <Settings className="w-4 h-4" /> Salas & Estoque
           </TabsTrigger>
-          <TabsTrigger value="routines" className="px-4 py-2 gap-2">
-            <CheckSquare className="w-4 h-4" /> Rotinas
-          </TabsTrigger>
-          <TabsTrigger value="kpis" className="px-4 py-2 gap-2">
-            <Activity className="w-4 h-4" /> Performance
-          </TabsTrigger>
+          {!isFrontDesk && (
+            <TabsTrigger value="routines" className="px-4 py-2 gap-2">
+              <CheckSquare className="w-4 h-4" /> Rotinas
+            </TabsTrigger>
+          )}
+          {!isFrontDesk && (
+            <TabsTrigger value="kpis" className="px-4 py-2 gap-2">
+              <Activity className="w-4 h-4" /> Performance
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="agenda" className="mt-0 outline-none">
@@ -98,13 +105,17 @@ export default function SpaWellness() {
           </div>
         </TabsContent>
 
-        <TabsContent value="routines" className="mt-0 outline-none">
-          <SpaRoutines />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="routines" className="mt-0 outline-none">
+            <SpaRoutines />
+          </TabsContent>
+        )}
 
-        <TabsContent value="kpis" className="mt-0 outline-none">
-          <SpaKPIs />
-        </TabsContent>
+        {!isFrontDesk && (
+          <TabsContent value="kpis" className="mt-0 outline-none">
+            <SpaKPIs />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

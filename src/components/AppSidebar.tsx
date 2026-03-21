@@ -85,25 +85,25 @@ const navGroups = [
         name: 'Dashboard',
         url: '/',
         icon: LayoutDashboard,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Reservas',
         url: '/reservas',
         icon: CalendarDays,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Hóspedes',
         url: '/hospedes',
         icon: Users,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Quartos',
         url: '/quartos',
         icon: BedDouble,
-        roles: ['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Lançamentos Rápidos',
@@ -115,6 +115,7 @@ const navGroups = [
           'Spa_Wellness',
           'Lavanderia_Limpeza',
           'Direcao_Admin',
+          'Front_Desk',
         ],
       },
       {
@@ -127,6 +128,7 @@ const navGroups = [
           'Spa_Wellness',
           'Lavanderia_Limpeza',
           'Direcao_Admin',
+          'Front_Desk',
         ],
       },
     ] as NavItem[],
@@ -138,31 +140,31 @@ const navGroups = [
         name: 'Governança',
         url: '/governanca',
         icon: Sparkles,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Lavanderia',
         url: '/lavanderia',
         icon: Shirt,
-        roles: ['Lavanderia_Limpeza', 'Direcao_Admin'],
+        roles: ['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Achados e Perdidos',
         url: '/achados-perdidos',
         icon: SearchX,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Amenities',
         url: '/minibar-amenities',
         icon: Package,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'F&B Básico',
         url: '/fnb',
         icon: Utensils,
-        roles: ['Restaurante_Bar', 'Direcao_Admin'],
+        roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'F&B Operações',
@@ -186,25 +188,25 @@ const navGroups = [
         name: 'Spa & Wellness',
         url: '/spa',
         icon: Heart,
-        roles: ['Spa_Wellness', 'Direcao_Admin'],
+        roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Lazer & Piscinas',
         url: '/lazer',
         icon: Umbrella,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Loja',
         url: '/loja',
         icon: ShoppingBag,
-        roles: ['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Manutenção',
         url: '/manutencao',
         icon: Wrench,
-        roles: ['Manutencao_Oficina', 'Direcao_Admin'],
+        roles: ['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
       },
     ] as NavItem[],
   },
@@ -249,7 +251,7 @@ const navGroups = [
         name: 'Vendas & Distribuição',
         url: '/sales-crm',
         icon: LineChart,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Financeiro Corp',
@@ -302,37 +304,37 @@ const navGroups = [
         name: 'CRM',
         url: '/crm',
         icon: HeartHandshake,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Fidelidade',
         url: '/fidelidade-feedback',
         icon: Star,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Marketing',
         url: '/marketing',
         icon: Megaphone,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Eventos & MICE',
         url: '/eventos',
         icon: CalendarRange,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Grupos (MICE)',
         url: '/mice',
         icon: Building,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Concierge',
         url: '/concierge',
         icon: ConciergeBell,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'IA Concierge',
@@ -344,21 +346,26 @@ const navGroups = [
         name: 'Guest Journey',
         url: '/guest-journey',
         icon: Compass,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Omnichannel',
         url: '/comunicacao',
         icon: MessageSquare,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Comms Automáticas',
         url: '/guest-comms',
         icon: Mail,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
-      { name: 'Frota', url: '/frota', icon: Car, roles: ['Rececao_FrontOffice', 'Direcao_Admin'] },
+      {
+        name: 'Frota',
+        url: '/frota',
+        icon: Car,
+        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      },
     ] as NavItem[],
   },
   {
@@ -418,6 +425,7 @@ export function AppSidebar() {
 
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [accordionValue, setAccordionValue] = useState<string[]>([])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -434,6 +442,11 @@ export function AppSidebar() {
     }
     fetchProfile()
   }, [])
+
+  useEffect(() => {
+    // Keep accordion fully collapsed by default upon page load or route change
+    setAccordionValue([])
+  }, [location.pathname])
 
   const hasModuleAccess = (item: NavItem) => {
     if (item.requiresManager && !isManager()) return false
@@ -485,7 +498,12 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
-        <Accordion type="multiple" className="w-full space-y-1">
+        <Accordion
+          type="multiple"
+          value={accordionValue}
+          onValueChange={setAccordionValue}
+          className="w-full space-y-1"
+        >
           {navGroups.map((group) => {
             const visibleItems = group.items.filter(hasModuleAccess)
 
