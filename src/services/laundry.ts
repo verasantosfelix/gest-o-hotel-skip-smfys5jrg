@@ -7,12 +7,14 @@ export interface LaundryLog {
   quantity: number
   status: string
   staff_member: string
+  location?: string
+  urgency?: 'normal' | 'high'
   created: string
   updated: string
 }
 
-export const getLaundryLogs = () =>
-  pb.collection('laundry_logs').getFullList<LaundryLog>({ sort: '-created' })
+export const getLaundryLogs = (filter?: string) =>
+  pb.collection('laundry_logs').getFullList<LaundryLog>({ sort: '-created', filter })
 
 export const createLaundryLog = (data: Partial<LaundryLog>) =>
   pb.collection('laundry_logs').create<LaundryLog>(data)

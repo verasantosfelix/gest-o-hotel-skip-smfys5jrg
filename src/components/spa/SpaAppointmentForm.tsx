@@ -48,6 +48,7 @@ export function SpaAppointmentForm({
     therapist_id: initialData?.therapist_id || '',
     start_time: initialData?.start_time || new Date().toISOString().slice(0, 16),
     end_time: initialData?.end_time || '',
+    preparation_time_buffer: initialData?.preparation_time_buffer || 15,
     contraindications: initialData?.contraindications || '',
     notes: initialData?.notes || '',
     status: initialData?.status || 'scheduled',
@@ -55,7 +56,6 @@ export function SpaAppointmentForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Auto calc end time based on service duration if empty
     let finalEnd = form.end_time
     if (!finalEnd && form.service_id && form.start_time) {
       const svc = services.find((s) => s.id === form.service_id)
@@ -72,6 +72,8 @@ export function SpaAppointmentForm({
     const res = reservations.find((r) => r.id === resId)
     setForm({ ...form, hotel_reservation_id: resId, guest_name: res ? res.guest_name : '' })
   }
+
+  const availableRooms = rooms.filter((r) => r.status !== 'maintenance')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -137,11 +139,16 @@ export function SpaAppointmentForm({
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {rooms.map((r) => (
+                  {availableRooms.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.name} - {r.status}
                     </SelectItem>
                   ))}
+                  {availableRooms.length === 0 && (
+                    <SelectItem value="none" disabled>
+                      Nenhuma sala livre
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -179,6 +186,18 @@ export function SpaAppointmentForm({
           </div>
 
           <div className="space-y-2">
+            <Label>Buffer de Preparação (minutos)</Label>
+            <Input
+              type="number"
+              value={form.preparation_time_buffer}
+              onChange={(e) =>
+                setForm({ ...form, preparation_time_buffer: parseInt(e.target.value) || 0 })
+              }
+              placeholder="Ex: 15"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label className="text-rose-600 font-bold">Contraindicações / Alergias</Label>
             <Textarea
               value={form.contraindications}
@@ -188,7 +207,7 @@ export function SpaAppointmentForm({
             />
           </div>
           <div className="space-y-2">
-            <Label>Observações</Label>
+            <Label>Observações Internas</Label>
             <Textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}

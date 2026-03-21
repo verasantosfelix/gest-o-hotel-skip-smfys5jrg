@@ -30,8 +30,6 @@ import {
   Building,
   ConciergeBell,
   Car,
-  Heart,
-  Umbrella,
   ShoppingBag,
   Terminal,
   CreditCard,
@@ -53,6 +51,8 @@ import {
   PenTool,
   CalendarHeart,
   BellRing,
+  Droplets,
+  WashingMachine,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -102,9 +102,9 @@ const quickAccessItems: NavItem[] = [
   },
   {
     name: 'Agendamento Spa',
-    url: '/spa/appointments',
+    url: '/spa/agenda',
     icon: CalendarHeart,
-    roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
+    roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
   },
   {
     name: 'Room Service',
@@ -171,7 +171,48 @@ const navGroups = [
     ] as NavItem[],
   },
   {
-    label: 'Governança & Operações',
+    label: 'Spa & Wellness',
+    items: [
+      {
+        name: 'Agenda Diária',
+        url: '/spa/agenda',
+        icon: CalendarHeart,
+        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      },
+      {
+        name: 'Agenda Mensal',
+        url: '/spa/mensal',
+        icon: CalendarDays,
+        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      },
+      {
+        name: 'Catálogo de Serviços',
+        url: '/spa/catalogo',
+        icon: BookOpen,
+        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      },
+      {
+        name: 'Operações & Salas',
+        url: '/spa/operacoes',
+        icon: Settings,
+        roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
+      },
+      {
+        name: 'Lavanderia SPA',
+        url: '/spa/lavanderia',
+        icon: Shirt,
+        roles: ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
+      },
+      {
+        name: 'Lazer & Piscinas',
+        url: '/lazer',
+        icon: Droplets,
+        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      },
+    ] as NavItem[],
+  },
+  {
+    label: 'Governança & F&B',
     items: [
       {
         name: 'Governança',
@@ -180,9 +221,9 @@ const navGroups = [
         roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
-        name: 'Lavanderia',
+        name: 'Lavanderia Geral',
         url: '/lavanderia',
-        icon: Shirt,
+        icon: WashingMachine,
         roles: ['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
       },
       {
@@ -220,18 +261,6 @@ const navGroups = [
         url: '/restaurante/menu-pdf',
         icon: FileText,
         roles: ['Restaurante_Bar', 'Direcao_Admin'],
-      },
-      {
-        name: 'Spa & Wellness',
-        url: '/spa',
-        icon: Heart,
-        roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Lazer & Piscinas',
-        url: '/lazer',
-        icon: Umbrella,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
       },
       {
         name: 'Loja',
@@ -463,6 +492,7 @@ export function AppSidebar() {
   const [accordionValue, setAccordionValue] = useState<string>('')
   const [openMaintenance, setOpenMaintenance] = useState(0)
   const [pendingPdf, setPendingPdf] = useState(0)
+  const [pendingSpaLaundry, setPendingSpaLaundry] = useState(0)
 
   const loadBadgeCounts = async () => {
     if (!pb.authStore.isValid) return
@@ -473,12 +503,8 @@ export function AppSidebar() {
           filter: 'status = "open"',
         })
         setOpenMaintenance(maint.totalItems)
-      } else {
-        setOpenMaintenance(0)
       }
-    } catch (e) {
-      console.error('Failed to load maintenance counts', e)
-    }
+    } catch (e) {}
 
     try {
       if (hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Impresso (PDF)')) {
@@ -486,12 +512,22 @@ export function AppSidebar() {
           filter: 'status = "pending_approval"',
         })
         setPendingPdf(pdfs.totalItems)
-      } else {
-        setPendingPdf(0)
       }
-    } catch (e) {
-      console.error('Failed to load pdf counts', e)
-    }
+    } catch (e) {}
+
+    try {
+      if (
+        hasAccess(
+          ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
+          'Lavanderia SPA',
+        )
+      ) {
+        const laundry = await pb.collection('laundry_logs').getList(1, 1, {
+          filter: 'location = "SPA" && status != "Entregue"',
+        })
+        setPendingSpaLaundry(laundry.totalItems)
+      }
+    } catch (e) {}
   }
 
   useEffect(() => {
@@ -500,13 +536,14 @@ export function AppSidebar() {
 
   useRealtime('maintenance_tickets', loadBadgeCounts)
   useRealtime('fb_pdf_versions', loadBadgeCounts)
+  useRealtime('laundry_logs', loadBadgeCounts)
 
   useEffect(() => {
     // Automatically expand the group that contains the current active route
     const activeGroup = navGroups.find((group) =>
       group.items.some((item) => item.url === location.pathname),
     )
-    if (activeGroup) {
+    if (activeGroup && accordionValue !== activeGroup.label) {
       setAccordionValue(activeGroup.label)
     }
   }, [location.pathname])
@@ -595,6 +632,9 @@ export function AppSidebar() {
                       } else if (item.name === 'Menu Impresso (PDF)') {
                         badgeCount = pendingPdf
                         badgeColor = 'bg-rose-500 text-white'
+                      } else if (item.name === 'Lavanderia SPA') {
+                        badgeCount = pendingSpaLaundry
+                        badgeColor = 'bg-blue-500 text-white'
                       }
 
                       return (

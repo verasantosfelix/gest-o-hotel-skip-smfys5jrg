@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T00:40:11.604Z",
+  "generatedAt": "2026-03-21T00:47:21.046Z",
   "collections": [
     {
       "name": "users",
@@ -141,6 +141,19 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "urgency",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["normal", "high"]
         }
       ],
       "indexes": []
@@ -1313,6 +1326,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "user_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": ["CREATE INDEX idx_calendar_events_sector ON calendar_events (sector)"]
@@ -2041,6 +2061,44 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["draft", "published"]
+        },
+        {
+          "name": "image",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "version",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "available",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "therapists",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": []
@@ -2175,9 +2233,17 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "preparation_time_buffer",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_spa_appts_start_therapist` ON `spa_appointments` (start_time, therapist_id)"
+      ]
     },
     {
       "name": "spa_inventory",

@@ -54,7 +54,7 @@ try {
   // Silent fallback
 }
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -92,7 +92,6 @@ import DocumentsContracts from './pages/DocumentsContracts'
 import AdvancedConcierge from './pages/AdvancedConcierge'
 import MICE from './pages/MICE'
 import FleetTransfers from './pages/FleetTransfers'
-import SpaWellness from './pages/SpaWellness'
 import PoolsLeisure from './pages/PoolsLeisure'
 import GiftShop from './pages/GiftShop'
 import ChatOps from './pages/ChatOps'
@@ -113,6 +112,14 @@ import SalesCRM from './pages/SalesCRM'
 import DigitalMenuAdmin from './pages/DigitalMenuAdmin'
 import PublicDigitalMenu from './pages/PublicDigitalMenu'
 import MenuPDF from './pages/MenuPDF'
+
+// SPA & Wellness Sub-pages
+import SpaAgendaDaily from './pages/spa/SpaAgendaDaily'
+import SpaAgendaMonthly from './pages/spa/SpaAgendaMonthly'
+import SpaCatalog from './pages/spa/SpaCatalog'
+import SpaOperations from './pages/spa/SpaOperations'
+import SpaLaundry from './pages/spa/SpaLaundry'
+import SpaPublicMenu from './pages/spa/SpaPublicMenu'
 
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
@@ -147,6 +154,7 @@ const App = () => {
                       <Sonner />
                       <Routes>
                         <Route path="/menu" element={<PublicDigitalMenu />} />
+                        <Route path="/spa-menu" element={<SpaPublicMenu />} />
                         <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
 
                         <Route element={<Layout />}>
@@ -183,7 +191,15 @@ const App = () => {
                           <Route path="/concierge" element={<AdvancedConcierge />} />
                           <Route path="/mice" element={<MICE />} />
                           <Route path="/frota" element={<FleetTransfers />} />
-                          <Route path="/spa" element={<SpaWellness />} />
+
+                          {/* SPA Routes */}
+                          <Route path="/spa" element={<Navigate to="/spa/agenda" replace />} />
+                          <Route path="/spa/agenda" element={<SpaAgendaDaily />} />
+                          <Route path="/spa/mensal" element={<SpaAgendaMonthly />} />
+                          <Route path="/spa/catalogo" element={<SpaCatalog />} />
+                          <Route path="/spa/operacoes" element={<SpaOperations />} />
+                          <Route path="/spa/lavanderia" element={<SpaLaundry />} />
+
                           <Route path="/lazer" element={<PoolsLeisure />} />
                           <Route path="/loja" element={<GiftShop />} />
                           <Route path="/chatops" element={<ChatOps />} />
@@ -204,7 +220,6 @@ const App = () => {
                           {/* Quick Access Action Routes */}
                           <Route path="/reservations/new" element={<Reservations />} />
                           <Route path="/maintenance/new" element={<Maintenance />} />
-                          <Route path="/spa/appointments" element={<SpaWellness />} />
                           <Route path="/fb/room-service" element={<FnB />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
