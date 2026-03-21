@@ -1,6 +1,23 @@
 import pb from '@/lib/pocketbase/client'
-export const getLostAndFound = () =>
-  pb.collection('lost_found_items').getFullList({ sort: '-created' })
-export const createLostAndFound = (data: any) => pb.collection('lost_found_items').create(data)
-export const updateLostAndFound = (id: string, data: any) =>
-  pb.collection('lost_found_items').update(id, data)
+
+export interface LostFoundItem {
+  id: string
+  description: string
+  location: string
+  date_found: string
+  status: string
+  guest_data: string
+  created: string
+  updated: string
+}
+
+export const getLostFoundItems = () =>
+  pb.collection('lost_found_items').getFullList<LostFoundItem>({ sort: '-created' })
+
+export const createLostFoundItem = (data: Partial<LostFoundItem>) =>
+  pb.collection('lost_found_items').create<LostFoundItem>(data)
+
+export const updateLostFoundItem = (id: string, data: Partial<LostFoundItem>) =>
+  pb.collection('lost_found_items').update<LostFoundItem>(id, data)
+
+export const deleteLostFoundItem = (id: string) => pb.collection('lost_found_items').delete(id)

@@ -20,7 +20,6 @@ import {
   getSpaAppointments,
   createSpaAppointment,
   updateSpaAppointment,
-  deleteSpaAppointment,
   updateSpaRoom,
   getSpaRooms,
   getSpaServices,
@@ -33,8 +32,12 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { toast } from '@/components/ui/use-toast'
 import { SpaAppointmentForm } from './SpaAppointmentForm'
 import { SpaActionDialog } from './SpaActionDialogs'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function SpaAgenda() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
   const [rooms, setRooms] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
@@ -193,54 +196,60 @@ export function SpaAgenda() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedAppt(a)
-                            setFormOpen(true)
-                          }}
-                        >
-                          Editar / Alterar
-                        </DropdownMenuItem>
-                        {a.status === 'scheduled' && (
+                    {!isFrontDesk ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedAppt(a)
-                              setActionType('checkin')
+                              setFormOpen(true)
                             }}
                           >
-                            Realizar Check-in
+                            Editar / Alterar
                           </DropdownMenuItem>
-                        )}
-                        {a.status === 'in_progress' && (
+                          {a.status === 'scheduled' && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedAppt(a)
+                                setActionType('checkin')
+                              }}
+                            >
+                              Realizar Check-in
+                            </DropdownMenuItem>
+                          )}
+                          {a.status === 'in_progress' && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedAppt(a)
+                                setActionType('checkout')
+                              }}
+                            >
+                              Finalizar (Check-out)
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedAppt(a)
-                              setActionType('checkout')
+                            className="text-rose-600"
+                            onClick={async () => {
+                              if (confirm('Cancelar agendamento?')) {
+                                await updateSpaAppointment(a.id, { status: 'cancelled' })
+                                toast({ title: 'Cancelado' })
+                              }
                             }}
                           >
-                            Finalizar (Check-out)
+                            Cancelar Agendamento
                           </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="text-rose-600"
-                          onClick={async () => {
-                            if (confirm('Cancelar agendamento?')) {
-                              await updateSpaAppointment(a.id, { status: 'cancelled' })
-                              toast({ title: 'Cancelado' })
-                            }
-                          }}
-                        >
-                          Cancelar Agendamento
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+                        Apenas Leitura
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               )

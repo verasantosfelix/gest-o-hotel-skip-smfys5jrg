@@ -21,8 +21,12 @@ import {
 } from '@/services/fnb'
 import { toast } from '@/components/ui/use-toast'
 import { CalendarDays, MapPin } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
 
 export function FnBReservations() {
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [reservations, setReservations] = useState<FBReservationFNB[]>([])
   const [tables, setTables] = useState<FBTable[]>([])
   const [form, setForm] = useState({ name: '', people: '', time: '', table: '' })
@@ -162,12 +166,18 @@ export function FnBReservations() {
                 </div>
                 <div className="text-right">
                   {r.status === 'confirmed' ? (
-                    <Button
-                      onClick={() => handleArrive(r)}
-                      className="bg-slate-900 text-white font-bold w-full sm:w-auto"
-                    >
-                      Registrar Chegada
-                    </Button>
+                    !isFrontDesk ? (
+                      <Button
+                        onClick={() => handleArrive(r)}
+                        className="bg-slate-900 text-white font-bold w-full sm:w-auto"
+                      >
+                        Registrar Chegada
+                      </Button>
+                    ) : (
+                      <Badge variant="outline" className="border-blue-200 text-blue-700">
+                        CONFIRMADA
+                      </Badge>
+                    )
                   ) : (
                     <Badge
                       className={

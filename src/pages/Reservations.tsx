@@ -208,7 +208,7 @@ export default function Reservations() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setSelected(res)}>
-                            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+                            <Eye className="mr-2 h-4 w-4" /> Ver Detalhes e Conta
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -236,14 +236,101 @@ export default function Reservations() {
 
       <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DrawerContent className="max-w-4xl mx-auto h-[85vh]">
-          <DrawerHeader className="border-b pb-4 px-6">
-            <DrawerTitle>Reserva {selected?.id}</DrawerTitle>
+          <DrawerHeader className="border-b pb-4 px-6 flex justify-between items-center">
+            <DrawerTitle className="text-xl">
+              Reserva {selected?.id} - {selected?.guestName}
+            </DrawerTitle>
+            {selected?.status === 'checked-in' && (
+              <Badge className="bg-emerald-100 text-emerald-800">In-House</Badge>
+            )}
           </DrawerHeader>
-          <div className="p-6">
-            <p className="text-slate-500">Exibindo reserva de {selected?.guestName}</p>
+          <div className="p-6 flex flex-col gap-6 overflow-y-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="shadow-sm border-slate-200">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Acomodação</p>
+                  <p className="font-bold text-lg mt-1">{selected?.room || 'N/A'}</p>
+                  <p className="text-xs text-slate-400">{selected?.roomType}</p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Check-in</p>
+                  <p className="font-bold text-lg mt-1">
+                    {formatDate(selected?.checkInDate || '')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Check-out</p>
+                  <p className="font-bold text-lg mt-1">
+                    {formatDate(selected?.checkOutDate || '')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-slate-200">
+                <CardContent className="p-4">
+                  <p className="text-xs font-bold text-slate-500 uppercase">Documento</p>
+                  <p className="font-bold text-lg mt-1">{selected?.guestDoc || 'Não Info'}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2 border-b pb-2">
+                Comandas & Extrato de Consumos
+              </h3>
+              {selected && (
+                <div className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead>Data / Hora</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead className="text-center">Status Pagamento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getConsumptionsByReservation(selected.id).map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-mono text-sm text-slate-500">
+                            {new Date(c.data_registro).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-900">
+                            {c.quantidade}x {c.descricao}
+                          </TableCell>
+                          <TableCell>{c.categoria}</TableCell>
+                          <TableCell className="text-right font-mono text-slate-700">
+                            R$ {c.valor.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              variant={c.validacao_hospede ? 'default' : 'outline'}
+                              className={c.validacao_hospede ? 'bg-emerald-500' : 'text-slate-500'}
+                            >
+                              {c.validacao_hospede ? 'Autorizado' : 'Pendente'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {getConsumptionsByReservation(selected.id).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-slate-500 py-8">
+                            Nenhum consumo registrado na conta.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
           </div>
           <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-end">
-            <Button onClick={() => setSelected(null)}>Fechar Ficha</Button>
+            <Button onClick={() => setSelected(null)}>Fechar Visualização</Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
