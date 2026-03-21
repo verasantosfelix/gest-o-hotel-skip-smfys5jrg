@@ -22,9 +22,13 @@ import { createConsumption } from '@/services/reservations'
 import { toast } from '@/components/ui/use-toast'
 import { format, parseISO, getHours, getMinutes, addMinutes, isSameDay } from 'date-fns'
 import { cn } from '@/lib/utils'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function SpaAgendaDaily() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
@@ -70,7 +74,9 @@ export default function SpaAgendaDaily() {
     )
   ) {
     return (
-      <RestrictedAccess requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin']} />
+      <RestrictedAccess
+        requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
+      />
     )
   }
 
@@ -252,7 +258,16 @@ export default function SpaAgendaDaily() {
                         style={{ top: `${topOffset}px`, height: `${duration}px` }}
                       >
                         <div
-                          onClick={() => {
+                          onClick={(e) => {
+                            if (isFrontDesk) {
+                              toast({
+                                title: 'Acesso Restrito',
+                                description:
+                                  'Apenas leitura de detalhes permitida para Front Desk.',
+                              })
+                              e.stopPropagation()
+                              return
+                            }
                             setSelectedAppt(a)
                             setFormOpen(true)
                           }}
@@ -278,34 +293,36 @@ export default function SpaAgendaDaily() {
                           />
                         )}
                         {/* Hover Actions */}
-                        <div className="hidden group-hover:flex absolute top-1 right-1 gap-1">
-                          {a.status === 'scheduled' && (
-                            <Button
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedAppt(a)
-                                setActionType('checkin')
-                              }}
-                            >
-                              C
-                            </Button>
-                          )}
-                          {a.status === 'in_progress' && (
-                            <Button
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedAppt(a)
-                                setActionType('checkout')
-                              }}
-                            >
-                              F
-                            </Button>
-                          )}
-                        </div>
+                        {!isFrontDesk && (
+                          <div className="hidden group-hover:flex absolute top-1 right-1 gap-1">
+                            {a.status === 'scheduled' && (
+                              <Button
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedAppt(a)
+                                  setActionType('checkin')
+                                }}
+                              >
+                                C
+                              </Button>
+                            )}
+                            {a.status === 'in_progress' && (
+                              <Button
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedAppt(a)
+                                  setActionType('checkout')
+                                }}
+                              >
+                                F
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })}

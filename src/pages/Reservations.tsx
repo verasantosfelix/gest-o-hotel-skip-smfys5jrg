@@ -43,12 +43,16 @@ import { ReservationAssistant } from '@/components/ReservationAssistant'
 import useReservationStore, { Reservation } from '@/stores/useReservationStore'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Reservations() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
   const { reservations, getConsumptionsByReservation } = useReservationStore()
   const [selected, setSelected] = useState<Reservation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+
+  const isFrontDesk = userRole === 'Front_Desk'
 
   if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Reservas')) {
     return (
@@ -329,8 +333,20 @@ export default function Reservations() {
               )}
             </div>
           </div>
-          <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-end">
-            <Button onClick={() => setSelected(null)}>Fechar Visualização</Button>
+          <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-between w-full">
+            {!isFrontDesk ? (
+              <div className="flex gap-2">
+                <Button variant="outline">Alterar Pagamento</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  Emitir Fatura
+                </Button>
+              </div>
+            ) : (
+              <div></div>
+            )}
+            <Button variant="secondary" onClick={() => setSelected(null)}>
+              Fechar Visualização
+            </Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

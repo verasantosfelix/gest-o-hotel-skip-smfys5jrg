@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T01:45:24.862Z",
+  "generatedAt": "2026-03-21T01:49:19.144Z",
   "collections": [
     {
       "name": "users",
@@ -94,8 +94,8 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {
@@ -1884,8 +1884,8 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {
@@ -2151,8 +2151,8 @@
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != ''"
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
       },
       "fields": [
         {
@@ -3410,6 +3410,94 @@
           "type": "bool",
           "required": false,
           "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "amenity_requests",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
+        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+      },
+      "fields": [
+        {
+          "name": "room_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "rooms"
+        },
+        {
+          "name": "guest_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "item",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "sabonete",
+            "shampoo",
+            "condicionador",
+            "gel_banho",
+            "kit_dentes",
+            "kit_barbeado",
+            "kit_costura",
+            "toalhas_extra",
+            "albornoz",
+            "pantufas",
+            "kit_infantil",
+            "chá / café",
+            "água"
+          ]
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "priority",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["normal", "urgente"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pending", "in_transit", "delivered"]
         },
         {
           "name": "created",
