@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { CalendarHeart, Filter, Plus, Clock, User } from 'lucide-react'
+import { CalendarHeart, Filter, Plus, Clock, User, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -13,16 +12,18 @@ import {
   getSpaRooms,
   getSpaServices,
   getActiveReservations,
+  getSpaBlockouts,
   SpaAppointment,
 } from '@/services/spa'
 import { SpaAppointmentForm } from '@/components/spa/SpaAppointmentForm'
 import { SpaActionDialog } from '@/components/spa/SpaActionDialogs'
-import { updateSpaAppointment, updateSpaRoom } from '@/services/spa'
+import { updateSpaAppointment, updateSpaRoom, createSpaAppointment } from '@/services/spa'
 import { createConsumption } from '@/services/reservations'
 import { toast } from '@/components/ui/use-toast'
-import { format, parseISO, getHours, getMinutes, addMinutes, isSameDay } from 'date-fns'
+import { format, parseISO, getHours, getMinutes, isSameDay } from 'date-fns'
 import { cn } from '@/lib/utils'
 import useAuthStore from '@/stores/useAuthStore'
+import pb from '@/lib/pocketbase/client'
 
 export default function SpaAgendaDaily() {
   const { hasAccess } = useAccess()
@@ -31,6 +32,7 @@ export default function SpaAgendaDaily() {
 
   const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
+  const [blockouts, setBlockouts] = useState<any[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
   const [rooms, setRooms] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
@@ -43,18 +45,20 @@ export default function SpaAgendaDaily() {
 
   const loadData = async () => {
     try {
-      const [appts, r, s, t, res] = await Promise.all([
+      const [appts, r, s, t, res, bo] = await Promise.all([
         getSpaAppointments(),
         getSpaRooms(),
         getSpaServices("status='published'"),
         getUsers(),
         getActiveReservations(),
+        getSpaBlockouts(),
       ])
       setAppointments(appts)
       setRooms(r)
       setServices(s)
       setTherapists(t)
       setReservations(res)
+      setBlockouts(bo)
     } catch (e) {
       console.error(e)
     }
@@ -66,6 +70,7 @@ export default function SpaAgendaDaily() {
 
   useRealtime('spa_appointments', loadData)
   useRealtime('spa_rooms', loadData)
+  useRealtime('calendar_events', loadData)
 
   if (
     !hasAccess(
@@ -74,21 +79,49 @@ export default function SpaAgendaDaily() {
     )
   ) {
     return (
-      <RestrictedAccess
-        requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
-      />
+      <RestrictedAccess requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin']} />
     )
   }
 
   const handleFormSubmit = async (data: any) => {
     try {
+      let isNewPending = false
+
       if (selectedAppt) {
         await updateSpaAppointment(selectedAppt.id, data)
         toast({ title: 'Agendamento atualizado!' })
       } else {
         await createSpaAppointment(data)
         toast({ title: 'Agendamento criado!' })
+        if (data.status === 'pending_approval') {
+          isNewPending = true
+        }
       }
+
+      if (isNewPending) {
+        try {
+          const usersToNotify = await pb.collection('users').getFullList({ expand: 'profile' })
+          const targets = usersToNotify.filter(
+            (u: any) =>
+              u.role === 'manager' ||
+              ['Direcao_Admin', 'Spa_Wellness'].includes(u.expand?.profile?.name),
+          )
+          for (const t of targets) {
+            await pb.collection('notifications').create({
+              recipient_id: t.id,
+              sender_id: pb.authStore.record?.id,
+              title: 'SPA: Aprovação Pendente',
+              message: `Novo agendamento com conflito para ${data.guest_name} requer aprovação.`,
+              type: 'approval_request',
+              status: 'unread',
+              link: '/spa/agenda',
+            })
+          }
+        } catch (err) {
+          console.error('Failed to notify managers', err)
+        }
+      }
+
       setFormOpen(false)
       setSelectedAppt(null)
     } catch (e) {
@@ -130,6 +163,7 @@ export default function SpaAgendaDaily() {
 
   const selectedDateObj = parseISO(date)
   const dayAppts = appointments.filter((a) => isSameDay(parseISO(a.start_time), selectedDateObj))
+  const dayBlockouts = blockouts.filter((b) => isSameDay(parseISO(b.start_date), selectedDateObj))
   const displayTherapists = therapists.filter(
     (t) => therapistFilter === '' || t.id === therapistFilter,
   )
@@ -148,6 +182,8 @@ export default function SpaAgendaDaily() {
         return 'bg-emerald-100 border-emerald-300 text-emerald-900'
       case 'cancelled':
         return 'bg-rose-100 border-rose-300 text-rose-900 opacity-50'
+      case 'pending_approval':
+        return 'bg-orange-100 border-orange-300 text-orange-900'
       default:
         return 'bg-slate-100 border-slate-300 text-slate-900'
     }
@@ -222,6 +258,8 @@ export default function SpaAgendaDaily() {
           <div className="flex-1 flex min-w-max">
             {displayTherapists.map((t) => {
               const tAppts = dayAppts.filter((a) => a.therapist_id === t.id)
+              const tBlocks = dayBlockouts.filter((b) => b.user_id === t.id)
+
               return (
                 <div
                   key={t.id}
@@ -241,6 +279,28 @@ export default function SpaAgendaDaily() {
                     />
                   ))}
 
+                  {/* Blockouts */}
+                  {tBlocks.map((b) => {
+                    const start = parseISO(b.start_date)
+                    const end = parseISO(b.end_date)
+                    const duration = (end.getTime() - start.getTime()) / 60000
+                    let topOffset = (getHours(start) - 8) * 60 + getMinutes(start) + 40
+                    if (topOffset < 40) topOffset = 40
+
+                    return (
+                      <div
+                        key={b.id}
+                        className="absolute w-[95%] left-[2.5%] bg-slate-200 border border-slate-300 rounded-md p-2 text-xs flex flex-col items-center justify-center text-slate-600 opacity-60"
+                        style={{ top: `${topOffset}px`, height: `${duration}px` }}
+                      >
+                        <CalendarHeart className="w-4 h-4 mb-1" />
+                        <span className="font-bold uppercase tracking-wider">
+                          {b.description || 'BLOQUEIO'}
+                        </span>
+                      </div>
+                    )
+                  })}
+
                   {/* Appointments */}
                   {tAppts.map((a) => {
                     const start = parseISO(a.start_time)
@@ -255,7 +315,7 @@ export default function SpaAgendaDaily() {
                       <div
                         key={a.id}
                         className="absolute w-[95%] left-[2.5%] group"
-                        style={{ top: `${topOffset}px`, height: `${duration}px` }}
+                        style={{ top: `${topOffset}px`, height: `${duration}px`, zIndex: 5 }}
                       >
                         <div
                           onClick={(e) => {
@@ -263,7 +323,7 @@ export default function SpaAgendaDaily() {
                               toast({
                                 title: 'Acesso Restrito',
                                 description:
-                                  'Apenas leitura de detalhes permitida para Front Desk.',
+                                  'Apenas leitura de detalhes permitida para o seu perfil.',
                               })
                               e.stopPropagation()
                               return
@@ -272,22 +332,26 @@ export default function SpaAgendaDaily() {
                             setFormOpen(true)
                           }}
                           className={cn(
-                            'w-full h-full rounded-md border p-2 text-xs cursor-pointer shadow-sm overflow-hidden hover:shadow-md transition-all',
+                            'w-full h-full rounded-md border p-2 text-xs shadow-sm overflow-hidden transition-all relative',
                             getStatusColor(a.status),
+                            !isFrontDesk && 'cursor-pointer hover:shadow-md hover:-translate-y-0.5',
                           )}
                         >
-                          <div className="font-bold truncate">{a.guest_name}</div>
-                          <div className="text-[10px] truncate opacity-80">
+                          <div className="font-bold truncate flex items-center gap-1">
+                            {a.status === 'pending_approval' && <AlertCircle className="w-3 h-3" />}
+                            {a.guest_name}
+                          </div>
+                          <div className="text-[10px] truncate opacity-80 mt-0.5">
                             {a.expand?.service_id?.name}
                           </div>
-                          <div className="flex items-center gap-1 mt-1 opacity-70">
+                          <div className="flex items-center gap-1 mt-1.5 opacity-75 font-medium">
                             <Clock className="w-3 h-3" /> {format(start, 'HH:mm')} -{' '}
                             {format(end, 'HH:mm')}
                           </div>
                         </div>
                         {buffer > 0 && (
                           <div
-                            className="absolute w-full left-0 bg-stripes opacity-20 border border-slate-300 rounded-b-md"
+                            className="absolute w-full left-0 bg-stripes opacity-30 border border-slate-300 rounded-b-md"
                             style={{ top: `${duration}px`, height: `${buffer}px` }}
                             title="Tempo de Preparação"
                           />
@@ -298,7 +362,7 @@ export default function SpaAgendaDaily() {
                             {a.status === 'scheduled' && (
                               <Button
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-6 w-6 shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setSelectedAppt(a)
@@ -311,7 +375,7 @@ export default function SpaAgendaDaily() {
                             {a.status === 'in_progress' && (
                               <Button
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-6 w-6 shadow-sm"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setSelectedAppt(a)
@@ -341,6 +405,9 @@ export default function SpaAgendaDaily() {
         rooms={rooms}
         therapists={therapists}
         reservations={reservations}
+        appointments={appointments}
+        blockouts={blockouts}
+        isFrontDesk={isFrontDesk}
         onSubmit={handleFormSubmit}
       />
 

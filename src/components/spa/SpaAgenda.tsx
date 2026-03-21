@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { MoreHorizontal, Plus, Calendar as CalendarIcon, User, Clock } from 'lucide-react'
+import {
+  MoreHorizontal,
+  Plus,
+  Calendar as CalendarIcon,
+  User,
+  Clock,
+  AlertCircle,
+} from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -25,6 +32,7 @@ import {
   getSpaServices,
   getUsers,
   getActiveReservations,
+  getSpaBlockouts,
   SpaAppointment,
 } from '@/services/spa'
 import { createConsumption } from '@/services/reservations'
@@ -33,12 +41,14 @@ import { toast } from '@/components/ui/use-toast'
 import { SpaAppointmentForm } from './SpaAppointmentForm'
 import { SpaActionDialog } from './SpaActionDialogs'
 import useAuthStore from '@/stores/useAuthStore'
+import pb from '@/lib/pocketbase/client'
 
 export function SpaAgenda() {
   const { userRole } = useAuthStore()
   const isFrontDesk = userRole === 'Front_Desk'
 
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
+  const [blockouts, setBlockouts] = useState<any[]>([])
   const [rooms, setRooms] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
@@ -50,18 +60,20 @@ export function SpaAgenda() {
 
   const loadData = async () => {
     try {
-      const [appts, r, s, t, res] = await Promise.all([
+      const [appts, r, s, t, res, bo] = await Promise.all([
         getSpaAppointments(),
         getSpaRooms(),
         getSpaServices(),
         getUsers(),
         getActiveReservations(),
+        getSpaBlockouts(),
       ])
       setAppointments(appts)
       setRooms(r)
       setServices(s)
       setTherapists(t)
       setReservations(res)
+      setBlockouts(bo)
     } catch (e) {
       console.error('Failed to load SPA data')
     }
@@ -73,16 +85,47 @@ export function SpaAgenda() {
 
   useRealtime('spa_appointments', loadData)
   useRealtime('spa_rooms', loadData)
+  useRealtime('calendar_events', loadData)
 
   const handleFormSubmit = async (data: any) => {
     try {
+      let isNewPending = false
+
       if (selectedAppt) {
         await updateSpaAppointment(selectedAppt.id, data)
         toast({ title: 'Agendamento atualizado!' })
       } else {
         await createSpaAppointment(data)
         toast({ title: 'Agendamento criado!' })
+        if (data.status === 'pending_approval') {
+          isNewPending = true
+        }
       }
+
+      if (isNewPending) {
+        try {
+          const usersToNotify = await pb.collection('users').getFullList({ expand: 'profile' })
+          const targets = usersToNotify.filter(
+            (u: any) =>
+              u.role === 'manager' ||
+              ['Direcao_Admin', 'Spa_Wellness'].includes(u.expand?.profile?.name),
+          )
+          for (const t of targets) {
+            await pb.collection('notifications').create({
+              recipient_id: t.id,
+              sender_id: pb.authStore.record?.id,
+              title: 'SPA: Aprovação Pendente',
+              message: `Novo agendamento com conflito para ${data.guest_name} requer aprovação.`,
+              type: 'approval_request',
+              status: 'unread',
+              link: '/spa/agenda',
+            })
+          }
+        } catch (err) {
+          console.error('Failed to notify managers', err)
+        }
+      }
+
       setFormOpen(false)
       setSelectedAppt(null)
     } catch (e) {
@@ -128,6 +171,16 @@ export function SpaAgenda() {
     in_progress: 'bg-amber-100 text-amber-700 animate-pulse',
     completed: 'bg-emerald-100 text-emerald-700',
     cancelled: 'bg-rose-100 text-rose-700',
+    pending_approval: 'bg-orange-100 text-orange-800 border-orange-300',
+  }
+
+  const statusLabels: Record<string, string> = {
+    scheduled: 'AGENDADO',
+    checked_in: 'CHECK-IN',
+    in_progress: 'EM ANDAMENTO',
+    completed: 'CONCLUÍDO',
+    cancelled: 'CANCELADO',
+    pending_approval: 'PENDENTE APROVAÇÃO',
   }
 
   return (
@@ -174,7 +227,12 @@ export function SpaAgenda() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-slate-900">{a.guest_name}</div>
+                    <div className="font-medium text-slate-900 flex items-center gap-1.5">
+                      {a.status === 'pending_approval' && (
+                        <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+                      )}
+                      {a.guest_name}
+                    </div>
                     <div className="text-xs text-slate-500">Qto: {roomNum}</div>
                   </TableCell>
                   <TableCell>
@@ -189,10 +247,10 @@ export function SpaAgenda() {
                       {a.expand?.therapist_id?.name || 'Não atri.'}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm">{a.expand?.spa_room_id?.name}</TableCell>
+                  <TableCell className="text-sm">{a.expand?.spa_room_id?.name || '-'}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusColors[a.status] || ''}>
-                      {a.status.replace('_', ' ').toUpperCase()}
+                      {statusLabels[a.status] || a.status.toUpperCase()}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -232,17 +290,19 @@ export function SpaAgenda() {
                               Finalizar (Check-out)
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem
-                            className="text-rose-600"
-                            onClick={async () => {
-                              if (confirm('Cancelar agendamento?')) {
-                                await updateSpaAppointment(a.id, { status: 'cancelled' })
-                                toast({ title: 'Cancelado' })
-                              }
-                            }}
-                          >
-                            Cancelar Agendamento
-                          </DropdownMenuItem>
+                          {a.status !== 'cancelled' && (
+                            <DropdownMenuItem
+                              className="text-rose-600"
+                              onClick={async () => {
+                                if (confirm('Cancelar agendamento?')) {
+                                  await updateSpaAppointment(a.id, { status: 'cancelled' })
+                                  toast({ title: 'Cancelado' })
+                                }
+                              }}
+                            >
+                              Cancelar Agendamento
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : (
@@ -273,6 +333,9 @@ export function SpaAgenda() {
         rooms={rooms}
         therapists={therapists}
         reservations={reservations}
+        appointments={appointments}
+        blockouts={blockouts}
+        isFrontDesk={isFrontDesk}
         onSubmit={handleFormSubmit}
       />
 

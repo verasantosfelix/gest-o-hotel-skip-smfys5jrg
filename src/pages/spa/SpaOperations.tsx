@@ -37,7 +37,6 @@ import useAuthStore from '@/stores/useAuthStore'
 export default function SpaOperations() {
   const { hasAccess } = useAccess()
   const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
 
   const [rooms, setRooms] = useState<SpaRoom[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
@@ -63,7 +62,8 @@ export default function SpaOperations() {
     loadData()
   }, [])
 
-  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'], 'Operações & Salas')) {
+  // Restrict Front_Desk from accessing this view entirely
+  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin'], 'Operações & Salas')) {
     return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin']} />
   }
 
@@ -140,12 +140,10 @@ export default function SpaOperations() {
             {rooms.map((r) => (
               <Card
                 key={r.id}
-                className={`transition-all ${!isFrontDesk ? 'cursor-pointer hover:shadow-md hover:-translate-y-1' : ''}`}
+                className="transition-all cursor-pointer hover:shadow-md hover:-translate-y-1"
                 onClick={() => {
-                  if (!isFrontDesk) {
-                    setRoomOpen(r)
-                    setNewStatus(r.status)
-                  }
+                  setRoomOpen(r)
+                  setNewStatus(r.status)
                 }}
               >
                 <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
@@ -168,11 +166,9 @@ export default function SpaOperations() {
             <h2 className="text-lg font-bold flex items-center gap-2">
               <CalendarOff className="w-5 h-5" /> Bloqueios & Escalas
             </h2>
-            {!isFrontDesk && (
-              <Button size="sm" onClick={() => setBlockoutOpen(true)}>
-                <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
-              </Button>
-            )}
+            <Button size="sm" onClick={() => setBlockoutOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
+            </Button>
           </div>
           <div className="space-y-2">
             {blockouts.map((b) => (
@@ -187,16 +183,14 @@ export default function SpaOperations() {
                       {format(new Date(b.end_date), 'dd/MM HH:mm')}
                     </p>
                   </div>
-                  {!isFrontDesk && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelBo(b.id)}
-                      className="text-rose-500 h-8 w-8"
-                    >
-                      &times;
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelBo(b.id)}
+                    className="text-rose-500 h-8 w-8"
+                  >
+                    &times;
+                  </Button>
                 </CardContent>
               </Card>
             ))}

@@ -5,9 +5,13 @@ import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { getSpaAppointments } from '@/services/spa'
 import { formatCurrency } from '@/lib/utils'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function SpaAgendaMonthly() {
   const { hasAccess } = useAccess()
+  const { userRole } = useAuthStore()
+  const isFrontDesk = userRole === 'Front_Desk'
+
   const [stats, setStats] = useState({ revenue: 0, count: 0, completionRate: 0 })
 
   useEffect(() => {
@@ -54,17 +58,21 @@ export default function SpaAgendaMonthly() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-emerald-100 p-3 rounded-full">
-              <TrendingUp className="w-6 h-6 text-emerald-700" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Receita SPA</p>
-              <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.revenue)}</h3>
-            </div>
-          </CardContent>
-        </Card>
+        {!isFrontDesk && (
+          <Card>
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="bg-emerald-100 p-3 rounded-full">
+                <TrendingUp className="w-6 h-6 text-emerald-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Receita SPA</p>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(stats.revenue)}
+                </h3>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardContent className="p-6 flex items-center gap-4">
             <div className="bg-blue-100 p-3 rounded-full">

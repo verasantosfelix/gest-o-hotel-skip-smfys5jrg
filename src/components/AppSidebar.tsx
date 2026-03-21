@@ -195,13 +195,13 @@ const navGroups = [
         name: 'Operações & Salas',
         url: '/spa/operacoes',
         icon: Settings,
-        roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
+        roles: ['Spa_Wellness', 'Direcao_Admin'], // Front Desk restricted
       },
       {
         name: 'Lavanderia SPA',
         url: '/spa/lavanderia',
         icon: Shirt,
-        roles: ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
+        roles: ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin'], // Front Desk restricted
       },
       {
         name: 'Lazer & Piscinas',
@@ -520,12 +520,7 @@ export function AppSidebar() {
     }
 
     try {
-      if (
-        hasAccess(
-          ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
-          'Lavanderia SPA',
-        )
-      ) {
+      if (hasAccess(['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin'], 'Lavanderia SPA')) {
         const laundry = await pb.collection('laundry_logs').getList(1, 1, {
           filter: 'location = "SPA" && status != "Entregue"',
         })

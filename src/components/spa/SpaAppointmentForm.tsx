@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { AlertTriangle } from 'lucide-react'
 import { SpaAppointment } from '@/services/spa'
 
 interface Props {
@@ -27,6 +28,9 @@ interface Props {
   rooms: any[]
   therapists: any[]
   reservations: any[]
+  appointments: SpaAppointment[]
+  blockouts: any[]
+  isFrontDesk: boolean
   onSubmit: (data: any) => Promise<void>
 }
 
@@ -38,6 +42,9 @@ export function SpaAppointmentForm({
   rooms,
   therapists,
   reservations,
+  appointments,
+  blockouts,
+  isFrontDesk,
   onSubmit,
 }: Props) {
   const [form, setForm] = useState({
@@ -54,8 +61,70 @@ export function SpaAppointmentForm({
     status: initialData?.status || 'scheduled',
   })
 
+  const [isConflict, setIsConflict] = useState(false)
+
+  // Recalculate conflict status when time, therapist or service changes
+  useEffect(() => {
+    if (!form.start_time || !form.therapist_id || !form.service_id) {
+      setIsConflict(false)
+      return
+    }
+
+    const start = new Date(form.start_time)
+    const svc = services.find((s) => s.id === form.service_id)
+    if (!svc) return
+
+    const buffer = form.preparation_time_buffer || 0
+    const end = new Date(start.getTime() + (svc.duration_minutes + buffer) * 60000)
+
+    let conflict = false
+
+    // 1. Check existing appointments overlap
+    for (const a of appointments) {
+      if (initialData && a.id === initialData.id) continue
+      if (a.therapist_id !== form.therapist_id) continue
+      if (['cancelled', 'completed'].includes(a.status)) continue
+
+      const aStart = new Date(a.start_time)
+      const aEnd = new Date(
+        new Date(a.end_time).getTime() + (a.preparation_time_buffer || 0) * 60000,
+      )
+
+      if (Math.max(start.getTime(), aStart.getTime()) < Math.min(end.getTime(), aEnd.getTime())) {
+        conflict = true
+        break
+      }
+    }
+
+    // 2. Check blockouts overlap
+    if (!conflict && blockouts) {
+      for (const b of blockouts) {
+        if (b.user_id !== form.therapist_id) continue
+        const bStart = new Date(b.start_date)
+        const bEnd = new Date(b.end_date)
+
+        if (Math.max(start.getTime(), bStart.getTime()) < Math.min(end.getTime(), bEnd.getTime())) {
+          conflict = true
+          break
+        }
+      }
+    }
+
+    setIsConflict(conflict)
+  }, [
+    form.start_time,
+    form.therapist_id,
+    form.service_id,
+    form.preparation_time_buffer,
+    appointments,
+    blockouts,
+    services,
+    initialData,
+  ])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     let finalEnd = form.end_time
     if (!finalEnd && form.service_id && form.start_time) {
       const svc = services.find((s) => s.id === form.service_id)
@@ -65,7 +134,25 @@ export function SpaAppointmentForm({
         finalEnd = d.toISOString().slice(0, 16)
       }
     }
-    await onSubmit({ ...form, end_time: finalEnd || form.start_time })
+
+    // Determine final status
+    let finalStatus = form.status
+    if (!initialData) {
+      if (isConflict) {
+        finalStatus = 'pending_approval'
+      } else {
+        finalStatus = 'scheduled'
+      }
+    }
+
+    const payload = {
+      ...form,
+      end_time: finalEnd || form.start_time,
+      status: finalStatus,
+      spa_room_id: isFrontDesk ? '' : form.spa_room_id,
+    }
+
+    await onSubmit(payload)
   }
 
   const handleGuestChange = (resId: string) => {
@@ -82,6 +169,21 @@ export function SpaAppointmentForm({
           <DialogTitle>{initialData ? 'Editar Agendamento' : 'Novo Agendamento SPA'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          {isConflict && !initialData && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-md text-sm text-orange-800 flex gap-2 items-start animate-in fade-in slide-in-from-top-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-orange-900">Conflito de Agenda Detectado</p>
+                <p className="mt-1">
+                  O terapeuta selecionado já possui um agendamento ou bloqueio neste horário. Se
+                  você prosseguir, a reserva será criada com status{' '}
+                  <strong>Pendente de Aprovação</strong>
+                  para avaliação da gerência.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Hóspede (Reserva Hotel)</Label>
@@ -128,30 +230,33 @@ export function SpaAppointmentForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Sala SPA</Label>
-              <Select
-                value={form.spa_room_id}
-                onValueChange={(v) => setForm({ ...form, spa_room_id: v })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRooms.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name} - {r.status}
-                    </SelectItem>
-                  ))}
-                  {availableRooms.length === 0 && (
-                    <SelectItem value="none" disabled>
-                      Nenhuma sala livre
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {!isFrontDesk && (
+              <div className="space-y-2">
+                <Label>Sala SPA</Label>
+                <Select
+                  value={form.spa_room_id}
+                  onValueChange={(v) => setForm({ ...form, spa_room_id: v })}
+                  required={!isFrontDesk}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRooms.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name} - {r.status}
+                      </SelectItem>
+                    ))}
+                    {availableRooms.length === 0 && (
+                      <SelectItem value="none" disabled>
+                        Nenhuma sala livre
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -185,17 +290,38 @@ export function SpaAppointmentForm({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Buffer de Preparação (minutos)</Label>
-            <Input
-              type="number"
-              value={form.preparation_time_buffer}
-              onChange={(e) =>
-                setForm({ ...form, preparation_time_buffer: parseInt(e.target.value) || 0 })
-              }
-              placeholder="Ex: 15"
-            />
-          </div>
+          {!isFrontDesk && initialData && (
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending_approval">Pendente Aprovação</SelectItem>
+                  <SelectItem value="scheduled">Agendado</SelectItem>
+                  <SelectItem value="checked_in">Check-in Realizado</SelectItem>
+                  <SelectItem value="in_progress">Em Andamento</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {!isFrontDesk && (
+            <div className="space-y-2">
+              <Label>Buffer de Preparação (minutos)</Label>
+              <Input
+                type="number"
+                value={form.preparation_time_buffer}
+                onChange={(e) =>
+                  setForm({ ...form, preparation_time_buffer: parseInt(e.target.value) || 0 })
+                }
+                placeholder="Ex: 15"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-rose-600 font-bold">Contraindicações / Alergias</Label>
@@ -218,7 +344,9 @@ export function SpaAppointmentForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar Agendamento</Button>
+            <Button type="submit">
+              {isConflict && !initialData ? 'Salvar (Pendente)' : 'Salvar Agendamento'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

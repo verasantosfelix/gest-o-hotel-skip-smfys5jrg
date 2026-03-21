@@ -40,7 +40,13 @@ export interface SpaAppointment {
   start_time: string
   end_time: string
   preparation_time_buffer?: number
-  status: 'scheduled' | 'checked_in' | 'in_progress' | 'completed' | 'cancelled'
+  status:
+    | 'scheduled'
+    | 'checked_in'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled'
+    | 'pending_approval'
   contraindications: string
   notes: string
   expand?: {
