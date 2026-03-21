@@ -21,7 +21,9 @@ export default function SpaAgendaMonthly() {
           count: completed.length,
           completionRate: appts.length > 0 ? (completed.length / appts.length) * 100 : 0,
         })
-      } catch (e) {}
+      } catch (e) {
+        console.error(e)
+      }
     }
     loadData()
   }, [])

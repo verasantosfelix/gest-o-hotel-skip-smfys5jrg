@@ -57,7 +57,9 @@ export default function SpaCatalog() {
   const loadData = async () => {
     try {
       setServices(await getSpaServices())
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {

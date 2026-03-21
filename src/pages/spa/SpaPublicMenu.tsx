@@ -23,6 +23,7 @@ export default function SpaPublicMenu() {
         const data = await getSpaServices("status = 'published'")
         setServices(data)
       } catch (e) {
+        console.error(e)
       } finally {
         setLoading(false)
       }

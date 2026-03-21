@@ -504,7 +504,9 @@ export function AppSidebar() {
         })
         setOpenMaintenance(maint.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
 
     try {
       if (hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Impresso (PDF)')) {
@@ -513,7 +515,9 @@ export function AppSidebar() {
         })
         setPendingPdf(pdfs.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
 
     try {
       if (
@@ -527,7 +531,9 @@ export function AppSidebar() {
         })
         setPendingSpaLaundry(laundry.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {

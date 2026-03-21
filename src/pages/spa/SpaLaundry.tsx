@@ -54,7 +54,9 @@ export default function SpaLaundry() {
   const loadData = async () => {
     try {
       setLogs(await getLaundryLogs("location='SPA'"))
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {
