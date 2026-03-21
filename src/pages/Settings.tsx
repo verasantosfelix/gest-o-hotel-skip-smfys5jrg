@@ -10,7 +10,7 @@ export default function Settings() {
   const { hasAccess } = useAccess()
   const { allowReports, setAllowReports } = useAuthStore()
 
-  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'])) {
+  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'], 'Configurações')) {
     return <RestrictedAccess requiredRoles={['Tecnologia_TI', 'Direcao_Admin']} />
   }
 

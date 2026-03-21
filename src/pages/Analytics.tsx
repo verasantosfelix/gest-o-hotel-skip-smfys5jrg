@@ -11,7 +11,7 @@ const occupancyData = [{ month: 'Jan', occupancy: 65 }]
 export default function Analytics() {
   const { hasAccess } = useAccess()
 
-  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'])) {
+  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Analytics')) {
     return <RestrictedAccess requiredRoles={['Administrativo_Financeiro', 'Direcao_Admin']} />
   }
 

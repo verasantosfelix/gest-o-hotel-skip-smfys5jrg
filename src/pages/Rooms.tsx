@@ -95,10 +95,15 @@ export default function Rooms() {
     loadRooms()
   })
 
-  if (!hasAccess(['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(
+      ['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
+      'Quartos',
+    )
+  ) {
     return (
       <RestrictedAccess
-        requiredRoles={['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin']}
+        requiredRoles={['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk']}
       />
     )
   }

@@ -36,7 +36,7 @@ export default function Laundry() {
 
   useRealtime('laundry_logs', loadData)
 
-  if (!hasAccess(['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'])) {
+  if (!hasAccess(['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'], 'Lavanderia')) {
     return (
       <RestrictedAccess requiredRoles={['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk']} />
     )

@@ -32,7 +32,7 @@ export default function Alcadas() {
   }
 
   useEffect(() => {
-    if (isManager() || hasAccess(['Direcao_Admin'])) {
+    if (isManager() || hasAccess(['Direcao_Admin'], 'Alçadas (Aprovações)')) {
       loadData()
     }
   }, [isManager, hasAccess])
@@ -42,7 +42,7 @@ export default function Alcadas() {
   useRealtime('hr_candidates', loadData)
   useRealtime('maintenance_tickets', loadData)
 
-  if (!isManager() && !hasAccess(['Direcao_Admin'])) {
+  if (!isManager() && !hasAccess(['Direcao_Admin'], 'Alçadas (Aprovações)')) {
     return <RestrictedAccess requiredRoles={['Direcao_Admin']} />
   }
 

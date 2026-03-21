@@ -5,7 +5,12 @@ import { NightAuditWizard } from '@/components/finance/NightAuditWizard'
 
 export default function NightAudit() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Administrativo_Financeiro', 'Rececao_FrontOffice', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(
+      ['Administrativo_Financeiro', 'Rececao_FrontOffice', 'Direcao_Admin'],
+      'Auditoria Noturna',
+    )
+  ) {
     return (
       <RestrictedAccess
         requiredRoles={['Administrativo_Financeiro', 'Rececao_FrontOffice', 'Direcao_Admin']}

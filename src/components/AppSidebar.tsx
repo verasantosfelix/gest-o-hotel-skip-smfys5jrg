@@ -66,8 +66,7 @@ import {
 } from '@/components/ui/accordion'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
-import useAuthStore, { Role } from '@/stores/useAuthStore'
-import pb from '@/lib/pocketbase/client'
+import { Role } from '@/stores/useAuthStore'
 
 type NavItem = {
   name: string
@@ -420,28 +419,9 @@ const navGroups = [
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
-  const { isManager } = useAccess()
-  const { userRole } = useAuthStore()
+  const { isManager, hasAccess } = useAccess()
 
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [accordionValue, setAccordionValue] = useState<string[]>([])
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const user = pb.authStore.record
-      if (user?.profile) {
-        try {
-          const p = await pb.collection('profiles').getOne(user.profile)
-          setProfile(p)
-        } catch (e) {
-          console.error('Failed to load profile for sidebar filtering', e)
-        }
-      }
-      setLoading(false)
-    }
-    fetchProfile()
-  }, [])
 
   useEffect(() => {
     // Keep accordion fully collapsed by default upon page load or route change
@@ -450,43 +430,7 @@ export function AppSidebar() {
 
   const hasModuleAccess = (item: NavItem) => {
     if (item.requiresManager && !isManager()) return false
-
-    if (profile) {
-      const allowed = Array.isArray(profile.allowed_actions) ? profile.allowed_actions : []
-      const denied = Array.isArray(profile.denied_actions) ? profile.denied_actions : []
-
-      if (denied.includes(item.name) || denied.includes('*')) return false
-      if (allowed.includes(item.name) || allowed.includes('*')) return true
-
-      if (allowed.length > 0) return false
-    }
-
-    if (userRole === 'Direcao_Admin' || pb.authStore.record?.role === 'manager') return true
-    return item.roles.includes(userRole)
-  }
-
-  if (loading) {
-    return (
-      <Sidebar variant="sidebar" collapsible="offcanvas">
-        <SidebarHeader className="h-16 flex items-center justify-center border-b px-4">
-          <div className="flex items-center gap-2 w-full font-bold text-primary">
-            <Hotel className="h-5 w-5 text-accent" />
-            <span className="truncate tracking-tight">SKIP {selectedHotel.name.split(' ')[1]}</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="p-4 space-y-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-3">
-              <div className="h-4 bg-slate-100 rounded w-1/2 animate-pulse" />
-              <div className="space-y-2 pl-2">
-                <div className="h-8 bg-slate-50 rounded w-full animate-pulse" />
-                <div className="h-8 bg-slate-50 rounded w-full animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </SidebarContent>
-      </Sidebar>
-    )
+    return hasAccess(item.roles, item.name)
   }
 
   return (

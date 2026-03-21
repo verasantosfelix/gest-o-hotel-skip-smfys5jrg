@@ -5,7 +5,7 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function TechMobility() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Manutencao_Oficina', 'Tecnologia_TI', 'Direcao_Admin'])) {
+  if (!hasAccess(['Manutencao_Oficina', 'Tecnologia_TI', 'Direcao_Admin'], 'Mobilidade')) {
     return (
       <RestrictedAccess requiredRoles={['Manutencao_Oficina', 'Tecnologia_TI', 'Direcao_Admin']} />
     )

@@ -5,7 +5,7 @@ import { ModuleCalendar } from '@/components/dashboard/ModuleCalendar'
 
 export default function HRIntelligence() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'])) {
+  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'HR Intelligence')) {
     return <RestrictedAccess requiredRoles={['Administrativo_Financeiro', 'Direcao_Admin']} />
   }
   return (

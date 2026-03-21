@@ -5,7 +5,7 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function ChatOps() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'])) {
+  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'], 'ChatOps')) {
     return <RestrictedAccess requiredRoles={['Tecnologia_TI', 'Direcao_Admin']} />
   }
   return (

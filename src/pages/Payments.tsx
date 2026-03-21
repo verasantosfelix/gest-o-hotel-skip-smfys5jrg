@@ -5,7 +5,9 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function Payments() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Rececao_FrontOffice', 'Administrativo_Financeiro', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(['Rececao_FrontOffice', 'Administrativo_Financeiro', 'Direcao_Admin'], 'Pagamentos')
+  ) {
     return (
       <RestrictedAccess
         requiredRoles={['Rececao_FrontOffice', 'Administrativo_Financeiro', 'Direcao_Admin']}

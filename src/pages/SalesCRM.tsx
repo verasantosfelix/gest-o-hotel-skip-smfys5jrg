@@ -5,8 +5,10 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function SalesCRM() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Vendas & Distribuição')) {
+    return (
+      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
   return (
     <div className="space-y-6 animate-fade-in pb-8">

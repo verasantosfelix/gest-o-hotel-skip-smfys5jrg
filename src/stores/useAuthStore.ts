@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import pb from '@/lib/pocketbase/client'
 
 export type Role =
   | 'Lavanderia_Limpeza'
@@ -17,6 +18,7 @@ interface AuthStore {
   userName: string
   allowReports: boolean
   setAllowReports: (allow: boolean) => void
+  profile: any
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
@@ -24,6 +26,57 @@ const AuthContext = createContext<AuthStore | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<Role>('Direcao_Admin')
   const [allowReports, setAllowReports] = useState(false)
+  const [profile, setProfile] = useState<any>(null)
+
+  const loadProfile = async () => {
+    const user = pb.authStore.record
+    if (user?.profile) {
+      try {
+        const p = await pb.collection('profiles').getOne(user.profile)
+        setProfile(p)
+      } catch (e) {
+        setProfile(null)
+      }
+    } else {
+      setProfile(null)
+    }
+  }
+
+  useEffect(() => {
+    loadProfile()
+    const unsubscribe = pb.authStore.onChange(() => {
+      loadProfile()
+    }, true)
+    return () => unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!profile?.id) return
+
+    let unsubscribeFn: (() => Promise<void>) | undefined
+    let cancelled = false
+
+    pb.collection('profiles')
+      .subscribe(profile.id, (e) => {
+        if (e.action === 'update') {
+          setProfile(e.record)
+        }
+      })
+      .then((fn) => {
+        if (cancelled) {
+          fn().catch(() => {})
+        } else {
+          unsubscribeFn = fn
+        }
+      })
+
+    return () => {
+      cancelled = true
+      if (unsubscribeFn) {
+        unsubscribeFn().catch(() => {})
+      }
+    }
+  }, [profile?.id])
 
   const userNameMap: Record<Role, string> = {
     Direcao_Admin: 'Gerente Geral',
@@ -41,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return React.createElement(
     AuthContext.Provider,
-    { value: { userRole, setUserRole, userName, allowReports, setAllowReports } },
+    { value: { userRole, setUserRole, userName, allowReports, setAllowReports, profile } },
     children,
   )
 }

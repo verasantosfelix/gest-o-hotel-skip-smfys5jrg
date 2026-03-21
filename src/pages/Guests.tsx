@@ -32,8 +32,10 @@ export default function Guests() {
   const { hasAccess } = useAccess()
   const [searchTerm, setSearchTerm] = useState('')
 
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Hóspedes')) {
+    return (
+      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   const filtered = GUESTS.filter(

@@ -54,7 +54,7 @@ export default function FinanceCorporate() {
   useRealtime('financial_contracts', loadData)
   useRealtime('financial_audit_logs', loadData)
 
-  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'])) {
+  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Financeiro Corp')) {
     return <RestrictedAccess requiredRoles={['Administrativo_Financeiro', 'Direcao_Admin']} />
   }
 

@@ -50,8 +50,10 @@ export default function Reservations() {
   const [selected, setSelected] = useState<Reservation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Reservas')) {
+    return (
+      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   const today = new Date().toISOString().split('T')[0]

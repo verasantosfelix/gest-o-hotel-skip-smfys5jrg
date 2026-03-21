@@ -24,7 +24,7 @@ export default function Security() {
   const { hasAccess } = useAccess()
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  if (!hasAccess(['Tecnologia_TI', 'Manutencao_Oficina', 'Direcao_Admin'])) {
+  if (!hasAccess(['Tecnologia_TI', 'Manutencao_Oficina', 'Direcao_Admin'], 'Segurança')) {
     return (
       <RestrictedAccess requiredRoles={['Tecnologia_TI', 'Manutencao_Oficina', 'Direcao_Admin']} />
     )

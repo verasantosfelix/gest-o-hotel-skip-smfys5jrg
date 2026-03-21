@@ -10,7 +10,7 @@ import { MenuPDFSchedules } from '@/components/fnb/MenuPDFSchedules'
 export default function MenuPDF() {
   const { hasAccess } = useAccess()
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'])) {
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Impresso (PDF)')) {
     return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
   }
 

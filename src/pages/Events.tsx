@@ -18,8 +18,10 @@ import { EventsKPIs } from '@/components/events/EventsKPIs'
 
 export default function Events() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Eventos & MICE')) {
+    return (
+      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   return (

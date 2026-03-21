@@ -13,7 +13,7 @@ export default function DigitalMenuAdmin() {
   const { hasAccess } = useAccess()
   const isDirector = hasAccess(['Direcao_Admin'])
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'])) {
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Digital')) {
     return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
   }
 

@@ -57,7 +57,7 @@ export default function Staff() {
   useRealtime('users', loadData)
   useRealtime('profiles', loadData)
 
-  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'])) {
+  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Equipe & RH')) {
     return <RestrictedAccess requiredRoles={['Administrativo_Financeiro', 'Direcao_Admin']} />
   }
 
@@ -139,9 +139,8 @@ export default function Staff() {
         {/* Tab 1: Overview & Members */}
         <TabsContent value="overview" className="space-y-6">
           <div className="flex justify-end mb-4">
-            {(hasAccess(['Administrativo_Financeiro', 'Direcao_Admin']) || isManager()) && (
-              <CreateUserDialog profiles={profiles} />
-            )}
+            {(hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Equipe & RH') ||
+              isManager()) && <CreateUserDialog profiles={profiles} />}
           </div>
 
           <div className="space-y-8">

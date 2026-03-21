@@ -37,13 +37,17 @@ export default function ServiceExpensePosting() {
   const [isSuccess, setIsSuccess] = useState(false)
 
   if (
-    !hasAccess([
-      'Restaurante_Bar',
-      'Spa_Wellness',
-      'Lavanderia_Limpeza',
-      'Rececao_FrontOffice',
-      'Direcao_Admin',
-    ])
+    !hasAccess(
+      [
+        'Restaurante_Bar',
+        'Spa_Wellness',
+        'Lavanderia_Limpeza',
+        'Rececao_FrontOffice',
+        'Direcao_Admin',
+        'Front_Desk',
+      ],
+      'Lançamentos Rápidos',
+    )
   ) {
     return (
       <RestrictedAccess
@@ -53,6 +57,7 @@ export default function ServiceExpensePosting() {
           'Lavanderia_Limpeza',
           'Rececao_FrontOffice',
           'Direcao_Admin',
+          'Front_Desk',
         ]}
       />
     )
@@ -92,7 +97,7 @@ export default function ServiceExpensePosting() {
         createdByRole: userRole,
         createdBy: userName,
       })
-      addLog('EXPENSE_POSTING', `${userName} lançou R$${valNum} na reserva ${reservaId}`)
+      addLog('EXPENSE_POSTING', `${userName} lançou R${valNum} na reserva ${reservaId}`)
     }
     setIsSuccess(true)
   }

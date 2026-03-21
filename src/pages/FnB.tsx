@@ -17,7 +17,7 @@ export default function FnB() {
   const { userRole } = useAuthStore()
   const isFrontDesk = userRole === 'Front_Desk'
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'])) {
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'], 'F&B Básico')) {
     return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk']} />
   }
 

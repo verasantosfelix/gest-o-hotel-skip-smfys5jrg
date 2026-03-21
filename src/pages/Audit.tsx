@@ -8,7 +8,7 @@ export default function Audit() {
   const { hasAccess } = useAccess()
   const { logs } = useAuditStore()
 
-  if (!hasAccess(['Administrativo_Financeiro', 'Tecnologia_TI', 'Direcao_Admin'])) {
+  if (!hasAccess(['Administrativo_Financeiro', 'Tecnologia_TI', 'Direcao_Admin'], 'Auditoria')) {
     return (
       <RestrictedAccess
         requiredRoles={['Administrativo_Financeiro', 'Tecnologia_TI', 'Direcao_Admin']}

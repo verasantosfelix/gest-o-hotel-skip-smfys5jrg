@@ -5,10 +5,15 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function LostAndFound() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(
+      ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      'Achados e Perdidos',
+    )
+  ) {
     return (
       <RestrictedAccess
-        requiredRoles={['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin']}
+        requiredRoles={['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
       />
     )
   }

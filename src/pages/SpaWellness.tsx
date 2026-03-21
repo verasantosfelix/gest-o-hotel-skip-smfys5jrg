@@ -46,7 +46,7 @@ export default function SpaWellness() {
   useRealtime('spa_rooms', loadHeaderData)
   useRealtime('spa_appointments', loadHeaderData)
 
-  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'])) {
+  if (!hasAccess(['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'], 'Spa & Wellness')) {
     return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin', 'Front_Desk']} />
   }
 

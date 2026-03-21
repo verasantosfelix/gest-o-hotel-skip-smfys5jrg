@@ -22,13 +22,17 @@ export default function ServiceGuestLookup() {
   const { hasAccess } = useAccess()
 
   if (
-    !hasAccess([
-      'Restaurante_Bar',
-      'Spa_Wellness',
-      'Lavanderia_Limpeza',
-      'Rececao_FrontOffice',
-      'Direcao_Admin',
-    ])
+    !hasAccess(
+      [
+        'Restaurante_Bar',
+        'Spa_Wellness',
+        'Lavanderia_Limpeza',
+        'Rececao_FrontOffice',
+        'Direcao_Admin',
+        'Front_Desk',
+      ],
+      'Busca Hóspedes',
+    )
   ) {
     return (
       <RestrictedAccess
@@ -38,6 +42,7 @@ export default function ServiceGuestLookup() {
           'Lavanderia_Limpeza',
           'Rececao_FrontOffice',
           'Direcao_Admin',
+          'Front_Desk',
         ]}
       />
     )

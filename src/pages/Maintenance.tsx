@@ -59,7 +59,7 @@ export default function Maintenance() {
   useRealtime('it_assets', loadData)
   useRealtime('rooms', loadData)
 
-  if (!hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'])) {
+  if (!hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'], 'Manutenção')) {
     return (
       <RestrictedAccess requiredRoles={['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk']} />
     )

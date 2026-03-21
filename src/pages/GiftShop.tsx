@@ -5,10 +5,12 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function GiftShop() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'], 'Loja')
+  ) {
     return (
       <RestrictedAccess
-        requiredRoles={['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin']}
+        requiredRoles={['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin', 'Front_Desk']}
       />
     )
   }

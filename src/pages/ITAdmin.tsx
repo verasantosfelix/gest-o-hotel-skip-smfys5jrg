@@ -38,7 +38,7 @@ export default function ITAdmin() {
   useRealtime('it_tickets', loadData)
   useRealtime('it_assets', loadData)
 
-  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'])) {
+  if (!hasAccess(['Tecnologia_TI', 'Direcao_Admin'], 'IT Admin')) {
     return <RestrictedAccess requiredRoles={['Tecnologia_TI', 'Direcao_Admin']} />
   }
 

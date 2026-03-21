@@ -5,9 +5,16 @@ import { ModuleCalendar } from '@/components/dashboard/ModuleCalendar'
 
 export default function PoolsLeisure() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin'])) {
+  if (
+    !hasAccess(
+      ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+      'Lazer & Piscinas',
+    )
+  ) {
     return (
-      <RestrictedAccess requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin']} />
+      <RestrictedAccess
+        requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
+      />
     )
   }
   return (

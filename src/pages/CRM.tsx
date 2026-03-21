@@ -6,8 +6,10 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 export default function CRM() {
   const { hasAccess } = useAccess()
 
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin'])) {
-    return <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin']} />
+  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'CRM')) {
+    return (
+      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
+    )
   }
 
   return (

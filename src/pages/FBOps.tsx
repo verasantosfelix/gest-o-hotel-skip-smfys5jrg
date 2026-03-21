@@ -5,7 +5,7 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function FBOps() {
   const { hasAccess } = useAccess()
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'])) {
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'F&B Operações')) {
     return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
   }
   return (
