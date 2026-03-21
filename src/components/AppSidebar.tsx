@@ -52,15 +52,17 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
 } from '@/components/ui/sidebar'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
 import useAuthStore, { Role } from '@/stores/useAuthStore'
@@ -470,50 +472,38 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
-        {navGroups.map((group) => {
-          const visibleItems = group.items.filter(hasModuleAccess)
+        <Accordion type="multiple" className="w-full space-y-1">
+          {navGroups.map((group) => {
+            const visibleItems = group.items.filter(hasModuleAccess)
 
-          if (visibleItems.length === 0) return null
+            if (visibleItems.length === 0) return null
 
-          return (
-            <Collapsible
-              key={group.label}
-              defaultOpen={false}
-              className="group/collapsible mb-4 last:mb-0"
-            >
-              <SidebarGroup className="p-0">
-                <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-between w-full">
-                    <span>{group.label}</span>
-                    <span className="text-slate-400 text-[12px] font-mono leading-none">
-                      <span className="group-data-[state=open]/collapsible:hidden">▸</span>
-                      <span className="hidden group-data-[state=open]/collapsible:inline">▾</span>
-                    </span>
-                  </CollapsibleTrigger>
-                </SidebarGroupLabel>
-                <CollapsibleContent className="data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out data-[state=open]:fade-in">
-                  <SidebarGroupContent className="pt-1">
-                    <SidebarMenu>
-                      {visibleItems.map((item) => {
-                        const isActive = location.pathname === item.url
-                        return (
-                          <SidebarMenuItem key={item.name}>
-                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                              <Link to={item.url} className="flex items-center gap-3">
-                                <item.icon className="h-4 w-4" />
-                                <span className="font-medium">{item.name}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        )
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </SidebarGroup>
-            </Collapsible>
-          )
-        })}
+            return (
+              <AccordionItem key={group.label} value={group.label} className="border-none">
+                <AccordionTrigger className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground py-2 px-2 rounded-md hover:no-underline text-sm font-medium">
+                  {group.label}
+                </AccordionTrigger>
+                <AccordionContent className="pb-1 pt-1 px-1">
+                  <SidebarMenu>
+                    {visibleItems.map((item) => {
+                      const isActive = location.pathname === item.url
+                      return (
+                        <SidebarMenuItem key={item.name}>
+                          <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                            <Link to={item.url} className="flex items-center gap-3">
+                              <item.icon className="h-4 w-4" />
+                              <span className="font-medium">{item.name}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )
+                    })}
+                  </SidebarMenu>
+                </AccordionContent>
+              </AccordionItem>
+            )
+          })}
+        </Accordion>
       </SidebarContent>
     </Sidebar>
   )
