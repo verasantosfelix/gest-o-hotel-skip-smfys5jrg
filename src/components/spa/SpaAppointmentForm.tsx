@@ -170,7 +170,9 @@ export function SpaAppointmentForm({
         dateStyle: 'short',
         timeStyle: 'short',
       })
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Could not format start_time for WhatsApp message', e)
+    }
     const msg = `Olá ${form.guest_name}, a sua reserva de ${svcName} no Complexo Agroturístico de Cacuso para o dia ${dateStr} foi confirmada! Vemo-nos em breve.`
     const cleanPhone = form.guest_phone.replace(/\D/g, '')
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
