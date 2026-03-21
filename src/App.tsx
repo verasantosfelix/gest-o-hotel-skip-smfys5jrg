@@ -151,6 +151,8 @@ const App = () => {
 
                         <Route element={<Layout />}>
                           <Route path="/" element={<Index />} />
+
+                          {/* Main Routes */}
                           <Route path="/reservas" element={<Reservations />} />
                           <Route path="/quartos" element={<Rooms />} />
                           <Route path="/hospedes" element={<Guests />} />
@@ -186,7 +188,6 @@ const App = () => {
                           <Route path="/loja" element={<GiftShop />} />
                           <Route path="/chatops" element={<ChatOps />} />
                           <Route path="/pagamentos" element={<Payments />} />
-
                           <Route path="/lavanderia" element={<Laundry />} />
                           <Route path="/achados-perdidos" element={<LostAndFound />} />
                           <Route path="/minibar-amenities" element={<MinibarAmenities />} />
@@ -195,11 +196,16 @@ const App = () => {
                           <Route path="/ai-concierge" element={<AIConcierge />} />
                           <Route path="/financeiro-corp" element={<FinanceCorporate />} />
                           <Route path="/auditoria-noturna" element={<NightAudit />} />
-
                           <Route path="/hr" element={<HRIntelligence />} />
                           <Route path="/it-admin" element={<ITAdmin />} />
                           <Route path="/fb-ops" element={<FBOps />} />
                           <Route path="/sales-crm" element={<SalesCRM />} />
+
+                          {/* Quick Access Action Routes */}
+                          <Route path="/reservations/new" element={<Reservations />} />
+                          <Route path="/maintenance/new" element={<Maintenance />} />
+                          <Route path="/spa/appointments" element={<SpaWellness />} />
+                          <Route path="/fb/room-service" element={<FnB />} />
                         </Route>
                         <Route path="*" element={<NotFound />} />
                       </Routes>

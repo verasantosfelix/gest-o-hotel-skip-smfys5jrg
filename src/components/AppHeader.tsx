@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -15,8 +15,125 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { format } from 'date-fns'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+
+const PATH_LABELS: Record<string, string> = {
+  reservas: 'Reservas',
+  reservations: 'Reservas',
+  hospedes: 'Hóspedes',
+  quartos: 'Quartos',
+  governanca: 'Governança',
+  'busca-hospedes': 'Busca de Hóspedes',
+  'lancamento-servicos': 'Lançamentos',
+  auditoria: 'Auditoria',
+  alcadas: 'Alçadas',
+  analytics: 'Analytics',
+  relatorios: 'Relatórios',
+  configuracoes: 'Configurações',
+  crm: 'CRM',
+  equipe: 'Equipe',
+  integracoes: 'Integrações',
+  marketing: 'Marketing',
+  fnb: 'F&B Básico',
+  fb: 'F&B',
+  restaurante: 'Restaurante',
+  'menu-digital': 'Menu Digital',
+  'menu-pdf': 'Menu PDF',
+  eventos: 'Eventos',
+  manutencao: 'Manutenção',
+  maintenance: 'Manutenção',
+  seguranca: 'Segurança',
+  revenue: 'Revenue',
+  mobilidade: 'Mobilidade',
+  'ia-governanca': 'Governança IA',
+  'guest-journey': 'Guest Journey',
+  comunicacao: 'Comunicação',
+  'documentos-contratos': 'Documentos',
+  concierge: 'Concierge',
+  mice: 'MICE',
+  frota: 'Frota',
+  spa: 'Spa',
+  lazer: 'Lazer',
+  loja: 'Loja',
+  chatops: 'ChatOps',
+  pagamentos: 'Pagamentos',
+  lavanderia: 'Lavanderia',
+  'achados-perdidos': 'Achados e Perdidos',
+  'minibar-amenities': 'Amenities',
+  'fidelidade-feedback': 'Fidelidade',
+  'guest-comms': 'Comunicações',
+  'ai-concierge': 'IA Concierge',
+  'financeiro-corp': 'Finanças',
+  'auditoria-noturna': 'Auditoria Noturna',
+  hr: 'RH',
+  'it-admin': 'IT Admin',
+  'fb-ops': 'F&B Operações',
+  'sales-crm': 'Vendas',
+  new: 'Novo',
+  edit: 'Editar',
+  appointments: 'Agendamentos',
+  'room-service': 'Room Service',
+}
+
+function DynamicBreadcrumbs() {
+  const location = useLocation()
+  const paths = location.pathname.split('/').filter(Boolean)
+
+  if (paths.length === 0) {
+    return (
+      <Breadcrumb className="hidden sm:flex">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbPage className="font-medium text-slate-800">Dashboard</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    )
+  }
+
+  return (
+    <Breadcrumb className="hidden sm:flex">
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link to="/">Início</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        {paths.map((path, index) => {
+          const isLast = index === paths.length - 1
+          const to = `/${paths.slice(0, index + 1).join('/')}`
+          const label =
+            PATH_LABELS[path] || path.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+
+          return (
+            <React.Fragment key={to}>
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage className="font-medium text-slate-800">{label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link to={to}>{label}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {!isLast && <BreadcrumbSeparator />}
+            </React.Fragment>
+          )
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+}
 
 export function AppHeader() {
   const { userRole, setUserRole, userName } = useAuthStore()
@@ -54,6 +171,8 @@ export function AppHeader() {
     <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6 shadow-sm z-10 sticky top-0">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
+        <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+        <DynamicBreadcrumbs />
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
         {isManager() && (

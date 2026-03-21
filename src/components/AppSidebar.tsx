@@ -49,6 +49,10 @@ import {
   LineChart,
   ShieldCheck,
   BookOpen,
+  CalendarPlus,
+  PenTool,
+  CalendarHeart,
+  BellRing,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -57,6 +61,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenuBadge,
 } from '@/components/ui/sidebar'
 import {
   Accordion,
@@ -66,8 +74,10 @@ import {
 } from '@/components/ui/accordion'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
-import { Role } from '@/stores/useAuthStore'
+import useAuthStore, { Role } from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
+import pb from '@/lib/pocketbase/client'
+import { useRealtime } from '@/hooks/use-realtime'
 
 type NavItem = {
   name: string
@@ -76,6 +86,33 @@ type NavItem = {
   roles: Role[]
   requiresManager?: boolean
 }
+
+const quickAccessItems: NavItem[] = [
+  {
+    name: 'Nova Reserva',
+    url: '/reservations/new',
+    icon: CalendarPlus,
+    roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
+  },
+  {
+    name: 'Novo Ticket Manut.',
+    url: '/maintenance/new',
+    icon: PenTool,
+    roles: ['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
+  },
+  {
+    name: 'Agendamento Spa',
+    url: '/spa/appointments',
+    icon: CalendarHeart,
+    roles: ['Spa_Wellness', 'Direcao_Admin', 'Front_Desk'],
+  },
+  {
+    name: 'Room Service',
+    url: '/fb/room-service',
+    icon: BellRing,
+    roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
+  },
+]
 
 const navGroups = [
   {
@@ -420,9 +457,49 @@ const navGroups = [
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
+  const { userRole } = useAuthStore()
   const { isManager, hasAccess } = useAccess()
 
   const [accordionValue, setAccordionValue] = useState<string>('')
+  const [openMaintenance, setOpenMaintenance] = useState(0)
+  const [pendingPdf, setPendingPdf] = useState(0)
+
+  const loadBadgeCounts = async () => {
+    if (!pb.authStore.isValid) return
+
+    try {
+      if (hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'], 'Manutenção')) {
+        const maint = await pb.collection('maintenance_tickets').getList(1, 1, {
+          filter: 'status = "open"',
+        })
+        setOpenMaintenance(maint.totalItems)
+      } else {
+        setOpenMaintenance(0)
+      }
+    } catch (e) {
+      console.error('Failed to load maintenance counts', e)
+    }
+
+    try {
+      if (hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Impresso (PDF)')) {
+        const pdfs = await pb.collection('fb_pdf_versions').getList(1, 1, {
+          filter: 'status = "pending_approval"',
+        })
+        setPendingPdf(pdfs.totalItems)
+      } else {
+        setPendingPdf(0)
+      }
+    } catch (e) {
+      console.error('Failed to load pdf counts', e)
+    }
+  }
+
+  useEffect(() => {
+    loadBadgeCounts()
+  }, [userRole])
+
+  useRealtime('maintenance_tickets', loadBadgeCounts)
+  useRealtime('fb_pdf_versions', loadBadgeCounts)
 
   useEffect(() => {
     // Automatically expand the group that contains the current active route
@@ -439,6 +516,8 @@ export function AppSidebar() {
     return hasAccess(item.roles, item.name)
   }
 
+  const quickAccessVisible = quickAccessItems.filter(hasModuleAccess)
+
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
       <SidebarHeader className="h-16 flex items-center justify-center border-b px-4">
@@ -448,6 +527,36 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
+        {quickAccessVisible.length > 0 && (
+          <SidebarGroup className="mb-2 p-0">
+            <SidebarGroupLabel className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
+              Atalhos Rápidos
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {quickAccessVisible.map((item) => {
+                  const isActive = location.pathname === item.url
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.name}
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/80 transition-colors"
+                      >
+                        <Link to={item.url} className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="font-medium truncate">{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <Accordion
           type="single"
           collapsible
@@ -476,14 +585,41 @@ export function AppSidebar() {
                   <SidebarMenu>
                     {visibleItems.map((item) => {
                       const isActive = location.pathname === item.url
+
+                      let badgeCount = 0
+                      let badgeColor = ''
+
+                      if (item.name === 'Manutenção') {
+                        badgeCount = openMaintenance
+                        badgeColor = 'bg-amber-500 text-white'
+                      } else if (item.name === 'Menu Impresso (PDF)') {
+                        badgeCount = pendingPdf
+                        badgeColor = 'bg-rose-500 text-white'
+                      }
+
                       return (
                         <SidebarMenuItem key={item.name}>
-                          <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                            <Link to={item.url} className="flex items-center gap-3">
-                              <item.icon className="h-4 w-4" />
-                              <span className="font-medium">{item.name}</span>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={item.name}
+                            className={badgeCount > 0 ? 'pr-8' : ''}
+                          >
+                            <Link to={item.url} className="flex items-center gap-3 w-full">
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              <span className="font-medium truncate">{item.name}</span>
                             </Link>
                           </SidebarMenuButton>
+                          {badgeCount > 0 && (
+                            <SidebarMenuBadge
+                              className={cn(
+                                'rounded-full px-1.5 min-w-5 flex justify-center text-[10px]',
+                                badgeColor,
+                              )}
+                            >
+                              {badgeCount}
+                            </SidebarMenuBadge>
+                          )}
                         </SidebarMenuItem>
                       )
                     })}
