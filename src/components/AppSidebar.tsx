@@ -177,6 +177,12 @@ const navGroups = [
         roles: ['Restaurante_Bar', 'Direcao_Admin'],
       },
       {
+        name: 'Menu Impresso (PDF)',
+        url: '/restaurante/menu-pdf',
+        icon: FileText,
+        roles: ['Restaurante_Bar', 'Direcao_Admin'],
+      },
+      {
         name: 'Spa & Wellness',
         url: '/spa',
         icon: Heart,

@@ -112,6 +112,7 @@ import FBOps from './pages/FBOps'
 import SalesCRM from './pages/SalesCRM'
 import DigitalMenuAdmin from './pages/DigitalMenuAdmin'
 import PublicDigitalMenu from './pages/PublicDigitalMenu'
+import MenuPDF from './pages/MenuPDF'
 
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
@@ -167,6 +168,7 @@ const App = () => {
                           <Route path="/marketing" element={<Marketing />} />
                           <Route path="/fnb" element={<FnB />} />
                           <Route path="/restaurante/menu-digital" element={<DigitalMenuAdmin />} />
+                          <Route path="/restaurante/menu-pdf" element={<MenuPDF />} />
                           <Route path="/eventos" element={<Events />} />
                           <Route path="/manutencao" element={<Maintenance />} />
                           <Route path="/seguranca" element={<Security />} />
