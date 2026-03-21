@@ -48,6 +48,7 @@ import {
   UtensilsCrossed,
   LineChart,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -167,6 +168,12 @@ const navGroups = [
         name: 'F&B Operações',
         url: '/fb-ops',
         icon: UtensilsCrossed,
+        roles: ['Restaurante_Bar', 'Direcao_Admin'],
+      },
+      {
+        name: 'Menu Digital',
+        url: '/restaurante/menu-digital',
+        icon: BookOpen,
         roles: ['Restaurante_Bar', 'Direcao_Admin'],
       },
       {

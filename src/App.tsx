@@ -110,6 +110,8 @@ import HRIntelligence from './pages/HRIntelligence'
 import ITAdmin from './pages/ITAdmin'
 import FBOps from './pages/FBOps'
 import SalesCRM from './pages/SalesCRM'
+import DigitalMenuAdmin from './pages/DigitalMenuAdmin'
+import PublicDigitalMenu from './pages/PublicDigitalMenu'
 
 import { HotelProvider } from './stores/useHotelStore'
 import { ReservationProvider } from './stores/useReservationStore'
@@ -143,6 +145,9 @@ const App = () => {
                       <Toaster />
                       <Sonner />
                       <Routes>
+                        <Route path="/menu" element={<PublicDigitalMenu />} />
+                        <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
+
                         <Route element={<Layout />}>
                           <Route path="/" element={<Index />} />
                           <Route path="/reservas" element={<Reservations />} />
@@ -161,6 +166,7 @@ const App = () => {
                           <Route path="/integracoes" element={<Integrations />} />
                           <Route path="/marketing" element={<Marketing />} />
                           <Route path="/fnb" element={<FnB />} />
+                          <Route path="/restaurante/menu-digital" element={<DigitalMenuAdmin />} />
                           <Route path="/eventos" element={<Events />} />
                           <Route path="/manutencao" element={<Maintenance />} />
                           <Route path="/seguranca" element={<Security />} />
@@ -193,7 +199,6 @@ const App = () => {
                           <Route path="/fb-ops" element={<FBOps />} />
                           <Route path="/sales-crm" element={<SalesCRM />} />
                         </Route>
-                        <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </TooltipProvider>

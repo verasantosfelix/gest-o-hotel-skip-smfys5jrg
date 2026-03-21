@@ -11,12 +11,30 @@ export interface FBTable {
   updated: string
 }
 
+export interface FBMenuCategory {
+  id: string
+  name: string
+  order: number
+  created: string
+  updated: string
+}
+
 export interface FBProduct {
   id: string
   name: string
   category: string
   price: number
   is_available: boolean
+  description?: string
+  image?: string
+  tags?: string[]
+  restrictions?: string
+  order?: number
+  status?: 'draft' | 'published' | 'archived'
+  category_id?: string
+  expand?: { category_id?: FBMenuCategory }
+  created: string
+  updated: string
 }
 
 export interface FBReservationFNB {
@@ -61,10 +79,19 @@ export const getFBTables = () =>
 export const updateFBTable = (id: string, data: Partial<FBTable>) =>
   pb.collection('fb_tables').update<FBTable>(id, data)
 
-export const getFBProducts = () =>
+export const getFBMenuCategories = () =>
+  pb.collection('fb_menu_categories').getFullList<FBMenuCategory>({ sort: 'order' })
+export const createFBMenuCategory = (data: Partial<FBMenuCategory>) =>
+  pb.collection('fb_menu_categories').create<FBMenuCategory>(data)
+export const updateFBMenuCategory = (id: string, data: Partial<FBMenuCategory>) =>
+  pb.collection('fb_menu_categories').update<FBMenuCategory>(id, data)
+export const deleteFBMenuCategory = (id: string) => pb.collection('fb_menu_categories').delete(id)
+
+export const getFBProducts = (filter?: string) =>
   pb
     .collection('fb_products')
-    .getFullList<FBProduct>({ filter: 'is_available = true', sort: 'category,name' })
+    .getFullList<FBProduct>({ filter, expand: 'category_id', sort: 'order,name' })
+export const deleteFBProduct = (id: string) => pb.collection('fb_products').delete(id)
 
 export const getFBOrders = (filter?: string) =>
   pb
@@ -76,11 +103,13 @@ export const updateFBOrder = (id: string, data: Partial<FBOrder>) =>
   pb.collection('fb_orders').update<FBOrder>(id, data)
 
 export const getFBOrderItems = (filter?: string) =>
-  pb.collection('fb_order_items').getFullList<FBOrderItem>({
-    filter,
-    expand: 'product_id,order_id.table_id,order_id.room_id',
-    sort: 'created',
-  })
+  pb
+    .collection('fb_order_items')
+    .getFullList<FBOrderItem>({
+      filter,
+      expand: 'product_id,order_id.table_id,order_id.room_id',
+      sort: 'created',
+    })
 export const createFBOrderItem = (data: Partial<FBOrderItem>) =>
   pb.collection('fb_order_items').create<FBOrderItem>(data)
 export const updateFBOrderItem = (id: string, data: Partial<FBOrderItem>) =>
