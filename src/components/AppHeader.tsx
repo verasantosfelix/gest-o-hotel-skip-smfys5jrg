@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import useAuthStore from '@/stores/useAuthStore'
-import { UserCircle, Bell, Crown, Eye, Settings2 } from 'lucide-react'
+import { UserCircle, Bell, Crown, Eye, Settings2, PlusCircle } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { NewServiceRequestDialog } from './shared/NewServiceRequestDialog'
 
 const PATH_LABELS: Record<string, string> = {
   reservas: 'Reservas',
@@ -139,6 +140,7 @@ export function AppHeader() {
   const { profile, previewRole, setPreviewRole, previewSector, setPreviewSector } = useAuthStore()
   const { isManager, effectiveRoleLevel } = useAccess()
   const [notifications, setNotifications] = useState<any[]>([])
+  const [isRequestOpen, setIsRequestOpen] = useState(false)
 
   const loadNotifications = async () => {
     if (!pb.authStore.isValid || !pb.authStore.record) return
@@ -188,6 +190,17 @@ export function AppHeader() {
         <DynamicBreadcrumbs />
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="hidden sm:flex h-8 gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm"
+          onClick={() => setIsRequestOpen(true)}
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span className="text-xs font-bold">Solicitação Dept.</span>
+        </Button>
+        <NewServiceRequestDialog open={isRequestOpen} onOpenChange={setIsRequestOpen} />
+
         {isHighLevel && (
           <div className="hidden md:flex items-center gap-2 bg-slate-50 p-1 rounded-md border border-slate-200 shadow-sm">
             <Settings2 className="w-4 h-4 text-slate-400 ml-1" />
@@ -305,8 +318,11 @@ export function AppHeader() {
                               asChild
                               className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700"
                             >
-                              <Link to="/alcadas" onClick={() => markAsRead(notif.id)}>
-                                Ver Alçadas
+                              <Link
+                                to={notif.link || '/alcadas'}
+                                onClick={() => markAsRead(notif.id)}
+                              >
+                                Ver Detalhes
                               </Link>
                             </Button>
                           )}

@@ -49,6 +49,11 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
     priority: 'medium' as any,
   })
 
+  // Exclude tickets waiting for managerial approval
+  const visibleTickets = tickets.filter(
+    (t) => t.status !== 'pending_approval' && t.status !== 'rejected',
+  )
+
   const handleCreate = async () => {
     try {
       if (!formData.room_id || !formData.description) {
@@ -108,7 +113,7 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((t) => (
+              {visibleTickets.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell>
                     <Badge
@@ -157,10 +162,10 @@ export function MaintenanceOS({ tickets, rooms }: { tickets: any[]; rooms: RoomR
                   </TableCell>
                 </TableRow>
               ))}
-              {tickets.length === 0 && (
+              {visibleTickets.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-slate-500">
-                    Nenhuma OS encontrada.
+                    Nenhuma OS operacional pendente ou em execução no momento.
                   </TableCell>
                 </TableRow>
               )}

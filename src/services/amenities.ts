@@ -9,18 +9,21 @@ export interface AmenityRequest {
   quantity: number
   description: string
   priority: 'normal' | 'urgente'
-  status: 'pending' | 'in_transit' | 'delivered'
+  status: 'pending' | 'in_transit' | 'delivered' | 'pending_approval' | 'rejected'
+  created_by?: string
   created: string
   updated: string
   expand?: {
     room_id?: RoomRecord
+    created_by?: any
   }
 }
 
 export const getAmenityRequests = () =>
-  pb
-    .collection('amenity_requests')
-    .getFullList<AmenityRequest>({ expand: 'room_id', sort: '-created' })
+  pb.collection('amenity_requests').getFullList<AmenityRequest>({
+    expand: 'room_id,created_by',
+    sort: '-created',
+  })
 
 export const createAmenityRequest = (data: Partial<AmenityRequest>) =>
   pb.collection('amenity_requests').create<AmenityRequest>(data)

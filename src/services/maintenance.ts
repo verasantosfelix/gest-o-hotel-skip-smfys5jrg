@@ -5,7 +5,8 @@ export interface MaintenanceTicket {
   room_id: string
   description: string
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'open' | 'in_progress' | 'resolved'
+  status: 'open' | 'in_progress' | 'resolved' | 'pending_approval' | 'rejected'
+  created_by?: string
   technician_id?: string
   used_materials?: any
   initial_photo?: string
@@ -23,7 +24,7 @@ export interface MaintenanceTicket {
 
 export const getMaintenanceTickets = () =>
   pb.collection('maintenance_tickets').getFullList<MaintenanceTicket>({
-    expand: 'room_id,technician_id',
+    expand: 'room_id,technician_id,created_by',
     sort: '-created',
   })
 
