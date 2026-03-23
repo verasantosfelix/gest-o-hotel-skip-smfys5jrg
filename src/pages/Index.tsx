@@ -32,6 +32,7 @@ export default function Index() {
   const allowed = effectiveAllowedActions
 
   if (!isExecutive && !allowed.includes('Dashboard')) {
+    if (allowed.includes('Reservas')) return <Navigate to="/reservas" replace />
     if (allowed.includes('Governança')) return <Navigate to="/governanca" replace />
     if (allowed.includes('F&B Básico')) return <Navigate to="/fnb" replace />
     if (allowed.includes('Agenda Diária')) return <Navigate to="/spa/agenda" replace />
@@ -39,6 +40,7 @@ export default function Index() {
     if (allowed.includes('IT Admin')) return <Navigate to="/it-admin" replace />
     if (allowed.includes('Financeiro Corp')) return <Navigate to="/financeiro-corp" replace />
     if (allowed.includes('Menu Digital')) return <Navigate to="/restaurante/menu-digital" replace />
+    if (allowed.includes('Relatórios')) return <Navigate to="/relatorios" replace />
   }
 
   if (isExecutive) {

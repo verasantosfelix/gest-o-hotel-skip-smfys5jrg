@@ -7,7 +7,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import { AlertTriangle } from 'lucide-react'
 
 export default function Layout() {
-  const { previewRole, setPreviewRole } = useAuthStore()
+  const { previewRole, previewSector, setPreviewRole, setPreviewSector } = useAuthStore()
 
   return (
     <SidebarProvider>
@@ -21,12 +21,22 @@ export default function Layout() {
                 <AlertTriangle className="w-4 h-4" />
                 <span>
                   Modo de Simulação: Visualizando como{' '}
-                  <strong>{previewRole.replace('_', ' ')}</strong>. A interface foi adaptada para
-                  este nível de acesso.
+                  <strong>{previewRole.replace('_', ' ')}</strong>
+                  {previewSector &&
+                    ['Gerente_Area', 'Responsavel_Equipa', 'Atendente'].includes(previewRole) && (
+                      <span>
+                        {' '}
+                        no setor <strong>{previewSector.replace('_', ' ')}</strong>
+                      </span>
+                    )}
+                  . A interface foi adaptada para este nível de acesso.
                 </span>
               </span>
               <button
-                onClick={() => setPreviewRole(null)}
+                onClick={() => {
+                  setPreviewRole(null)
+                  setPreviewSector(null)
+                }}
                 className="text-amber-900 hover:text-amber-950 underline text-xs font-bold"
               >
                 Sair da Simulação

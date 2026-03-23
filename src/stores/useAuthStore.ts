@@ -21,6 +21,8 @@ interface AuthStore {
   profile: any
   previewRole: string | null
   setPreviewRole: (role: string | null) => void
+  previewSector: string | null
+  setPreviewSector: (sector: string | null) => void
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allowReports, setAllowReports] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [previewRole, setPreviewRole] = useState<string | null>(null)
+  const [previewSector, setPreviewSector] = useState<string | null>(null)
 
   const loadProfile = async () => {
     const user = pb.authStore.record
@@ -100,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         previewRole,
         setPreviewRole,
+        previewSector,
+        setPreviewSector,
       },
     },
     children,

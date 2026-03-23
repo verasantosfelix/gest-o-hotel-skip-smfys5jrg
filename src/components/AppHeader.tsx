@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import useAuthStore from '@/stores/useAuthStore'
-import { UserCircle, Bell, Crown, ShieldAlert, Eye, Settings2 } from 'lucide-react'
+import { UserCircle, Bell, Crown, Eye, Settings2 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
@@ -136,7 +136,7 @@ function DynamicBreadcrumbs() {
 }
 
 export function AppHeader() {
-  const { profile, previewRole, setPreviewRole } = useAuthStore()
+  const { profile, previewRole, setPreviewRole, previewSector, setPreviewSector } = useAuthStore()
   const { isManager, effectiveRoleLevel } = useAccess()
   const [notifications, setNotifications] = useState<any[]>([])
 
@@ -189,26 +189,55 @@ export function AppHeader() {
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
         {isHighLevel && (
-          <div className="hidden md:flex items-center gap-2">
-            <Settings2 className="w-4 h-4 text-slate-400" />
+          <div className="hidden md:flex items-center gap-2 bg-slate-50 p-1 rounded-md border border-slate-200 shadow-sm">
+            <Settings2 className="w-4 h-4 text-slate-400 ml-1" />
             <Select
               value={previewRole || 'none'}
-              onValueChange={(val) => setPreviewRole(val === 'none' ? null : val)}
+              onValueChange={(val) => {
+                if (val === 'none') {
+                  setPreviewRole(null)
+                  setPreviewSector(null)
+                } else {
+                  setPreviewRole(val)
+                  if (
+                    !previewSector &&
+                    ['Gerente_Area', 'Responsavel_Equipa', 'Atendente'].includes(val)
+                  ) {
+                    setPreviewSector('Front_Desk')
+                  }
+                }
+              }}
             >
-              <SelectTrigger className="w-[180px] h-8 text-xs bg-slate-50 border-slate-200 hover:bg-slate-100 transition-colors">
+              <SelectTrigger className="w-[140px] h-7 text-xs bg-white border-slate-200 hover:bg-slate-50 transition-colors focus:ring-0">
                 <SelectValue placeholder="Visão como..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none" className="font-semibold text-primary">
                   Minha Visão Original
                 </SelectItem>
-                <SelectItem value="Administrativo_Geral">Administrativo Geral</SelectItem>
+                <SelectItem value="Administrativo_Geral">Admin. Geral</SelectItem>
                 <SelectItem value="Administrativo">Administrativo</SelectItem>
                 <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
                 <SelectItem value="Responsavel_Equipa">Líder de Equipa</SelectItem>
                 <SelectItem value="Atendente">Atendente</SelectItem>
               </SelectContent>
             </Select>
+
+            {previewRole &&
+              ['Gerente_Area', 'Responsavel_Equipa', 'Atendente'].includes(previewRole) && (
+                <Select value={previewSector || 'Front_Desk'} onValueChange={setPreviewSector}>
+                  <SelectTrigger className="w-[130px] h-7 text-xs bg-white border-slate-200 hover:bg-slate-50 transition-colors focus:ring-0">
+                    <SelectValue placeholder="Setor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Front_Desk">Front Desk</SelectItem>
+                    <SelectItem value="F&B">F&B</SelectItem>
+                    <SelectItem value="SPA">SPA & Wellness</SelectItem>
+                    <SelectItem value="Governança">Governança</SelectItem>
+                    <SelectItem value="Manutenção">Manutenção</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
           </div>
         )}
 
@@ -299,7 +328,16 @@ export function AppHeader() {
             {roleLevel === 'Gerente_Geral' && <Crown className="w-3 h-3 text-indigo-500" />}
             {roleLevel === 'Director_Geral' && <Eye className="w-3 h-3 text-slate-500" />}
             {profile?.name || roleLabels[roleLevel] || roleLevel}{' '}
-            {previewRole && <span className="text-amber-600 ml-1 font-bold">(Simulação)</span>}
+            {previewRole && (
+              <span className="text-amber-600 ml-1 font-bold">
+                (Simulação
+                {previewSector &&
+                ['Gerente_Area', 'Responsavel_Equipa', 'Atendente'].includes(previewRole)
+                  ? ` ${previewSector.replace('_', ' ')}`
+                  : ''}
+                )
+              </span>
+            )}
           </span>
         </div>
 

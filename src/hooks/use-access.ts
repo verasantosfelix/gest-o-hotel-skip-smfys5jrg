@@ -2,37 +2,86 @@ import { toast } from '@/components/ui/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
 
 export function useAccess() {
-  const { profile, previewRole } = useAuthStore()
+  const { profile, previewRole, previewSector } = useAuthStore()
 
-  const getMockAllowedActions = (role: string) => {
+  const getMockAllowedActions = (role: string, sector: string | null) => {
+    // Transversal modules visible to all employees
+    const transversal = ['Omnichannel', 'Comunicação']
+
     switch (role) {
       case 'Administrativo_Geral':
         return ['*']
       case 'Administrativo':
-        return ['Dashboard', 'Relatórios', 'Financeiro Corp', 'Documentos', 'Analytics', 'Equipe']
-      case 'Gerente_Area':
         return [
-          'Dashboard',
-          'Reservas',
-          'Quartos',
-          'Governança',
-          'Manutenção',
-          'F&B Básico',
-          'Equipe',
-          'CRM',
+          ...transversal,
+          'Relatórios',
+          'Financeiro Corp',
+          'Documentos',
+          'Analytics',
+          'Equipe & RH',
+          'Pagamentos',
         ]
-      case 'Responsavel_Equipa':
-        return ['Dashboard', 'Governança', 'F&B Básico', 'Manutenção']
-      case 'Atendente':
-        return ['Dashboard', 'Reservas', 'Lançamentos Rápidos', 'Busca Hóspedes', 'F&B Básico']
       default:
-        return []
+        const actions = new Set([...transversal])
+
+        if (sector === 'Front_Desk') {
+          actions
+            .add('Dashboard')
+            .add('Reservas')
+            .add('Hóspedes')
+            .add('Quartos')
+            .add('Lançamentos Rápidos')
+            .add('Busca Hóspedes')
+            .add('Concierge')
+          if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
+            actions.add('Auditoria Noturna').add('Guest Journey')
+          }
+          if (role === 'Gerente_Area') {
+            actions.add('Revenue Mgmt').add('CRM').add('Manutenção').add('Governança')
+          }
+        } else if (sector === 'F&B') {
+          actions.add('F&B Básico').add('Menu Digital')
+          if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
+            actions.add('F&B Operações').add('Menu Impresso (PDF)')
+          }
+          if (role === 'Gerente_Area') {
+            actions.add('Eventos & MICE').add('Manutenção')
+          }
+        } else if (sector === 'SPA') {
+          actions.add('Agenda Diária').add('Catálogo de Serviços')
+          if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
+            actions.add('Agenda Mensal').add('Operações & Salas').add('Lavanderia SPA')
+          }
+          if (role === 'Gerente_Area') {
+            actions.add('Lazer & Piscinas').add('Manutenção').add('Lavanderia Geral')
+          }
+        } else if (sector === 'Governança') {
+          actions.add('Governança').add('Achados e Perdidos').add('Amenities')
+          if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
+            actions.add('Lavanderia Geral')
+          }
+          if (role === 'Gerente_Area') {
+            actions.add('Manutenção')
+          }
+        } else if (sector === 'Manutenção') {
+          actions.add('Manutenção')
+          if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
+            actions.add('Segurança')
+          }
+          if (role === 'Gerente_Area') {
+            actions.add('IT Admin')
+          }
+        }
+
+        return Array.from(actions)
     }
   }
 
   const effectiveRoleLevel = previewRole || profile?.role_level || 'Atendente'
+  const effectiveSector = previewSector || 'Front_Desk'
+
   const effectiveAllowedActions = previewRole
-    ? getMockAllowedActions(previewRole)
+    ? getMockAllowedActions(previewRole, effectiveSector)
     : Array.isArray(profile?.allowed_actions)
       ? profile.allowed_actions
       : []
@@ -66,7 +115,7 @@ export function useAccess() {
 
     if (moduleName && effectiveAllowedActions.includes(moduleName)) {
       if (effectiveRoleLevel === 'Atendente' || effectiveRoleLevel === 'Administrativo')
-        return false // Minimal write permissions by default
+        return false
       return true
     }
 
@@ -126,6 +175,7 @@ export function useAccess() {
     isManager,
     canWrite,
     effectiveRoleLevel,
+    effectiveSector,
     effectiveAllowedActions,
   }
 }
