@@ -4,7 +4,7 @@ import useAuthStore from '@/stores/useAuthStore'
 export function useAccess() {
   const { profile, previewRole, previewSector } = useAuthStore()
 
-  const getMockAllowedActions = (role: string, sector: string | null) => {
+  const getDefaultAllowedActions = (role: string, sector: string | null) => {
     // Transversal modules visible to all employees
     const transversal = ['Omnichannel', 'Comunicação']
 
@@ -24,7 +24,7 @@ export function useAccess() {
       default: {
         const actions = new Set([...transversal])
 
-        if (sector === 'Front_Desk') {
+        if (sector === 'Front_Desk' || sector === 'Rececao_FrontOffice') {
           actions
             .add('Dashboard')
             .add('Reservas')
@@ -35,11 +35,13 @@ export function useAccess() {
             .add('Concierge')
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('Auditoria Noturna').add('Guest Journey')
+            // Cross-department operational modules for Area/Team Leaders
+            actions.add('Agenda Diária').add('F&B Básico').add('Vendas & Distribuição')
           }
           if (role === 'Gerente_Area') {
             actions.add('Revenue Mgmt').add('CRM').add('Manutenção').add('Governança')
           }
-        } else if (sector === 'F&B') {
+        } else if (sector === 'F&B' || sector === 'Restaurante_Bar') {
           actions.add('F&B Básico').add('Menu Digital')
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('F&B Operações').add('Menu Impresso (PDF)')
@@ -47,7 +49,7 @@ export function useAccess() {
           if (role === 'Gerente_Area') {
             actions.add('Eventos & MICE').add('Manutenção')
           }
-        } else if (sector === 'SPA') {
+        } else if (sector === 'SPA' || sector === 'Spa_Wellness') {
           actions.add('Agenda Diária').add('Catálogo de Serviços')
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('Agenda Mensal').add('Operações & Salas').add('Lavanderia SPA')
@@ -55,7 +57,7 @@ export function useAccess() {
           if (role === 'Gerente_Area') {
             actions.add('Lazer & Piscinas').add('Manutenção').add('Lavanderia Geral')
           }
-        } else if (sector === 'Governança') {
+        } else if (sector === 'Governança' || sector === 'Lavanderia_Limpeza') {
           actions.add('Governança').add('Achados e Perdidos').add('Amenities')
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('Lavanderia Geral')
@@ -63,7 +65,7 @@ export function useAccess() {
           if (role === 'Gerente_Area') {
             actions.add('Manutenção')
           }
-        } else if (sector === 'Manutenção') {
+        } else if (sector === 'Manutenção' || sector === 'Manutencao_Oficina') {
           actions.add('Manutenção')
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('Segurança')
@@ -79,13 +81,18 @@ export function useAccess() {
   }
 
   const effectiveRoleLevel = previewRole || profile?.role_level || 'Atendente'
-  const effectiveSector = previewSector || 'Front_Desk'
+  const effectiveSector = previewSector || profile?.name || 'Front_Desk'
+
+  const defaultActions = getDefaultAllowedActions(effectiveRoleLevel, effectiveSector) || []
 
   const effectiveAllowedActions = previewRole
-    ? getMockAllowedActions(previewRole, effectiveSector)
-    : Array.isArray(profile?.allowed_actions)
-      ? profile.allowed_actions
-      : []
+    ? defaultActions
+    : Array.from(
+        new Set([
+          ...(Array.isArray(profile?.allowed_actions) ? profile.allowed_actions : []),
+          ...defaultActions,
+        ]),
+      )
 
   const hasAccess = (requiredRoles: string[] | string, moduleName?: string) => {
     if (!profile) return false
@@ -101,6 +108,11 @@ export function useAccess() {
     if (effectiveAllowedActions.includes('*')) return true
 
     if (moduleName && effectiveAllowedActions.includes(moduleName)) return true
+
+    if (requiredRoles && requiredRoles.length > 0) {
+      const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles]
+      if (roles.includes(effectiveSector)) return true
+    }
 
     return false
   }

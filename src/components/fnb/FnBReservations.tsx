@@ -22,12 +22,19 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { CalendarDays, MapPin } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
+import { useAccess } from '@/hooks/use-access'
 import { useRealtime } from '@/hooks/use-realtime'
 
 export function FnBReservations() {
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
-  const isFnbManager = userRole === 'Restaurante_Bar' || userRole === 'Direcao_Admin'
+  const { profile } = useAuthStore()
+  const { isManager } = useAccess()
+  const isFrontDeskProfile =
+    profile?.name === 'Front_Desk' || profile?.name === 'Rececao_FrontOffice'
+  const isFrontDeskStaffOnly = isFrontDeskProfile && !isManager()
+  const isFnbManager =
+    profile?.name === 'Restaurante_Bar' ||
+    profile?.name === 'Direcao_Admin' ||
+    (isFrontDeskProfile && isManager())
 
   const [reservations, setReservations] = useState<FBReservationFNB[]>([])
   const [tables, setTables] = useState<FBTable[]>([])
@@ -190,7 +197,7 @@ export function FnBReservations() {
                   </div>
                 </div>
                 <div className="text-right flex flex-col sm:flex-row items-center gap-2">
-                  {r.status === 'pending' && !isFrontDesk && (
+                  {r.status === 'pending' && !isFrontDeskStaffOnly && (
                     <Button
                       onClick={() => handleConfirm(r)}
                       variant="outline"
@@ -200,7 +207,7 @@ export function FnBReservations() {
                     </Button>
                   )}
                   {r.status === 'confirmed' ? (
-                    !isFrontDesk ? (
+                    !isFrontDeskStaffOnly ? (
                       <Button
                         onClick={() => handleArrive(r)}
                         className="bg-slate-900 text-white font-bold w-full sm:w-auto"

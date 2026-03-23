@@ -41,11 +41,15 @@ import { toast } from '@/components/ui/use-toast'
 import { SpaAppointmentForm } from './SpaAppointmentForm'
 import { SpaActionDialog } from './SpaActionDialogs'
 import useAuthStore from '@/stores/useAuthStore'
+import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
 
 export function SpaAgenda() {
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
+  const { profile } = useAuthStore()
+  const { isManager } = useAccess()
+  const isFrontDeskProfile =
+    profile?.name === 'Front_Desk' || profile?.name === 'Rececao_FrontOffice'
+  const isFrontDeskStaffOnly = isFrontDeskProfile && !isManager()
 
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
   const [blockouts, setBlockouts] = useState<any[]>([])
@@ -73,7 +77,7 @@ export function SpaAgenda() {
       setReservations(res)
       setBlockouts(bo)
 
-      if (!isFrontDesk) {
+      if (!isFrontDeskStaffOnly) {
         try {
           const r = await getSpaRooms()
           setRooms(r)
@@ -90,10 +94,10 @@ export function SpaAgenda() {
 
   useEffect(() => {
     loadData()
-  }, [isFrontDesk])
+  }, [isFrontDeskStaffOnly])
 
   useRealtime('spa_appointments', loadData)
-  useRealtime('spa_rooms', loadData, !isFrontDesk)
+  useRealtime('spa_rooms', loadData, !isFrontDeskStaffOnly)
   useRealtime('calendar_events', loadData)
 
   const handleFormSubmit = async (data: any) => {
@@ -217,7 +221,7 @@ export function SpaAgenda() {
               <TableHead>Hóspede (Qto)</TableHead>
               <TableHead>Serviço</TableHead>
               <TableHead>Terapeuta</TableHead>
-              {!isFrontDesk && <TableHead>Sala SPA</TableHead>}
+              {!isFrontDeskStaffOnly && <TableHead>Sala SPA</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -256,7 +260,7 @@ export function SpaAgenda() {
                       {a.expand?.therapist_id?.name || 'Não atri.'}
                     </div>
                   </TableCell>
-                  {!isFrontDesk && (
+                  {!isFrontDeskStaffOnly && (
                     <TableCell className="text-sm">{a.expand?.spa_room_id?.name || '-'}</TableCell>
                   )}
                   <TableCell>
@@ -265,7 +269,7 @@ export function SpaAgenda() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {!isFrontDesk ? (
+                    {!isFrontDeskStaffOnly ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -328,7 +332,7 @@ export function SpaAgenda() {
             {appointments.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={isFrontDesk ? 6 : 7}
+                  colSpan={isFrontDeskStaffOnly ? 6 : 7}
                   className="text-center py-8 text-slate-500"
                 >
                   Nenhum agendamento encontrado.
@@ -349,7 +353,7 @@ export function SpaAgenda() {
         reservations={reservations}
         appointments={appointments}
         blockouts={blockouts}
-        isFrontDesk={isFrontDesk}
+        isFrontDesk={isFrontDeskStaffOnly}
         onSubmit={handleFormSubmit}
       />
 

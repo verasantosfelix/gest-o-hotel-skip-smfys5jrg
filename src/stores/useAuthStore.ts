@@ -135,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (user.expand?.profile) {
       setProfile(user.expand.profile)
+      if (user.expand.profile.name) setUserRole(user.expand.profile.name as Role)
       setProfileError(null)
     } else {
       try {
@@ -144,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ])
 
         setProfile(p)
+        if (p.name) setUserRole(p.name as Role)
         setProfileError(null)
       } catch (e: any) {
         if (e.message === 'TIMEOUT') {
@@ -161,7 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Update last login without triggering infinite loadProfile loop
       await pb
         .collection('users')
         .update(user.id, { last_login: new Date().toISOString() }, { requestKey: null })
@@ -181,8 +182,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfileError(null)
         currentUserIdRef.current = null
       } else {
-        // Only load if the user ID actually changed (e.g., login as a different user).
-        // This prevents the infinite loop when updating 'last_login' which triggers onChange
         if (record.id !== currentUserIdRef.current) {
           if (!loadingRef.current) {
             loadProfile()

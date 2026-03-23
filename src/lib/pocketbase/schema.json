@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T23:49:41.657Z",
+  "generatedAt": "2026-03-23T23:56:20.465Z",
   "collections": [
     {
       "name": "users",
@@ -1838,9 +1838,9 @@
       "apiRules": {
         "list": "",
         "view": "",
-        "create": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+        "create": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "update": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "delete": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')"
       },
       "fields": [
         {
@@ -2002,7 +2002,7 @@
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
         "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+        "delete": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')"
       },
       "fields": [
         {
@@ -2237,11 +2237,11 @@
       "name": "spa_rooms",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "view": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "create": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "update": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'",
-        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+        "list": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "view": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "create": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "update": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')",
+        "delete": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')"
       },
       "fields": [
         {
@@ -2282,7 +2282,7 @@
         "view": "@request.auth.id != ''",
         "create": "@request.auth.id != ''",
         "update": "@request.auth.id != ''",
-        "delete": "@request.auth.id != '' && @request.auth.profile.name != 'Front_Desk'"
+        "delete": "@request.auth.id != '' && (@request.auth.profile.name != 'Front_Desk' || @request.auth.profile.role_level = 'Gerente_Area' || @request.auth.profile.role_level = 'Responsavel_Equipa' || @request.auth.profile.role_level = 'Gerente_Geral')"
       },
       "fields": [
         {

@@ -24,10 +24,14 @@ import { formatCurrency } from '@/lib/utils'
 import { useRealtime } from '@/hooks/use-realtime'
 import { BellRing, CheckCircle2 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
+import { useAccess } from '@/hooks/use-access'
 
 export function FnBRoomService() {
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
+  const { profile } = useAuthStore()
+  const { isManager } = useAccess()
+  const isFrontDeskProfile =
+    profile?.name === 'Front_Desk' || profile?.name === 'Rececao_FrontOffice'
+  const isFrontDeskStaffOnly = isFrontDeskProfile && !isManager()
 
   const [products, setProducts] = useState<FBProduct[]>([])
   const [reservations, setReservations] = useState<PBReservation[]>([])
@@ -192,9 +196,9 @@ export function FnBRoomService() {
                 </div>
                 <Button
                   size="lg"
-                  disabled={!isReady || isFrontDesk}
+                  disabled={!isReady || isFrontDeskStaffOnly}
                   onClick={() => handleDeliver(o)}
-                  className={`w-full sm:w-auto font-bold ${isReady && !isFrontDesk ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+                  className={`w-full sm:w-auto font-bold ${isReady && !isFrontDeskStaffOnly ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
                 >
                   {isReady ? (
                     <>
