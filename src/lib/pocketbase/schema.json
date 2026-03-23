@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T19:28:53.641Z",
+  "generatedAt": "2026-03-23T19:44:29.829Z",
   "collections": [
     {
       "name": "users",
@@ -51,6 +51,18 @@
           "required": true,
           "system": false,
           "selectValues": ["manager", "user"]
+        },
+        {
+          "name": "last_login",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_active",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -3598,6 +3610,58 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "email_templates",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.role = 'manager'",
+        "update": "@request.auth.role = 'manager'",
+        "delete": "@request.auth.role = 'manager'"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "subject",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "content",
+          "type": "editor",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_email_templates_slug ON email_templates (slug)"]
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Briefcase, Shield, Crown, Trash2, Eye } from 'lucide-react'
+import { Briefcase, Shield, Crown, Trash2, Eye, Ban, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { getUsers, getProfiles, updateUser, updateProfile, deleteProfile } from '@/services/staff'
@@ -31,6 +42,7 @@ import { StaffDocumentsSheet } from '@/components/staff/StaffDocumentsSheet'
 import { CreateProfileDialog } from '@/components/staff/CreateProfileDialog'
 import { EditProfileDialog } from '@/components/staff/EditProfileDialog'
 import { ResendAccessDialog } from '@/components/staff/ResendAccessDialog'
+import { EmailTemplateEditor } from '@/components/staff/EmailTemplateEditor'
 import pb from '@/lib/pocketbase/client'
 
 export default function Staff() {
@@ -73,6 +85,28 @@ export default function Staff() {
         description: 'Falha ao atualizar nível do usuário.',
         variant: 'destructive',
       })
+    }
+  }
+
+  const handleSuspendToggle = async (user: any) => {
+    const isActive = user.is_active === false ? true : false
+    try {
+      await updateUser(user.id, { is_active: isActive })
+
+      try {
+        await pb.collection('action_audit_logs').create({
+          user_id: pb.authStore.record?.id,
+          action_type: isActive ? 'reactivate_user' : 'suspend_user',
+          module: 'Equipe & RH',
+          details: { target_user_id: user.id, target_email: user.email },
+        })
+      } catch (err) {
+        console.error('Failed to write audit log', err)
+      }
+
+      toast({ title: 'Sucesso', description: 'Status de acesso atualizado.' })
+    } catch (e) {
+      toast({ title: 'Erro', description: 'Falha ao atualizar status.', variant: 'destructive' })
     }
   }
 
@@ -158,7 +192,7 @@ export default function Staff() {
               Equipe e Perfis (RBAC)
             </h1>
             <p className="text-sm text-slate-500">
-              Gerencie níveis hierárquicos e acesso a módulos
+              Gerencie níveis hierárquicos, acessos e templates de sistema
             </p>
           </div>
         </div>
@@ -168,6 +202,7 @@ export default function Staff() {
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Visão Geral & Membros</TabsTrigger>
           <TabsTrigger value="profiles">Cargos e Permissões (RBAC)</TabsTrigger>
+          <TabsTrigger value="emails">Configurações de E-mail</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -216,18 +251,20 @@ export default function Staff() {
                   </CardHeader>
                   <CardContent className="p-0 overflow-x-auto">
                     {profileUsers.length > 0 ? (
-                      <Table className="min-w-[700px]">
+                      <Table className="min-w-[800px]">
                         <TableHeader>
                           <TableRow className="bg-white hover:bg-white">
                             <TableHead className="pl-6 w-[250px]">Membro</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Nível Técnico</TableHead>
+                            <TableHead>Último Acesso</TableHead>
                             <TableHead className="text-right pr-6">Ações</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {profileUsers.map((u) => {
                             const isProfileManager = profile.manager_id === u.id
+                            const isSuspended = u.is_active === false
                             const avatarUrl = u.avatar
                               ? pb.files.getUrl(u, u.avatar, { thumb: '100x100' })
                               : undefined
@@ -237,28 +274,44 @@ export default function Staff() {
                               <TableRow key={u.id}>
                                 <TableCell className="pl-6 font-medium">
                                   <div className="flex items-center gap-3">
-                                    <Avatar className="w-9 h-9 border border-slate-200">
+                                    <Avatar
+                                      className={`w-9 h-9 border border-slate-200 ${isSuspended ? 'opacity-50 grayscale' : ''}`}
+                                    >
                                       <AvatarImage src={avatarUrl} className="object-cover" />
                                       <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-semibold">
                                         {initials}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col">
-                                      <span className="truncate max-w-[150px]">
+                                      <span
+                                        className={`truncate max-w-[150px] ${isSuspended ? 'text-slate-400 line-through' : ''}`}
+                                      >
                                         {u.name || 'Sem Nome'}
                                       </span>
-                                      {isProfileManager && (
-                                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[9px] px-1.5 py-0 uppercase gap-1 flex items-center w-fit mt-0.5">
-                                          <Crown className="w-2.5 h-2.5" /> Lead
-                                        </Badge>
-                                      )}
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        {isProfileManager && (
+                                          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[9px] px-1.5 py-0 uppercase flex items-center w-fit">
+                                            <Crown className="w-2.5 h-2.5 mr-1" /> Lead
+                                          </Badge>
+                                        )}
+                                        {isSuspended && (
+                                          <Badge
+                                            variant="destructive"
+                                            className="text-[9px] px-1.5 py-0 uppercase w-fit"
+                                          >
+                                            Suspenso
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-slate-500 text-sm truncate max-w-[180px]">
+                                <TableCell
+                                  className={`text-slate-500 text-sm truncate max-w-[180px] ${isSuspended ? 'opacity-50' : ''}`}
+                                >
                                   {u.email}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className={isSuspended ? 'opacity-50' : ''}>
                                   {u.role === 'manager' ? (
                                     <Badge
                                       variant="outline"
@@ -275,6 +328,16 @@ export default function Staff() {
                                     </Badge>
                                   )}
                                 </TableCell>
+                                <TableCell className={isSuspended ? 'opacity-50' : ''}>
+                                  <span className="text-slate-600 text-sm">
+                                    {u.last_login
+                                      ? (() => {
+                                          const d = new Date(u.last_login)
+                                          return `${d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`
+                                        })()
+                                      : 'Nunca acessou'}
+                                  </span>
+                                </TableCell>
                                 <TableCell className="text-right pr-6">
                                   <div className="flex justify-end items-center gap-2">
                                     <StaffDocumentsSheet user={u} />
@@ -282,6 +345,54 @@ export default function Staff() {
                                       <ResendAccessDialog user={u} />
                                     )}
                                     <EditUserDialog user={u} profiles={profiles} />
+
+                                    {pb.authStore.record?.role === 'manager' &&
+                                      u.id !== pb.authStore.record?.id && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className={`h-8 w-8 p-0 ${isSuspended ? 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700' : 'text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700'}`}
+                                              title={
+                                                isSuspended ? 'Ativar Acesso' : 'Suspender Acesso'
+                                              }
+                                            >
+                                              {isSuspended ? (
+                                                <CheckCircle className="w-4 h-4" />
+                                              ) : (
+                                                <Ban className="w-4 h-4" />
+                                              )}
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>
+                                                {isSuspended ? 'Ativar Acesso' : 'Suspender Acesso'}
+                                              </AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {isSuspended
+                                                  ? `Tem certeza que deseja ativar o acesso de ${u.name || u.email}? O utilizador poderá voltar a entrar no sistema.`
+                                                  : `Tem certeza que deseja suspender o acesso de ${u.name || u.email}? O utilizador não poderá mais entrar no sistema.`}
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                onClick={() => handleSuspendToggle(u)}
+                                                className={
+                                                  isSuspended
+                                                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                                                    : 'bg-rose-600 hover:bg-rose-700'
+                                                }
+                                              >
+                                                {isSuspended ? 'Sim, Ativar' : 'Sim, Suspender'}
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -316,27 +427,81 @@ export default function Staff() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {unassignedUsers.map((u) => (
-                      <div key={u.id} className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="px-3 py-1 font-normal border border-slate-200 bg-white shadow-sm flex items-center gap-2"
-                        >
-                          <Avatar className="w-4 h-4 border border-slate-200">
-                            <AvatarImage
-                              src={u.avatar ? pb.files.getUrl(u, u.avatar) : undefined}
-                              className="object-cover"
-                            />
-                            <AvatarFallback className="text-[8px] bg-slate-100">
-                              {u.name ? u.name.substring(0, 2).toUpperCase() : 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          {u.name || u.email}
-                        </Badge>
-                        {pb.authStore.record?.role === 'manager' && <ResendAccessDialog user={u} />}
-                        <EditUserDialog user={u} profiles={profiles} />
-                      </div>
-                    ))}
+                    {unassignedUsers.map((u) => {
+                      const isSuspended = u.is_active === false
+                      return (
+                        <div key={u.id} className="flex items-center gap-2">
+                          <Badge
+                            variant="secondary"
+                            className={`px-3 py-1 font-normal border ${isSuspended ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-slate-200 bg-white'} shadow-sm flex items-center gap-2`}
+                          >
+                            <Avatar
+                              className={`w-4 h-4 border border-slate-200 ${isSuspended ? 'opacity-50 grayscale' : ''}`}
+                            >
+                              <AvatarImage
+                                src={u.avatar ? pb.files.getUrl(u, u.avatar) : undefined}
+                                className="object-cover"
+                              />
+                              <AvatarFallback className="text-[8px] bg-slate-100">
+                                {u.name ? u.name.substring(0, 2).toUpperCase() : 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className={isSuspended ? 'line-through opacity-70' : ''}>
+                              {u.name || u.email}
+                            </span>
+                          </Badge>
+                          {pb.authStore.record?.role === 'manager' && (
+                            <ResendAccessDialog user={u} />
+                          )}
+                          <EditUserDialog user={u} profiles={profiles} />
+
+                          {pb.authStore.record?.role === 'manager' &&
+                            u.id !== pb.authStore.record?.id && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={`h-8 w-8 p-0 ${isSuspended ? 'text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700' : 'text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700'}`}
+                                    title={isSuspended ? 'Ativar Acesso' : 'Suspender Acesso'}
+                                  >
+                                    {isSuspended ? (
+                                      <CheckCircle className="w-4 h-4" />
+                                    ) : (
+                                      <Ban className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {isSuspended ? 'Ativar Acesso' : 'Suspender Acesso'}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {isSuspended
+                                        ? `Tem certeza que deseja ativar o acesso de ${u.name || u.email}? O utilizador poderá voltar a entrar no sistema.`
+                                        : `Tem certeza que deseja suspender o acesso de ${u.name || u.email}? O utilizador não poderá mais entrar no sistema.`}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleSuspendToggle(u)}
+                                      className={
+                                        isSuspended
+                                          ? 'bg-emerald-600 hover:bg-emerald-700'
+                                          : 'bg-rose-600 hover:bg-rose-700'
+                                      }
+                                    >
+                                      {isSuspended ? 'Sim, Ativar' : 'Sim, Suspender'}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -425,6 +590,10 @@ export default function Staff() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="emails" className="space-y-6">
+          <EmailTemplateEditor />
         </TabsContent>
       </Tabs>
     </div>
