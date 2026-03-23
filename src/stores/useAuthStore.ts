@@ -19,6 +19,8 @@ interface AuthStore {
   allowReports: boolean
   setAllowReports: (allow: boolean) => void
   profile: any
+  previewRole: string | null
+  setPreviewRole: (role: string | null) => void
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<Role>('Direcao_Admin')
   const [allowReports, setAllowReports] = useState(false)
   const [profile, setProfile] = useState<any>(null)
+  const [previewRole, setPreviewRole] = useState<string | null>(null)
 
   const loadProfile = async () => {
     const user = pb.authStore.record
@@ -87,7 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return React.createElement(
     AuthContext.Provider,
-    { value: { userRole, setUserRole, userName, allowReports, setAllowReports, profile } },
+    {
+      value: {
+        userRole,
+        setUserRole,
+        userName,
+        allowReports,
+        setAllowReports,
+        profile,
+        previewRole,
+        setPreviewRole,
+      },
+    },
     children,
   )
 }

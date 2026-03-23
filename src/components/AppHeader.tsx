@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import useAuthStore from '@/stores/useAuthStore'
-import { UserCircle, Bell, Crown, ShieldAlert, Eye } from 'lucide-react'
+import { UserCircle, Bell, Crown, ShieldAlert, Eye, Settings2 } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
@@ -18,6 +18,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const PATH_LABELS: Record<string, string> = {
   reservas: 'Reservas',
@@ -129,8 +136,8 @@ function DynamicBreadcrumbs() {
 }
 
 export function AppHeader() {
-  const { profile } = useAuthStore()
-  const { isManager } = useAccess()
+  const { profile, previewRole, setPreviewRole } = useAuthStore()
+  const { isManager, effectiveRoleLevel } = useAccess()
   const [notifications, setNotifications] = useState<any[]>([])
 
   const loadNotifications = async () => {
@@ -163,12 +170,15 @@ export function AppHeader() {
   const roleLabels: Record<string, string> = {
     Gerente_Geral: 'Gerente Geral',
     Director_Geral: 'Director',
+    Administrativo_Geral: 'Admin. Geral',
+    Administrativo: 'Administrativo',
     Gerente_Area: 'Gerente Área',
     Responsavel_Equipa: 'Líder Equipa',
     Atendente: 'Atendente',
   }
 
-  const roleLevel = profile?.role_level || 'Atendente'
+  const roleLevel = effectiveRoleLevel || 'Atendente'
+  const isHighLevel = ['Gerente_Geral', 'Director_Geral'].includes(profile?.role_level)
 
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6 shadow-sm z-10 sticky top-0">
@@ -178,6 +188,30 @@ export function AppHeader() {
         <DynamicBreadcrumbs />
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
+        {isHighLevel && (
+          <div className="hidden md:flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-slate-400" />
+            <Select
+              value={previewRole || 'none'}
+              onValueChange={(val) => setPreviewRole(val === 'none' ? null : val)}
+            >
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-slate-50 border-slate-200 hover:bg-slate-100 transition-colors">
+                <SelectValue placeholder="Visão como..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none" className="font-semibold text-primary">
+                  Minha Visão Original
+                </SelectItem>
+                <SelectItem value="Administrativo_Geral">Administrativo Geral</SelectItem>
+                <SelectItem value="Administrativo">Administrativo</SelectItem>
+                <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
+                <SelectItem value="Responsavel_Equipa">Líder de Equipa</SelectItem>
+                <SelectItem value="Atendente">Atendente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {isManager() && (
           <Popover>
             <PopoverTrigger asChild>
@@ -264,7 +298,8 @@ export function AppHeader() {
           <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1 uppercase">
             {roleLevel === 'Gerente_Geral' && <Crown className="w-3 h-3 text-indigo-500" />}
             {roleLevel === 'Director_Geral' && <Eye className="w-3 h-3 text-slate-500" />}
-            {profile?.name} • {roleLabels[roleLevel] || roleLevel}
+            {profile?.name || roleLabels[roleLevel] || roleLevel}{' '}
+            {previewRole && <span className="text-amber-600 ml-1 font-bold">(Simulação)</span>}
           </span>
         </div>
 

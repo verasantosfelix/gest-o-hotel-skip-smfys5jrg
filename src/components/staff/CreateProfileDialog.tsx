@@ -113,7 +113,9 @@ export function CreateProfileDialog() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true)
     try {
-      const isGlobal = ['Gerente_Geral', 'Director_Geral'].includes(values.role_level)
+      const isGlobal = ['Gerente_Geral', 'Director_Geral', 'Administrativo_Geral'].includes(
+        values.role_level,
+      )
       await createProfile({
         name: values.name,
         role_level: values.role_level,
@@ -130,7 +132,7 @@ export function CreateProfileDialog() {
   }
 
   const roleLevel = form.watch('role_level')
-  const isGlobal = ['Gerente_Geral', 'Director_Geral'].includes(roleLevel)
+  const isGlobal = ['Gerente_Geral', 'Director_Geral', 'Administrativo_Geral'].includes(roleLevel)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -180,6 +182,10 @@ export function CreateProfileDialog() {
                       <SelectItem value="Director_Geral">
                         Director Geral (Somente Leitura)
                       </SelectItem>
+                      <SelectItem value="Administrativo_Geral">
+                        Administrativo Geral (Operacional Total)
+                      </SelectItem>
+                      <SelectItem value="Administrativo">Administrativo</SelectItem>
                       <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
                       <SelectItem value="Responsavel_Equipa">Responsável de Equipa</SelectItem>
                       <SelectItem value="Atendente">Atendente / Empregado</SelectItem>

@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import useAuthStore from '@/stores/useAuthStore'
 import useHotelStore from '@/stores/useHotelStore'
+import { useAccess } from '@/hooks/use-access'
 import { FinancialDashboard } from '@/components/operations/FinancialDashboard'
 
 import { FrontOfficeMain } from '@/components/front-office/FrontOfficeMain'
@@ -15,6 +16,7 @@ import { FrontOfficeKPIs } from '@/components/front-office/FrontOfficeKPIs'
 
 export default function Index() {
   const { profile } = useAuthStore()
+  const { effectiveRoleLevel, effectiveAllowedActions } = useAccess()
   const { selectedHotel } = useHotelStore()
   const [activeTab, setActiveTab] = useState('dashboard')
 
@@ -23,9 +25,11 @@ export default function Index() {
       <div className="p-8 text-center text-slate-500 animate-pulse">Carregando dashboard...</div>
     )
 
-  const isExecutive = ['Gerente_Geral', 'Director_Geral'].includes(profile.role_level)
+  const isExecutive = ['Gerente_Geral', 'Director_Geral', 'Administrativo_Geral'].includes(
+    effectiveRoleLevel,
+  )
 
-  const allowed = Array.isArray(profile.allowed_actions) ? profile.allowed_actions : []
+  const allowed = effectiveAllowedActions
 
   if (!isExecutive && !allowed.includes('Dashboard')) {
     if (allowed.includes('Governança')) return <Navigate to="/governanca" replace />
@@ -44,7 +48,7 @@ export default function Index() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Executive Dashboard</h1>
           <p className="text-slate-500">
             Visão{' '}
-            {profile.role_level === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
+            {effectiveRoleLevel === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
             {selectedHotel.name}
           </p>
         </div>

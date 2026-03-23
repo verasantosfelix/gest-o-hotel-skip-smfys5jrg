@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T13:35:17.637Z",
+  "generatedAt": "2026-03-23T13:44:56.564Z",
   "collections": [
     {
       "name": "users",
@@ -1191,6 +1191,8 @@
           "selectValues": [
             "Gerente_Geral",
             "Director_Geral",
+            "Administrativo_Geral",
+            "Administrativo",
             "Gerente_Area",
             "Responsavel_Equipa",
             "Atendente"
