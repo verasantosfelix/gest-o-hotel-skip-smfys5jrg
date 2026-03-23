@@ -27,7 +27,7 @@ import useAuthStore from '@/stores/useAuthStore'
 
 export function FnBRoomService() {
   const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
+  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
 
   const [products, setProducts] = useState<FBProduct[]>([])
   const [reservations, setReservations] = useState<PBReservation[]>([])

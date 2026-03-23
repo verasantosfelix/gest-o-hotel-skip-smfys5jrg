@@ -45,7 +45,7 @@ import pb from '@/lib/pocketbase/client'
 
 export function SpaAgenda() {
   const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
+  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
 
   const [appointments, setAppointments] = useState<SpaAppointment[]>([])
   const [blockouts, setBlockouts] = useState<any[]>([])

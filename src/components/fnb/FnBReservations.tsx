@@ -26,7 +26,8 @@ import { useRealtime } from '@/hooks/use-realtime'
 
 export function FnBReservations() {
   const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
+  const isFrontDesk = userRole === 'Front_Desk' || userRole === 'Rececao_FrontOffice'
+  const isFnbManager = userRole === 'Restaurante_Bar' || userRole === 'Direcao_Admin'
 
   const [reservations, setReservations] = useState<FBReservationFNB[]>([])
   const [tables, setTables] = useState<FBTable[]>([])
@@ -54,11 +55,11 @@ export function FnBReservations() {
         people_count: parseInt(form.people),
         reservation_time: form.time,
         table_id: form.table || undefined,
-        status: 'confirmed',
+        status: isFnbManager ? 'confirmed' : 'pending',
         notes: '',
       })
-      if (form.table) await updateFBTable(form.table, { status: 'reserved' })
-      toast({ title: 'Reserva Criada com Sucesso' })
+      if (form.table && isFnbManager) await updateFBTable(form.table, { status: 'reserved' })
+      toast({ title: isFnbManager ? 'Reserva Confirmada' : 'Reserva enviada para F&B (Pendente)' })
       setForm({ name: '', people: '', time: '', table: '' })
       loadData()
     } catch (e) {
@@ -80,6 +81,7 @@ export function FnBReservations() {
   const handleConfirm = async (r: FBReservationFNB) => {
     try {
       await updateFBReservation(r.id, { status: 'confirmed' })
+      if (r.table_id) await updateFBTable(r.table_id, { status: 'reserved' })
       toast({ title: 'Reserva Confirmada.' })
       loadData()
     } catch (e) {
@@ -145,7 +147,7 @@ export function FnBReservations() {
               onClick={handleCreate}
               className="w-full font-bold bg-blue-600 hover:bg-blue-700"
             >
-              Confirmar Reserva
+              {isFnbManager ? 'Confirmar Reserva' : 'Solicitar Reserva'}
             </Button>
           </CardContent>
         </Card>
