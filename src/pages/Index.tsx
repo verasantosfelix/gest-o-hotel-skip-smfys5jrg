@@ -1,8 +1,19 @@
 import { Navigate } from 'react-router-dom'
 import { useState } from 'react'
-import { BedDouble, ShieldCheck, Sparkles, LayoutGrid } from 'lucide-react'
+import {
+  BedDouble,
+  ShieldCheck,
+  Sparkles,
+  LayoutGrid,
+  RefreshCw,
+  UserX,
+  Clock,
+  AlertCircle,
+  ShieldAlert,
+} from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import useAuthStore from '@/stores/useAuthStore'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
@@ -14,16 +25,92 @@ import { CheckOut } from '@/components/operations/CheckOut'
 import { ShiftRoutines } from '@/components/front-office/ShiftRoutines'
 import { FrontOfficeKPIs } from '@/components/front-office/FrontOfficeKPIs'
 
+import { useRealtime } from '@/hooks/use-realtime'
+import pb from '@/lib/pocketbase/client'
+
 export default function Index() {
-  const { profile } = useAuthStore()
+  const { profile, loadingProfile, profileError, retryLoadProfile } = useAuthStore()
   const { effectiveRoleLevel, effectiveAllowedActions } = useAccess()
   const { selectedHotel } = useHotelStore()
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  if (!profile)
+  useRealtime('users', (e) => {
+    if (e.record.id === pb.authStore.record?.id) {
+      retryLoadProfile()
+    }
+  })
+
+  if (loadingProfile) {
     return (
-      <div className="p-8 text-center text-slate-500 animate-pulse">Carregando dashboard...</div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 animate-pulse font-medium">Carregando dashboard...</p>
+      </div>
     )
+  }
+
+  if (profileError) {
+    const errorConfig = {
+      suspended: {
+        title: 'Conta Suspensa',
+        desc: 'A sua conta foi desativada pelo administrador. Você não tem acesso ao sistema no momento.',
+        icon: ShieldAlert,
+        color: 'text-rose-600',
+        bg: 'bg-rose-50',
+        border: 'border-rose-200',
+      },
+      not_found: {
+        title: 'Perfil Não Encontrado',
+        desc: 'Perfil não encontrado. Por favor, contacte o administrador para associar um cargo à sua conta.',
+        icon: UserX,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+      },
+      forbidden: {
+        title: 'Acesso Negado',
+        desc: 'Você não tem permissão para carregar os dados deste perfil. Verifique com o suporte.',
+        icon: AlertCircle,
+        color: 'text-rose-600',
+        bg: 'bg-rose-50',
+        border: 'border-rose-200',
+      },
+      timeout: {
+        title: 'Tempo Limite Excedido',
+        desc: 'Não foi possível carregar os dados a tempo. Verifique sua conexão com a internet ou tente novamente.',
+        icon: Clock,
+        color: 'text-slate-600',
+        bg: 'bg-slate-50',
+        border: 'border-slate-200',
+      },
+    }[profileError]
+
+    const Icon = errorConfig.icon
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
+        <Card className={`max-w-md w-full ${errorConfig.border} shadow-sm animate-fade-in-up`}>
+          <CardContent className="p-6 text-center space-y-4">
+            <div
+              className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${errorConfig.bg}`}
+            >
+              <Icon className={`w-8 h-8 ${errorConfig.color}`} />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">{errorConfig.title}</h2>
+            <p className="text-slate-500 text-sm leading-relaxed">{errorConfig.desc}</p>
+
+            <div className="pt-4 flex justify-center">
+              <Button onClick={retryLoadProfile} variant="outline" className="gap-2">
+                <RefreshCw className="w-4 h-4" /> Tentar Novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!profile) return null
 
   const isExecutive = ['Gerente_Geral', 'Director_Geral', 'Administrativo_Geral'].includes(
     effectiveRoleLevel,

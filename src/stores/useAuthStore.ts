@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import pb from '@/lib/pocketbase/client'
 
 export type Role =
@@ -23,6 +23,9 @@ interface AuthStore {
   setPreviewRole: (role: string | null) => void
   previewSector: string | null
   setPreviewSector: (sector: string | null) => void
+  loadingProfile: boolean
+  profileError: 'suspended' | 'not_found' | 'forbidden' | 'timeout' | null
+  retryLoadProfile: () => void
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
@@ -34,19 +37,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [previewRole, setPreviewRole] = useState<string | null>(null)
   const [previewSector, setPreviewSector] = useState<string | null>(null)
 
-  const loadProfile = async () => {
-    const user = pb.authStore.record
-    if (user?.profile) {
-      try {
-        const p = await pb.collection('profiles').getOne(user.profile)
-        setProfile(p)
-      } catch (e) {
-        setProfile(null)
-      }
-    } else {
-      setProfile(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [profileError, setProfileError] = useState<
+    'suspended' | 'not_found' | 'forbidden' | 'timeout' | null
+  >(null)
+
+  const loadProfile = useCallback(async () => {
+    setLoadingProfile(true)
+    setProfileError(null)
+
+    let user = pb.authStore.record
+    if (!user) {
+      setLoadingProfile(false)
+      return
     }
-  }
+
+    try {
+      const latestUser = await Promise.race([
+        pb.collection('users').getOne(user.id, { $autoCancel: false }),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
+      ])
+      user = latestUser
+      pb.authStore.save(pb.authStore.token, user)
+    } catch (e: any) {
+      if (e.message === 'TIMEOUT') {
+        setProfileError('timeout')
+        setLoadingProfile(false)
+        return
+      }
+    }
+
+    if (user.is_active === false) {
+      setProfileError('suspended')
+      setProfile(null)
+      setLoadingProfile(false)
+      return
+    }
+
+    if (!user.profile) {
+      setProfileError('not_found')
+      setProfile(null)
+      setLoadingProfile(false)
+      return
+    }
+
+    try {
+      const p = await Promise.race([
+        pb.collection('profiles').getOne(user.profile, { $autoCancel: false }),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
+      ])
+
+      setProfile(p)
+      setProfileError(null)
+
+      try {
+        await pb
+          .collection('users')
+          .update(user.id, { last_login: new Date().toISOString() }, { $autoCancel: false })
+      } catch (e) {
+        // ignore
+      }
+    } catch (e: any) {
+      if (e.message === 'TIMEOUT') {
+        setProfileError('timeout')
+      } else if (e.status === 403) {
+        setProfileError('forbidden')
+      } else {
+        setProfileError('not_found')
+      }
+      setProfile(null)
+    } finally {
+      setLoadingProfile(false)
+    }
+  }, [])
 
   useEffect(() => {
     loadProfile()
@@ -54,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loadProfile()
     }, true)
     return () => unsubscribe()
-  }, [])
+  }, [loadProfile])
 
   useEffect(() => {
     if (!profile?.id) return
@@ -105,6 +168,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPreviewRole,
         previewSector,
         setPreviewSector,
+        loadingProfile,
+        profileError,
+        retryLoadProfile: loadProfile,
       },
     },
     children,
