@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T22:49:35.260Z",
+  "generatedAt": "2026-03-23T22:56:56.246Z",
   "collections": [
     {
       "name": "users",
@@ -1326,7 +1326,10 @@
           "selectValues": ["standard", "suite", "luxo"]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_rooms_number ON rooms (room_number)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_rooms_number ON rooms (room_number)",
+        "CREATE INDEX `idx_rooms_status_validation` ON `rooms` (status)"
+      ]
     },
     {
       "name": "calendar_events",
@@ -1488,7 +1491,9 @@
           "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_res_availability` ON `reservations` (room_id, check_in, check_out)"
+      ]
     },
     {
       "name": "consumptions",

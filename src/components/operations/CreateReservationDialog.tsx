@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
-import { CalendarIcon, Check, ChevronsUpDown, UserPlus } from 'lucide-react'
+import { format, differenceInDays } from 'date-fns'
+import { CalendarIcon, Check, ChevronsUpDown, UserPlus, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -38,6 +38,8 @@ import { toast } from '@/components/ui/use-toast'
 import { getRooms, RoomRecord } from '@/services/rooms'
 import { getLoyalty, createLoyalty } from '@/services/guest_loyalty'
 import { createReservation } from '@/services/reservations'
+import pb from '@/lib/pocketbase/client'
+import { useAccess } from '@/hooks/use-access'
 
 const schema = z
   .object({
@@ -49,6 +51,7 @@ const schema = z
     checkOut: z.date({ required_error: 'Check-out obrigatório' }),
     isVip: z.boolean().default(false),
     isCorporate: z.boolean().default(false),
+    totalAmount: z.number().min(0, 'Valor inválido'),
   })
   .refine((data) => data.checkOut >= data.checkIn, {
     message: 'Check-out inválido',
@@ -65,20 +68,101 @@ export function CreateReservationDialog({
   const [rooms, setRooms] = useState<RoomRecord[]>([])
   const [guests, setGuests] = useState<any[]>([])
   const [guestPopOpen, setGuestPopOpen] = useState(false)
+  const [isAvailable, setIsAvailable] = useState(true)
+  const [availabilityMsg, setAvailabilityMsg] = useState('')
+
+  const { isManager } = useAccess()
+  const managerAccess = isManager()
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { isNewGuest: false, isVip: false, isCorporate: false },
+    defaultValues: { isNewGuest: false, isVip: false, isCorporate: false, totalAmount: 0 },
   })
+
+  const checkIn = form.watch('checkIn')
+  const checkOut = form.watch('checkOut')
+  const roomId = form.watch('roomId')
+  const isVip = form.watch('isVip')
+  const isCorporate = form.watch('isCorporate')
+  const guestName = form.watch('guestName')
 
   useEffect(() => {
     if (open) {
-      getRooms().then((rs) =>
-        setRooms(rs.filter((r) => !['maintenance', 'out_of_order'].includes(r.status))),
-      )
+      getRooms().then((rs) => setRooms(rs.filter((r) => !['out_of_order'].includes(r.status))))
       getLoyalty().then(setGuests)
       form.reset()
+      setIsAvailable(true)
+      setAvailabilityMsg('')
     }
   }, [open, form])
+
+  useEffect(() => {
+    if (checkIn && checkOut && roomId) {
+      const room = rooms.find((r) => r.id === roomId)
+      if (!room) return
+
+      const type = room.room_type || 'standard'
+      let baseRate = 100
+      if (type === 'suite') baseRate = 250
+      if (type === 'luxo') baseRate = 500
+
+      const nights = Math.max(1, differenceInDays(checkOut, checkIn))
+      let totalBase = baseRate * nights
+
+      const month = checkIn.getMonth()
+      if ([5, 6, 7, 11].includes(month)) {
+        totalBase = totalBase * 1.2
+      }
+
+      let discount = 0
+      const guest = guests.find((g) => g.guest_name === guestName)
+      const isGold = guest?.tier === 'Gold'
+
+      if (isGold || isVip) discount = 0.15
+      else if (isCorporate) discount = 0.1
+
+      const finalAmount = totalBase * (1 - discount)
+      form.setValue('totalAmount', parseFloat(finalAmount.toFixed(2)))
+    }
+  }, [checkIn, checkOut, roomId, isVip, isCorporate, guestName, rooms, guests, form])
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!checkIn || !checkOut || !roomId) {
+        setIsAvailable(true)
+        setAvailabilityMsg('')
+        return
+      }
+
+      const room = rooms.find((r) => r.id === roomId)
+      if (room?.status === 'maintenance') {
+        setIsAvailable(false)
+        setAvailabilityMsg('Quarto indisponível para o período selecionado ou em manutenção.')
+        return
+      }
+
+      const inStr = format(checkIn, 'yyyy-MM-dd')
+      const outStr = format(checkOut, 'yyyy-MM-dd')
+
+      try {
+        const overlaps = await pb.collection('reservations').getFullList({
+          filter: `room_id = "${roomId}" && status != 'cancelado' && status != 'checked_out' && check_in < "${outStr}" && check_out > "${inStr}"`,
+        })
+
+        if (overlaps.length > 0) {
+          setIsAvailable(false)
+          setAvailabilityMsg('Quarto indisponível para o período selecionado ou em manutenção.')
+        } else {
+          setIsAvailable(true)
+          setAvailabilityMsg('')
+        }
+      } catch (e) {
+        console.error('Error checking availability', e)
+      }
+    }
+
+    checkAvailability()
+  }, [checkIn, checkOut, roomId, rooms])
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
     try {
@@ -97,7 +181,7 @@ export function CreateReservationDialog({
         status: 'previsto',
         is_vip: v.isVip,
         is_corporate: v.isCorporate,
-        balance: 0,
+        balance: v.totalAmount,
       })
       toast({ title: 'Sucesso', description: 'Reserva criada com sucesso!' })
       onOpenChange(false)
@@ -114,6 +198,13 @@ export function CreateReservationDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {!isAvailable && availabilityMsg && (
+              <div className="bg-destructive/15 text-destructive p-3 rounded-md flex items-center gap-2 text-sm animate-fade-in">
+                <AlertCircle className="w-4 h-4" />
+                {availabilityMsg}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -337,6 +428,33 @@ export function CreateReservationDialog({
                 )}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="totalAmount"
+                render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1 pt-2">
+                    <FormLabel>Rate Sugerida (USD)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value)
+                          field.onChange(isNaN(val) ? 0 : val)
+                        }}
+                        disabled={!managerAccess}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <div className="flex gap-6 py-4 border-t mt-4">
               <FormField
                 control={form.control}
@@ -369,6 +487,7 @@ export function CreateReservationDialog({
               <Button
                 type="submit"
                 className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+                disabled={!isAvailable}
               >
                 Confirmar Reserva
               </Button>
