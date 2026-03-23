@@ -16,7 +16,15 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
-import { ArrowLeft, Clock, Save, ShieldCheck, Utensils, Sparkles } from 'lucide-react'
+import {
+  ArrowLeft,
+  Clock,
+  Save,
+  ShieldCheck,
+  Utensils,
+  Sparkles,
+  AlertTriangle,
+} from 'lucide-react'
 import { GuestLoyalty, updateLoyalty } from '@/services/guest_loyalty'
 import { GuestInteraction, getGuestInteractions, createGuestInteraction } from '@/services/crm'
 import {
@@ -99,7 +107,7 @@ export function GuestProfileView({ guest, onBack }: { guest: GuestLoyalty; onBac
       setNewIntDetails('')
       toast({ title: 'Interação registrada.' })
     } catch (e) {
-      toast({ title: 'Erro', variant: 'destructive' })
+      toast({ title: 'Erro ao registrar interação', variant: 'destructive' })
     }
   }
 
@@ -121,10 +129,19 @@ export function GuestProfileView({ guest, onBack }: { guest: GuestLoyalty; onBac
       const formData = new FormData()
       formData.append('marketing_consent', marketingConsent.toString())
       formData.append('room_preferences', roomPrefs)
-      if (marketingConsent && sigRef.current && !sigRef.current.isEmpty()) {
+
+      if (marketingConsent && !guest.consent_signature) {
+        if (!sigRef.current || sigRef.current.isEmpty()) {
+          return toast({
+            title: 'Assinatura Obrigatória',
+            description: 'O consentimento de marketing exige assinatura digital (GDPR).',
+            variant: 'destructive',
+          })
+        }
         const blob = dataURLtoBlob(sigRef.current.toDataURL()!)
         formData.append('consent_signature', blob, 'signature.png')
       }
+
       await updateLoyalty(guest.id, formData)
       toast({ title: 'Preferências e consentimento salvos com sucesso!' })
     } catch (e) {
@@ -180,7 +197,8 @@ export function GuestProfileView({ guest, onBack }: { guest: GuestLoyalty; onBac
         })
         toast({ title: 'Reserva de mesa enviada para aprovação (Pendente).' })
       } else {
-        if (!fbForm.resId || !fbForm.productId) return
+        if (!fbForm.resId || !fbForm.productId)
+          return toast({ title: 'Selecione a reserva e o produto', variant: 'destructive' })
         const prod = fbProducts.find((p) => p.id === fbForm.productId)
         if (!prod) return
         const res = reservations.find((r) => r.id === fbForm.resId)
@@ -331,9 +349,10 @@ export function GuestProfileView({ guest, onBack }: { guest: GuestLoyalty; onBac
                 </p>
 
                 {marketingConsent && !guest.consent_signature && (
-                  <div className="md:ml-6 space-y-2 border border-orange-200 bg-orange-50 p-4 rounded-lg">
-                    <Label className="text-orange-800 font-bold">
-                      Assinatura Obrigatória para Consentimento
+                  <div className="md:ml-6 space-y-2 border border-orange-200 bg-orange-50 p-4 rounded-lg animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-orange-800 font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" /> Assinatura Obrigatória para
+                      Consentimento
                     </Label>
                     <div className="bg-white rounded-md p-1 border">
                       <SignaturePad ref={sigRef} className="w-full h-32" />
@@ -344,7 +363,7 @@ export function GuestProfileView({ guest, onBack }: { guest: GuestLoyalty; onBac
                   </div>
                 )}
                 {marketingConsent && guest.consent_signature && (
-                  <div className="md:ml-6 flex items-center gap-2 text-emerald-600 font-medium">
+                  <div className="md:ml-6 flex items-center gap-2 text-emerald-600 font-medium bg-emerald-50 p-3 rounded-lg border border-emerald-100">
                     <ShieldCheck className="w-5 h-5" /> Assinatura Digital Registrada no Sistema
                   </div>
                 )}

@@ -14,6 +14,17 @@ onRecordAfterUpdateSuccess((e) => {
           0,
         )
 
+        let templateName = 'Welcome Tier'
+        try {
+          const tierSlug = `tier_${record.get('tier').toLowerCase()}`
+          const tmpl = $app.findFirstRecordByFilter('email_templates', `slug = {:slug}`, {
+            slug: tierSlug,
+          })
+          if (tmpl) templateName = tmpl.get('name')
+        } catch (err) {
+          // ignore if template not found
+        }
+
         users.forEach((u) => {
           const notif = new Record(notifCol)
           notif.set('recipient_id', u.id)
@@ -21,7 +32,7 @@ onRecordAfterUpdateSuccess((e) => {
           notif.set('title', 'Automação de Marketing Executada')
           notif.set(
             'message',
-            `Email 'Tier Upgrade Welcome' simulado para ${record.get('guest_name')} (Nível: ${record.get('tier')}). Consentimento verificado.`,
+            `Email '${templateName}' simulado para ${record.get('guest_name')} (Nível: ${record.get('tier')}). Consentimento verificado.`,
           )
           notif.set('type', 'info')
           notif.set('status', 'unread')

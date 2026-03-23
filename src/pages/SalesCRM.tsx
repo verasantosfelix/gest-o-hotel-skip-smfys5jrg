@@ -1,15 +1,36 @@
 import { useState, useEffect } from 'react'
-import { LineChart, Activity, TrendingUp } from 'lucide-react'
+import { LineChart, Activity, TrendingUp, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
-import { getGuestInteractions, GuestInteraction } from '@/services/crm'
+import { getGuestInteractions, GuestInteraction, createGuestInteraction } from '@/services/crm'
+import { getLoyalty, GuestLoyalty } from '@/services/guest_loyalty'
 import { useRealtime } from '@/hooks/use-realtime'
+import pb from '@/lib/pocketbase/client'
+import { toast } from '@/components/ui/use-toast'
 
 export default function SalesCRM() {
   const { hasAccess } = useAccess()
   const [interactions, setInteractions] = useState<GuestInteraction[]>([])
+  const [guests, setGuests] = useState<GuestLoyalty[]>([])
+
+  // Quick Log State
+  const [selGuest, setSelGuest] = useState('')
+  const [logType, setLogType] = useState('note')
+  const [logDetails, setLogDetails] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadData = async () => {
     try {
@@ -20,10 +41,42 @@ export default function SalesCRM() {
     }
   }
 
+  const loadGuests = async () => {
+    try {
+      const gs = await getLoyalty()
+      setGuests(gs)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     loadData()
+    loadGuests()
   }, [])
+
   useRealtime('guest_interactions', loadData)
+
+  const handleQuickLog = async () => {
+    if (!selGuest || !logDetails)
+      return toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' })
+    setIsSubmitting(true)
+    try {
+      await createGuestInteraction({
+        guest_id: selGuest,
+        type: logType as any,
+        details: logDetails,
+        staff_id: pb.authStore.record?.id,
+      })
+      toast({ title: 'Interação registrada com sucesso!' })
+      setSelGuest('')
+      setLogDetails('')
+    } catch (e) {
+      toast({ title: 'Erro ao registrar interação', variant: 'destructive' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Vendas & Distribuição')) {
     return (
@@ -75,52 +128,113 @@ export default function SalesCRM() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-slate-500" /> Timeline Global de Interações (Guest
-            Relations)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {interactions.slice(0, 15).map((int) => (
-              <div
-                key={int.id}
-                className="flex gap-4 items-start p-3 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100"
-              >
-                <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 uppercase">
-                  {int.expand?.guest_id?.guest_name?.charAt(0) || '?'}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold text-slate-800">
-                      {int.expand?.guest_id?.guest_name}
-                    </p>
-                    <time className="text-xs text-slate-400 font-mono">
-                      {new Date(int.created).toLocaleString()}
-                    </time>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-slate-500" /> Timeline Global de Interações (Guest
+                Relations)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {interactions.slice(0, 15).map((int) => (
+                  <div
+                    key={int.id}
+                    className="flex gap-4 items-start p-3 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 uppercase">
+                      {int.expand?.guest_id?.guest_name?.charAt(0) || '?'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <p className="font-semibold text-slate-800">
+                          {int.expand?.guest_id?.guest_name || 'Hóspede Removido'}
+                        </p>
+                        <time className="text-xs text-slate-400 font-mono">
+                          {new Date(int.created).toLocaleString()}
+                        </time>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 mb-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {int.type.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          Staff: {int.expand?.staff_id?.name || 'Sistema'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-700">{int.details}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1 mb-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {int.type.toUpperCase()}
-                    </Badge>
-                    <span className="text-xs text-slate-500">
-                      Staff: {int.expand?.staff_id?.name || 'Sistema'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-700">{int.details}</p>
-                </div>
+                ))}
+                {interactions.length === 0 && (
+                  <p className="text-center text-slate-500 py-8">
+                    Nenhuma interação recente registrada no CRM.
+                  </p>
+                )}
               </div>
-            ))}
-            {interactions.length === 0 && (
-              <p className="text-center text-slate-500 py-8">
-                Nenhuma interação recente registrada no CRM.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="sticky top-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-600" /> Registro Rápido
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Hóspede</Label>
+                <Select value={selGuest} onValueChange={setSelGuest}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o hóspede" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {guests.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.guest_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Interação</Label>
+                <Select value={logType} onValueChange={setLogType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="note">Nota / Observação</SelectItem>
+                    <SelectItem value="preference">Preferência</SelectItem>
+                    <SelectItem value="incident">Incidente</SelectItem>
+                    <SelectItem value="interaction">Interação Direta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Detalhes</Label>
+                <Textarea
+                  placeholder="Descreva a interação..."
+                  value={logDetails}
+                  onChange={(e) => setLogDetails(e.target.value)}
+                  className="h-32"
+                />
+              </div>
+              <Button
+                onClick={handleQuickLog}
+                disabled={isSubmitting}
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isSubmitting ? 'Salvando...' : 'Salvar Interação'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
