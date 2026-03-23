@@ -51,7 +51,7 @@ export function FrontOfficeMain({ onNavigate }: { onNavigate: (tab: string) => v
   const maintRooms = rooms.filter((r) => r.status === 'maintenance').length
 
   return (
-    <div className="space-y-6 animate-fade-in pb-8">
+    <div className="space-y-6 animate-fade-in pb-2">
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-slate-200 shadow-sm">
           <CardContent className="p-4 flex items-center gap-4">

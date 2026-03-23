@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardHeader,
@@ -19,23 +19,21 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import useReservationStore, {
-  ConsumptionCategory,
-  Consumption as IConsumption,
-} from '@/stores/useReservationStore'
-import useInventoryStore from '@/stores/useInventoryStore'
-import useAuditStore from '@/stores/useAuditStore'
 import { CheckCircle, Info, ShieldCheck } from 'lucide-react'
+import pb from '@/lib/pocketbase/client'
+import { getConsumables, ConsumableItem } from '@/services/consumables'
+import { getReservations, PBReservation } from '@/services/reservations'
+import { toast } from '@/components/ui/use-toast'
+import { formatCurrency } from '@/lib/utils'
 
 export function Consumption() {
-  const { reservations, addConsumption, getConsumptionsByReservation } = useReservationStore()
-  const { items, decrementStock } = useInventoryStore()
-  const { addLog } = useAuditStore()
+  const [reservations, setReservations] = useState<PBReservation[]>([])
+  const [items, setItems] = useState<ConsumableItem[]>([])
 
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
     reserva_id: '',
-    categoria: '' as ConsumptionCategory | '',
+    categoria: '',
     inventory_item_id: '',
     descricao_item: '',
     preco_unitario: '',
@@ -44,16 +42,17 @@ export function Consumption() {
   })
   const [assinatura, setAssinatura] = useState(false)
   const [error, setError] = useState('')
-  const [lastSaved, setLastSaved] = useState<IConsumption | null>(null)
+  const [lastSaved, setLastSaved] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
 
-  const activeReservation = reservations.find(
-    (r) => r.id === form.reserva_id && r.status === 'checked-in',
+  useEffect(() => {
+    getReservations().then((res) => setReservations(res.filter((r) => r.status === 'in_house')))
+    getConsumables().then(setItems)
+  }, [step])
+
+  const availableItems = items.filter(
+    (i) => i.category === (form.categoria === 'minibar' ? 'minibar' : 'hygiene'),
   )
-  const activeConsumptions = activeReservation
-    ? getConsumptionsByReservation(activeReservation.id).filter((c) => c.validacao_hospede)
-    : []
-
-  const availableItems = items.filter((i) => i.category === form.categoria)
 
   const preco = parseFloat(form.preco_unitario.replace(',', '.')) || 0
   const qtd = parseInt(form.quantidade, 10) || 1
@@ -70,7 +69,7 @@ export function Consumption() {
   }
   const total = subtotal - desconto
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 1) {
       if (
         !form.reserva_id ||
@@ -79,59 +78,50 @@ export function Consumption() {
         !form.preco_unitario ||
         !form.quantidade
       ) {
-        setError('<erro>Todos os campos obrigatórios devem ser preenchidos.</erro>')
+        setError('Todos os campos obrigatórios devem ser preenchidos.')
         return
       }
       if (isNaN(preco) || preco <= 0) {
-        setError('<erro tipo="valor-invalido">O preço unitário deve ser superior a zero.</erro>')
+        setError('O preço unitário deve ser superior a zero.')
         return
       }
       if (isNaN(qtd) || qtd <= 0) {
-        setError('<erro tipo="quantidade-invalida">A quantidade deve ser pelo menos 1.</erro>')
+        setError('A quantidade deve ser pelo menos 1.')
         return
       }
       const res = reservations.find((r) => r.id === form.reserva_id)
-      if (!res || res.status !== 'checked-in') {
-        setError(
-          '<erro tipo="status-invalido">Não é possível registrar consumo para uma reserva sem check-in ativo.</erro>',
-        )
+      if (!res) {
+        setError('Reserva não encontrada ou sem check-in ativo.')
         return
       }
       setError('')
       setStep(2)
     } else if (step === 2) {
       if (!assinatura) {
-        setError(
-          '<erro tipo="assinatura-pendente">A confirmação e assinatura do hóspede são obrigatórias.</erro>',
-        )
+        setError('A confirmação e assinatura do hóspede são obrigatórias.')
         return
       }
 
-      if (form.inventory_item_id) {
-        decrementStock(form.inventory_item_id, qtd)
-        addLog(
-          'INVENTORY_DEDUCTION',
-          `Deducted ${qtd}x ${form.descricao_item} from inventory for reservation ${form.reserva_id}`,
-        )
-      }
+      setLoading(true)
+      try {
+        const payload = {
+          reservation_id: form.reserva_id,
+          type: form.categoria,
+          amount: total,
+          description: `${qtd}x ${form.descricao_item}${motivo ? ` (Desc: ${motivo})` : ''}`,
+        }
 
-      const cons: IConsumption = {
-        id: `ITEM-${Math.floor(Math.random() * 10000)}`,
-        reserva_id: form.reserva_id,
-        categoria: form.categoria as ConsumptionCategory,
-        descricao: form.descricao_item,
-        quantidade: qtd,
-        preco_unitario: preco,
-        desconto,
-        motivo_desconto: motivo || undefined,
-        valor: total,
-        validacao_hospede: assinatura,
-        data_registro: new Date().toISOString(),
+        const cons = await pb.collection('consumptions').create(payload)
+
+        setLastSaved(cons)
+        setError('')
+        setStep(3)
+        toast({ title: 'Consumo registrado com sucesso.' })
+      } catch (err: any) {
+        setError(err.message || 'Erro ao registrar consumo')
+      } finally {
+        setLoading(false)
       }
-      addConsumption(cons)
-      setLastSaved(cons)
-      setError('')
-      setStep(3)
     }
   }
 
@@ -147,14 +137,11 @@ export function Consumption() {
           <pre className="bg-slate-900 text-emerald-400 p-4 rounded-md font-mono text-sm overflow-x-auto shadow-inner">
             {`<OUTPUT>
   <item_id>${lastSaved?.id}</item_id>
-  <reserva_id>${lastSaved?.reserva_id}</reserva_id>
-  <categoria>${lastSaved?.categoria}</categoria>
-  <quantidade>${lastSaved?.quantidade}</quantidade>
-  <preco_unitario>${lastSaved?.preco_unitario.toFixed(2)}</preco_unitario>
-  <desconto>${lastSaved?.desconto.toFixed(2)}</desconto>
-  <valor_final>${lastSaved?.valor.toFixed(2)}</valor_final>
-  <validacao_hospede>${lastSaved?.validacao_hospede}</validacao_hospede>
-  <estoque_atualizado>${form.inventory_item_id ? 'Sim' : 'N/A'}</estoque_atualizado>
+  <reserva_id>${lastSaved?.reservation_id}</reserva_id>
+  <categoria>${lastSaved?.type}</categoria>
+  <valor_final>${lastSaved?.amount.toFixed(2)}</valor_final>
+  <descricao>${lastSaved?.description}</descricao>
+  <estoque_atualizado>${form.categoria === 'minibar' ? 'Sim (Auto)' : 'N/A'}</estoque_atualizado>
   <status>Item registrado com sucesso</status>
 </OUTPUT>`}
           </pre>
@@ -187,8 +174,7 @@ export function Consumption() {
       <CardHeader>
         <CardTitle className="text-slate-800 font-display">Lançamento de Consumo</CardTitle>
         <CardDescription>
-          Registre itens na conta com motor de descontos, assinatura digital e dedução automática de
-          estoque.
+          Registre itens na conta da reserva. Estoque de minibar é deduzido automaticamente.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 min-h-[250px]">
@@ -196,12 +182,22 @@ export function Consumption() {
           <div className="space-y-4 animate-fade-in">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-700">ID da Reserva</Label>
-                <Input
-                  placeholder="Ex: 12345"
+                <Label className="text-slate-700">Reserva (In-House)</Label>
+                <Select
                   value={form.reserva_id}
-                  onChange={(e) => setForm({ ...form, reserva_id: e.target.value })}
-                />
+                  onValueChange={(v) => setForm({ ...form, reserva_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {reservations.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.guest_name} - Q.{r.expand?.room_id?.room_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-700">Categoria</Label>
@@ -210,7 +206,7 @@ export function Consumption() {
                   onValueChange={(v) =>
                     setForm({
                       ...form,
-                      categoria: v as any,
+                      categoria: v,
                       inventory_item_id: '',
                       descricao_item: '',
                       preco_unitario: '',
@@ -221,17 +217,21 @@ export function Consumption() {
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Minibar">Minibar (Frigobar)</SelectItem>
-                    <SelectItem value="Restaurante">Restaurante</SelectItem>
-                    <SelectItem value="Serviços Extras">Serviços Extras</SelectItem>
+                    <SelectItem value="minibar">Minibar (Frigobar)</SelectItem>
+                    <SelectItem value="restaurante">Restaurante / F&B</SelectItem>
+                    <SelectItem value="spa">SPA / Wellness</SelectItem>
+                    <SelectItem value="room_service">Room Service</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700">Item (Estoque / Descrição)</Label>
-              {availableItems.length > 0 ? (
+              <Label className="text-slate-700">
+                Item {form.categoria === 'minibar' && '(Estoque)'}
+              </Label>
+              {availableItems.length > 0 && form.categoria === 'minibar' ? (
                 <Select
                   value={form.inventory_item_id}
                   onValueChange={(v) => {
@@ -239,8 +239,8 @@ export function Consumption() {
                     setForm({
                       ...form,
                       inventory_item_id: v,
-                      descricao_item: item?.name || '',
-                      preco_unitario: item?.price.toFixed(2) || '',
+                      descricao_item: item?.item_name || '',
+                      preco_unitario: item?.unit_price.toString() || '',
                     })
                   }}
                 >
@@ -250,7 +250,8 @@ export function Consumption() {
                   <SelectContent>
                     {availableItems.map((i) => (
                       <SelectItem key={i.id} value={i.id}>
-                        {i.name} (Estoque: {i.quantity})
+                        {i.item_name} (Estoque: {i.stock_quantity}) -{' '}
+                        {formatCurrency(i.unit_price, 'AOA')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -275,7 +276,7 @@ export function Consumption() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-700">Preço Unitário (R$)</Label>
+                <Label className="text-slate-700">Preço Unitário (AOA)</Label>
                 <Input
                   placeholder="0.00"
                   value={form.preco_unitario}
@@ -319,19 +320,19 @@ export function Consumption() {
               <AlertDescription className="text-slate-700 space-y-2">
                 <div className="flex justify-between">
                   <span>
-                    Subtotal ({qtd}x R$ {preco.toFixed(2)}):
+                    Subtotal ({qtd}x {formatCurrency(preco, 'AOA')}):
                   </span>
-                  <span>R$ {subtotal.toFixed(2)}</span>
+                  <span>{formatCurrency(subtotal, 'AOA')}</span>
                 </div>
                 {desconto > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Desconto ({motivo}):</span>
-                    <span>- R$ {desconto.toFixed(2)}</span>
+                    <span>- {formatCurrency(desconto, 'AOA')}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200">
                   <span>Total Final:</span>
-                  <span>R$ {total.toFixed(2)}</span>
+                  <span>{formatCurrency(total, 'AOA')}</span>
                 </div>
               </AlertDescription>
             </Alert>
@@ -343,7 +344,8 @@ export function Consumption() {
               </div>
               <h3 className="font-medium text-slate-800">Assinatura Digital do Hóspede</h3>
               <p className="text-sm text-slate-500 mb-4">
-                Confirmo o consumo acima no valor de <strong>R$ {total.toFixed(2)}</strong>.
+                Confirmo o consumo acima no valor de <strong>{formatCurrency(total, 'AOA')}</strong>
+                .
               </p>
               <div className="max-w-sm mx-auto p-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-md">
                 <div className="flex items-center space-x-3 justify-center">
@@ -377,12 +379,16 @@ export function Consumption() {
             setStep((s) => Math.max(1, s - 1))
             setError('')
           }}
-          disabled={step === 1}
+          disabled={step === 1 || loading}
         >
           Voltar
         </Button>
-        <Button onClick={handleNext} className="bg-slate-800 hover:bg-slate-900 text-white">
-          {step === 2 ? 'Registrar Consumo' : 'Avançar'}
+        <Button
+          onClick={handleNext}
+          disabled={loading}
+          className="bg-slate-800 hover:bg-slate-900 text-white"
+        >
+          {step === 2 ? (loading ? 'Registrando...' : 'Registrar Consumo') : 'Avançar'}
         </Button>
       </CardFooter>
     </Card>

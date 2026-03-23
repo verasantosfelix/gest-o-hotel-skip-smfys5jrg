@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { toast } from '@/components/ui/use-toast'
 
 import useAuthStore from '@/stores/useAuthStore'
 import useHotelStore from '@/stores/useHotelStore'
@@ -30,9 +31,13 @@ import { CheckIn } from '@/components/operations/CheckIn'
 import { CheckOut } from '@/components/operations/CheckOut'
 import { ShiftRoutines } from '@/components/front-office/ShiftRoutines'
 import { FrontOfficeKPIs } from '@/components/front-office/FrontOfficeKPIs'
+import { GanttChart } from '@/components/operations/GanttChart'
 
 import { useRealtime } from '@/hooks/use-realtime'
 import pb from '@/lib/pocketbase/client'
+
+import { getReservations, updateReservation, PBReservation } from '@/services/reservations'
+import { getRooms, RoomRecord } from '@/services/rooms'
 
 export default function Index() {
   const { profile, loadingProfile, profileError, errorDetails, retryLoadProfile, logout } =
@@ -43,6 +48,19 @@ export default function Index() {
 
   const [loadingSeconds, setLoadingSeconds] = useState(0)
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
+
+  const [reservations, setReservations] = useState<PBReservation[]>([])
+  const [rooms, setRooms] = useState<RoomRecord[]>([])
+
+  const loadData = async () => {
+    try {
+      const [res, rms] = await Promise.all([getReservations(), getRooms()])
+      setReservations(res)
+      setRooms(rms)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -56,6 +74,12 @@ export default function Index() {
     return () => clearInterval(interval)
   }, [loadingProfile])
 
+  useEffect(() => {
+    if (!loadingProfile && profile) {
+      loadData()
+    }
+  }, [loadingProfile, profile])
+
   useRealtime('users', (e) => {
     if (e.record.id === pb.authStore.record?.id) {
       if (e.action === 'update' && e.record.is_active === false) {
@@ -63,6 +87,23 @@ export default function Index() {
       }
     }
   })
+  useRealtime('reservations', loadData)
+  useRealtime('rooms', loadData)
+
+  const handleMoveReservation = async (
+    id: string,
+    roomId: string,
+    checkIn: string,
+    checkOut: string,
+  ) => {
+    try {
+      await updateReservation(id, { room_id: roomId, check_in: checkIn, check_out: checkOut })
+      toast({ title: 'Reserva atualizada no dashboard com sucesso!' })
+      loadData()
+    } catch (e) {
+      toast({ title: 'Erro ao mover reserva', variant: 'destructive' })
+    }
+  }
 
   if (loadingProfile) {
     return (
@@ -284,6 +325,11 @@ export default function Index() {
           </Card>
         </div>
         <FinancialDashboard />
+
+        <div className="mt-8 space-y-3">
+          <h2 className="text-xl font-bold text-slate-800">Visão Geral de Reservas (Gantt)</h2>
+          <GanttChart reservations={reservations} rooms={rooms} onMove={handleMoveReservation} />
+        </div>
       </div>
     )
   }
@@ -315,8 +361,12 @@ export default function Index() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="outline-none mt-0">
+        <TabsContent value="dashboard" className="outline-none mt-0 space-y-8">
           <FrontOfficeMain onNavigate={setActiveTab} />
+          <div className="space-y-3 pt-6 border-t border-slate-100">
+            <h2 className="text-lg font-bold text-slate-800">Mapa Global de Ocupação (Gantt)</h2>
+            <GanttChart reservations={reservations} rooms={rooms} onMove={handleMoveReservation} />
+          </div>
         </TabsContent>
         <TabsContent value="checkin" className="outline-none mt-0">
           <CheckIn />

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T23:10:30.187Z",
+  "generatedAt": "2026-03-23T23:20:35.161Z",
   "collections": [
     {
       "name": "users",
@@ -3699,6 +3699,65 @@
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_email_templates_slug ON email_templates (slug)"]
+    },
+    {
+      "name": "consumables_inventory",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "item_name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["minibar", "hygiene"]
+        },
+        {
+          "name": "stock_quantity",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "unit_price",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "min_threshold",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }

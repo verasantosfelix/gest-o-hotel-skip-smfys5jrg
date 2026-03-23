@@ -11,6 +11,8 @@ import {
   GanttChartSquare,
   FileCheck,
   Receipt,
+  Building2,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +39,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
@@ -67,6 +78,10 @@ export default function Reservations() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCheckInOpen, setIsCheckInOpen] = useState(false)
   const [checkInRes, setCheckInRes] = useState<PBReservation | null>(null)
+
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false)
+  const [corpData, setCorpData] = useState({ company_name: '', vat_number: '' })
+  const [isInvoiceLoading, setIsInvoiceLoading] = useState(false)
 
   const loadData = async () => {
     try {
@@ -121,45 +136,62 @@ export default function Reservations() {
     }
   }
 
-  const handleRequestInvoice = async () => {
+  const openInvoiceDialog = async () => {
     if (!selected) return
+    setInvoiceDialogOpen(true)
     try {
-      const totalCons = consumptions
-        .filter((c) => c.reservation_id === selected.id)
-        .reduce((a, b) => a + b.amount, 0)
-      const totalAmount = totalCons + (selected.balance || 0)
+      const loyalty = await pb
+        .collection('guest_loyalty')
+        .getFirstListItem(`guest_name="${selected.guest_name}"`)
+      setCorpData({
+        company_name: loyalty.company_name || '',
+        vat_number: loyalty.vat_number || '',
+      })
+    } catch (e) {
+      setCorpData({ company_name: '', vat_number: '' })
+    }
+  }
 
-      await createFinancialDoc({
-        doc_type: 'invoice_request',
-        amount: totalAmount,
-        status: 'pending',
-        category: 'A/R',
-        entity_name: selected.guest_name,
-        currency: 'AOA',
-        notes: `Referente à reserva ${selected.id}`,
+  const handleConfirmInvoice = async () => {
+    if (!selected) return
+    if (!corpData.company_name || !corpData.vat_number) {
+      toast({ title: 'Preencha os dados corporativos', variant: 'destructive' })
+      return
+    }
+
+    setIsInvoiceLoading(true)
+    try {
+      const res = await pb.send(`/backend/v1/reservations/${selected.id}/invoice-request`, {
+        method: 'POST',
+        body: {
+          company_name: corpData.company_name,
+          vat_number: corpData.vat_number,
+        },
       })
 
-      const financeUsers = await pb.collection('users').getFullList({ expand: 'profile' })
-      const targetUsers = financeUsers.filter(
-        (u) =>
-          u.expand?.profile?.role_level === 'Administrativo_Financeiro' ||
-          u.expand?.profile?.role_level === 'Direcao_Admin',
-      )
+      const blob = new Blob([res.invoice_text], { type: 'text/plain' })
+      const fd = new FormData()
+      fd.append('doc_type', 'invoice_request')
+      fd.append('status', 'pending')
+      fd.append('amount', res.total_amount.toString())
+      fd.append('currency', 'AOA')
+      fd.append('entity_name', res.company_name)
+      fd.append('category', 'A/R')
+      fd.append('notes', `Referente à reserva ${selected.id} de ${selected.guest_name}`)
+      fd.append('document', blob, `Fatura_${selected.id}.txt`)
 
-      for (const u of targetUsers) {
-        await pb.collection('notifications').create({
-          recipient_id: u.id,
-          sender_id: pb.authStore.record?.id,
-          title: 'Solicitação de Fatura Interna',
-          message: `Fatura solicitada para ${selected.guest_name} no valor de ${formatCurrency(totalAmount, 'AOA')}.`,
-          type: 'approval_request',
-          status: 'unread',
-        })
-      }
+      await createFinancialDoc(fd as any)
 
-      toast({ title: 'Solicitação enviada ao departamento Financeiro.' })
-    } catch (e) {
-      toast({ title: 'Erro ao solicitar fatura', variant: 'destructive' })
+      toast({
+        title: 'Fatura solicitada com sucesso!',
+        description: 'O Financeiro foi notificado.',
+      })
+      setInvoiceDialogOpen(false)
+      setSelected(null)
+    } catch (e: any) {
+      toast({ title: 'Erro ao solicitar fatura', description: e.message, variant: 'destructive' })
+    } finally {
+      setIsInvoiceLoading(false)
     }
   }
 
@@ -428,10 +460,10 @@ export default function Reservations() {
           <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-between w-full">
             <Button
               variant="default"
-              className="gap-2 bg-slate-900 text-white hover:bg-slate-800"
-              onClick={handleRequestInvoice}
+              className="gap-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+              onClick={openInvoiceDialog}
             >
-              <Receipt className="w-4 h-4" /> Solicitar Fatura ao Financeiro
+              <Receipt className="w-4 h-4" /> Gerar Pedido de Fatura
             </Button>
             <Button variant="secondary" onClick={() => setSelected(null)}>
               Fechar
@@ -439,6 +471,59 @@ export default function Reservations() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Invoice Request Dialog */}
+      <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" /> Fatura Corporativa
+            </DialogTitle>
+            <DialogDescription>
+              Confirme os dados corporativos para gerar e anexar a fatura.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome da Empresa (Entity Name)</Label>
+              <Input
+                value={corpData.company_name}
+                onChange={(e) => setCorpData({ ...corpData, company_name: e.target.value })}
+                placeholder="Ex: Empresa Lda"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>NIF / VAT Number</Label>
+              <Input
+                value={corpData.vat_number}
+                onChange={(e) => setCorpData({ ...corpData, vat_number: e.target.value })}
+                placeholder="Ex: 500123456"
+              />
+            </div>
+            {(!corpData.company_name || !corpData.vat_number) && (
+              <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                <AlertCircle className="w-4 h-4" /> Ambos os campos são obrigatórios.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setInvoiceDialogOpen(false)}
+              disabled={isInvoiceLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmInvoice}
+              disabled={isInvoiceLoading || !corpData.company_name || !corpData.vat_number}
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            >
+              {isInvoiceLoading ? 'Gerando...' : 'Confirmar Envio'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <CreateReservationDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
       <DigitalCheckInDialog
