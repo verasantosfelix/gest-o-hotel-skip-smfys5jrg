@@ -58,13 +58,9 @@ export default function Index() {
 
   useRealtime('users', (e) => {
     if (e.record.id === pb.authStore.record?.id) {
-      retryLoadProfile()
-    }
-  })
-
-  useRealtime('profiles', (e) => {
-    if (e.record.id === profile?.id || e.record.id === pb.authStore.record?.profile) {
-      retryLoadProfile()
+      if (e.action === 'update' && e.record.is_active === false) {
+        retryLoadProfile()
+      }
     }
   })
 
@@ -114,7 +110,7 @@ export default function Index() {
       },
       timeout: {
         title: 'Tempo Limite Excedido',
-        desc: 'Não foi possível carregar os dados a tempo (7 segundos). Verifique a sua conexão com a internet ou tente novamente.',
+        desc: 'Não foi possível carregar os dados a tempo (10 segundos). Verifique a sua conexão com a internet ou tente novamente.',
         icon: Clock,
         color: 'text-slate-600',
         bg: 'bg-slate-50',
@@ -203,11 +199,14 @@ export default function Index() {
                 <RefreshCw className="w-4 h-4" /> Tentar Novamente
               </Button>
               <Button
-                onClick={logout}
+                onClick={() => {
+                  logout()
+                  window.location.reload()
+                }}
                 variant="outline"
                 className="gap-2 h-11 px-6 border-slate-300 text-slate-700"
               >
-                <LogOut className="w-4 h-4" /> Terminar Sessão
+                <LogOut className="w-4 h-4" /> Limpar Cache e Sair
               </Button>
             </div>
           </CardContent>

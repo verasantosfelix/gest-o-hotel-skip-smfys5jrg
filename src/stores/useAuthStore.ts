@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import pb from '@/lib/pocketbase/client'
 
 export type Role =
@@ -43,12 +43,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profileError, setProfileError] = useState<AuthStore['profileError']>(null)
   const [errorDetails, setErrorDetails] = useState<any>(null)
 
+  const loadingRef = useRef(false)
+
   const logout = useCallback(() => {
     pb.authStore.clear()
     window.location.href = '/'
   }, [])
 
   const loadProfile = useCallback(async () => {
+    if (loadingRef.current) return
+    loadingRef.current = true
     setLoadingProfile(true)
     setProfileError(null)
     setErrorDetails(null)
@@ -56,20 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let user = pb.authStore.record
     if (!user) {
       setLoadingProfile(false)
+      loadingRef.current = false
       return
     }
 
     try {
       const latestUser = await Promise.race([
         pb.collection('users').getOne(user.id, { expand: 'profile', $autoCancel: false }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 7000)),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
       ])
       user = latestUser
-      pb.authStore.save(pb.authStore.token, user)
     } catch (e: any) {
       if (e.message === 'TIMEOUT') {
         setProfileError('timeout')
-        setErrorDetails({ message: 'Request timed out after 7000ms' })
+        setErrorDetails({ message: 'Request timed out after 10000ms' })
       } else {
         if (e.status === 403) setProfileError('forbidden')
         else if (e.status === 404) setProfileError('not_found')
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setProfile(null)
       setLoadingProfile(false)
+      loadingRef.current = false
       return
     }
 
@@ -91,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setErrorDetails({ message: 'Acesso negado: a sua conta está marcada como inativa.' })
       setProfile(null)
       setLoadingProfile(false)
+      loadingRef.current = false
       return
     }
 
@@ -101,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       setProfile(null)
       setLoadingProfile(false)
+      loadingRef.current = false
       return
     }
 
@@ -108,11 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(user.expand.profile)
       setProfileError(null)
       setLoadingProfile(false)
+      loadingRef.current = false
     } else {
       try {
         const p = await Promise.race([
           pb.collection('profiles').getOne(user.profile, { $autoCancel: false }),
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 7000)),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
         ])
 
         setProfile(p)
@@ -120,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e: any) {
         if (e.message === 'TIMEOUT') {
           setProfileError('timeout')
-          setErrorDetails({ message: 'Profile request timed out after 7000ms' })
+          setErrorDetails({ message: 'Profile request timed out after 10000ms' })
         } else if (e.status === 403) {
           setProfileError('forbidden')
           setErrorDetails({ status: e.status, message: e.message, response: e.response })
@@ -131,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null)
       } finally {
         setLoadingProfile(false)
+        loadingRef.current = false
       }
     }
 
@@ -145,9 +154,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadProfile()
-    const unsubscribe = pb.authStore.onChange(() => {
-      loadProfile()
-    }, true)
+    const unsubscribe = pb.authStore.onChange((token, record) => {
+      if (!token || !record) {
+        setProfile(null)
+        setProfileError(null)
+      } else {
+        if (!loadingRef.current) {
+          loadProfile()
+        }
+      }
+    }, false)
     return () => unsubscribe()
   }, [loadProfile])
 
