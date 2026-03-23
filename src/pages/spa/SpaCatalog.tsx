@@ -11,10 +11,7 @@ import { formatCurrency } from '@/lib/utils'
 import useAuthStore from '@/stores/useAuthStore'
 
 export default function SpaCatalog() {
-  const { hasAccess } = useAccess()
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
-
+  const { hasAccess, canWrite } = useAccess()
   const [services, setServices] = useState<SpaService[]>([])
 
   const loadData = async () => {
@@ -29,17 +26,8 @@ export default function SpaCatalog() {
     loadData()
   }, [])
 
-  if (
-    !hasAccess(
-      ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      'Catálogo de Serviços',
-    )
-  ) {
-    return (
-      <RestrictedAccess
-        requiredRoles={['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
-      />
-    )
+  if (!hasAccess([], 'Catálogo de Serviços')) {
+    return <RestrictedAccess />
   }
 
   const handleDelete = async (id: string) => {
@@ -67,7 +55,7 @@ export default function SpaCatalog() {
             <p className="text-sm text-slate-500">Serviços e Tratamentos do SPA</p>
           </div>
         </div>
-        {!isFrontDesk && (
+        {canWrite('Catálogo de Serviços') && (
           <Button className="gap-2">
             <Plus className="w-4 h-4" /> Novo Serviço
           </Button>
@@ -104,7 +92,7 @@ export default function SpaCatalog() {
                   {s.description || 'Sem descrição detalhada.'}
                 </p>
 
-                {!isFrontDesk && (
+                {canWrite('Catálogo de Serviços') && (
                   <div className="flex gap-2 pt-2 border-t mt-4">
                     <Button variant="outline" size="sm" className="flex-1 gap-1">
                       <Edit className="w-3.5 h-3.5" /> Editar

@@ -25,8 +25,13 @@ import { getRooms, RoomRecord } from '@/services/rooms'
 
 export default function Maintenance() {
   const { hasAccess } = useAccess()
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
+  const { profile } = useAuthStore()
+
+  if (!hasAccess([], 'Manutenção')) {
+    return <RestrictedAccess />
+  }
+
+  const isStaff = profile?.role_level === 'Atendente'
 
   const [tickets, setTickets] = useState<any[]>([])
   const [sensors, setSensors] = useState<any[]>([])
@@ -45,25 +50,16 @@ export default function Maintenance() {
       setSensors(sData)
       setAssets(aData)
       setRooms(rData)
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) {}
   }
 
   useEffect(() => {
     loadData()
   }, [])
-
   useRealtime('maintenance_tickets', loadData)
   useRealtime('iot_sensors', loadData)
   useRealtime('it_assets', loadData)
   useRealtime('rooms', loadData)
-
-  if (!hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'], 'Manutenção')) {
-    return (
-      <RestrictedAccess requiredRoles={['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk']} />
-    )
-  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">
@@ -79,40 +75,48 @@ export default function Maintenance() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
+      <Tabs defaultValue={isStaff ? 'os' : 'dashboard'} className="w-full">
         <TabsList className="mb-6 h-12 w-full sm:w-auto bg-slate-100 flex overflow-x-auto justify-start border border-slate-200 shadow-sm">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2 h-9 px-4">
-            <LayoutDashboard className="w-4 h-4" /> Painel Operacional
-          </TabsTrigger>
+          {!isStaff && (
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 h-9 px-4">
+              <LayoutDashboard className="w-4 h-4" /> Painel Operacional
+            </TabsTrigger>
+          )}
           <TabsTrigger value="os" className="flex items-center gap-2 h-9 px-4">
             <ClipboardList className="w-4 h-4" /> Ordens de Serviço
           </TabsTrigger>
           <TabsTrigger value="iot" className="flex items-center gap-2 h-9 px-4">
             <Cpu className="w-4 h-4" /> Sensores IoT
           </TabsTrigger>
-          <TabsTrigger value="inventario" className="flex items-center gap-2 h-9 px-4">
-            <Settings className="w-4 h-4" /> Ativos & Preventiva
-          </TabsTrigger>
-          {!isFrontDesk && (
+          {!isStaff && (
+            <TabsTrigger value="inventario" className="flex items-center gap-2 h-9 px-4">
+              <Settings className="w-4 h-4" /> Ativos & Preventiva
+            </TabsTrigger>
+          )}
+          {!isStaff && (
             <TabsTrigger value="turnos" className="flex items-center gap-2 h-9 px-4">
               <RouteIcon className="w-4 h-4" /> Rotinas de Turno
             </TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="dashboard" className="mt-0 outline-none">
-          <MaintenanceDashboard tickets={tickets} sensors={sensors} />
-        </TabsContent>
+        {!isStaff && (
+          <TabsContent value="dashboard" className="mt-0 outline-none">
+            <MaintenanceDashboard tickets={tickets} sensors={sensors} />
+          </TabsContent>
+        )}
         <TabsContent value="os" className="mt-0 outline-none">
           <MaintenanceOS tickets={tickets} rooms={rooms} />
         </TabsContent>
         <TabsContent value="iot" className="mt-0 outline-none">
           <MaintenanceIoT sensors={sensors} />
         </TabsContent>
-        <TabsContent value="inventario" className="mt-0 outline-none">
-          <MaintenanceInventory assets={assets} />
-        </TabsContent>
-        {!isFrontDesk && (
+        {!isStaff && (
+          <TabsContent value="inventario" className="mt-0 outline-none">
+            <MaintenanceInventory assets={assets} />
+          </TabsContent>
+        )}
+        {!isStaff && (
           <TabsContent value="turnos" className="mt-0 outline-none">
             <MaintenanceShifts />
           </TabsContent>

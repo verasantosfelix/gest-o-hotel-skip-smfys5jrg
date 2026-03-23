@@ -74,8 +74,6 @@ import {
 } from '@/components/ui/accordion'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
-import useAuthStore, { Role } from '@/stores/useAuthStore'
-import { cn } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 
@@ -83,410 +81,104 @@ type NavItem = {
   name: string
   url: string
   icon: any
-  roles: Role[]
   requiresManager?: boolean
 }
 
 const quickAccessItems: NavItem[] = [
-  {
-    name: 'Nova Reserva',
-    url: '/reservations/new',
-    icon: CalendarPlus,
-    roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-  },
-  {
-    name: 'Novo Ticket Manut.',
-    url: '/maintenance/new',
-    icon: PenTool,
-    roles: ['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
-  },
-  {
-    name: 'Agendamento Spa',
-    url: '/spa/agenda',
-    icon: CalendarHeart,
-    roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-  },
-  {
-    name: 'Room Service',
-    url: '/fb/room-service',
-    icon: BellRing,
-    roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
-  },
+  { name: 'Nova Reserva', url: '/reservations/new', icon: CalendarPlus },
+  { name: 'Novo Ticket Manut.', url: '/maintenance/new', icon: PenTool },
+  { name: 'Agendamento Spa', url: '/spa/agenda', icon: CalendarHeart },
+  { name: 'Room Service', url: '/fb/room-service', icon: BellRing },
 ]
 
 const navGroups = [
   {
     label: 'Front-Office',
     items: [
-      {
-        name: 'Dashboard',
-        url: '/',
-        icon: LayoutDashboard,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Reservas',
-        url: '/reservas',
-        icon: CalendarDays,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Hóspedes',
-        url: '/hospedes',
-        icon: Users,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Quartos',
-        url: '/quartos',
-        icon: BedDouble,
-        roles: ['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Lançamentos Rápidos',
-        url: '/lancamento-servicos',
-        icon: Receipt,
-        roles: [
-          'Rececao_FrontOffice',
-          'Restaurante_Bar',
-          'Spa_Wellness',
-          'Lavanderia_Limpeza',
-          'Direcao_Admin',
-          'Front_Desk',
-        ],
-      },
-      {
-        name: 'Busca Hóspedes',
-        url: '/busca-hospedes',
-        icon: Search,
-        roles: [
-          'Rececao_FrontOffice',
-          'Restaurante_Bar',
-          'Spa_Wellness',
-          'Lavanderia_Limpeza',
-          'Direcao_Admin',
-          'Front_Desk',
-        ],
-      },
-    ] as NavItem[],
+      { name: 'Dashboard', url: '/', icon: LayoutDashboard },
+      { name: 'Reservas', url: '/reservas', icon: CalendarDays },
+      { name: 'Hóspedes', url: '/hospedes', icon: Users },
+      { name: 'Quartos', url: '/quartos', icon: BedDouble },
+      { name: 'Lançamentos Rápidos', url: '/lancamento-servicos', icon: Receipt },
+      { name: 'Busca Hóspedes', url: '/busca-hospedes', icon: Search },
+    ],
   },
   {
     label: 'Spa & Wellness',
     items: [
-      {
-        name: 'Agenda Diária',
-        url: '/spa/agenda',
-        icon: CalendarHeart,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Agenda Mensal',
-        url: '/spa/mensal',
-        icon: CalendarDays,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Catálogo de Serviços',
-        url: '/spa/catalogo',
-        icon: BookOpen,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Operações & Salas',
-        url: '/spa/operacoes',
-        icon: Settings,
-        roles: ['Spa_Wellness', 'Direcao_Admin'], // Front Desk restricted
-      },
-      {
-        name: 'Lavanderia SPA',
-        url: '/spa/lavanderia',
-        icon: Shirt,
-        roles: ['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin'], // Front Desk restricted
-      },
-      {
-        name: 'Lazer & Piscinas',
-        url: '/lazer',
-        icon: Droplets,
-        roles: ['Spa_Wellness', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-    ] as NavItem[],
+      { name: 'Agenda Diária', url: '/spa/agenda', icon: CalendarHeart },
+      { name: 'Agenda Mensal', url: '/spa/mensal', icon: CalendarDays },
+      { name: 'Catálogo de Serviços', url: '/spa/catalogo', icon: BookOpen },
+      { name: 'Operações & Salas', url: '/spa/operacoes', icon: Settings },
+      { name: 'Lavanderia SPA', url: '/spa/lavanderia', icon: Shirt },
+      { name: 'Lazer & Piscinas', url: '/lazer', icon: Droplets },
+    ],
   },
   {
     label: 'Governança & F&B',
     items: [
-      {
-        name: 'Governança',
-        url: '/governanca',
-        icon: Sparkles,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Lavanderia Geral',
-        url: '/lavanderia',
-        icon: WashingMachine,
-        roles: ['Lavanderia_Limpeza', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Achados e Perdidos',
-        url: '/achados-perdidos',
-        icon: SearchX,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Amenities',
-        url: '/minibar-amenities',
-        icon: Package,
-        roles: ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'F&B Básico',
-        url: '/fnb',
-        icon: Utensils,
-        roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'F&B Operações',
-        url: '/fb-ops',
-        icon: UtensilsCrossed,
-        roles: ['Restaurante_Bar', 'Direcao_Admin'],
-      },
-      {
-        name: 'Menu Digital',
-        url: '/restaurante/menu-digital',
-        icon: BookOpen,
-        roles: ['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Menu Impresso (PDF)',
-        url: '/restaurante/menu-pdf',
-        icon: FileText,
-        roles: ['Restaurante_Bar', 'Direcao_Admin'],
-      },
-      {
-        name: 'Loja',
-        url: '/loja',
-        icon: ShoppingBag,
-        roles: ['Rececao_FrontOffice', 'Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Manutenção',
-        url: '/manutencao',
-        icon: Wrench,
-        roles: ['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
-      },
-    ] as NavItem[],
+      { name: 'Governança', url: '/governanca', icon: Sparkles },
+      { name: 'Lavanderia Geral', url: '/lavanderia', icon: WashingMachine },
+      { name: 'Achados e Perdidos', url: '/achados-perdidos', icon: SearchX },
+      { name: 'Amenities', url: '/minibar-amenities', icon: Package },
+      { name: 'F&B Básico', url: '/fnb', icon: Utensils },
+      { name: 'F&B Operações', url: '/fb-ops', icon: UtensilsCrossed },
+      { name: 'Menu Digital', url: '/restaurante/menu-digital', icon: BookOpen },
+      { name: 'Menu Impresso (PDF)', url: '/restaurante/menu-pdf', icon: FileText },
+      { name: 'Loja', url: '/loja', icon: ShoppingBag },
+      { name: 'Manutenção', url: '/manutencao', icon: Wrench },
+    ],
   },
   {
     label: 'Estratégico & Financeiro',
     items: [
-      {
-        name: 'Alçadas (Aprovações)',
-        url: '/alcadas',
-        icon: ShieldCheck,
-        roles: [
-          'Lavanderia_Limpeza',
-          'Restaurante_Bar',
-          'Spa_Wellness',
-          'Rececao_FrontOffice',
-          'Administrativo_Financeiro',
-          'Manutencao_Oficina',
-          'Tecnologia_TI',
-          'Direcao_Admin',
-        ],
-        requiresManager: true,
-      },
-      {
-        name: 'Analytics',
-        url: '/analytics',
-        icon: BarChart,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Relatórios',
-        url: '/relatorios',
-        icon: FileText,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Revenue Mgmt',
-        url: '/revenue',
-        icon: TrendingUp,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Vendas & Distribuição',
-        url: '/sales-crm',
-        icon: LineChart,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Financeiro Corp',
-        url: '/financeiro-corp',
-        icon: Landmark,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Auditoria Noturna',
-        url: '/auditoria-noturna',
-        icon: MoonStar,
-        roles: ['Administrativo_Financeiro', 'Rececao_FrontOffice', 'Direcao_Admin'],
-      },
-      {
-        name: 'Pagamentos',
-        url: '/pagamentos',
-        icon: CreditCard,
-        roles: ['Administrativo_Financeiro', 'Rececao_FrontOffice', 'Direcao_Admin'],
-      },
-      {
-        name: 'Equipe & RH',
-        url: '/equipe',
-        icon: Briefcase,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'HR Intelligence',
-        url: '/hr',
-        icon: UserCog,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Documentos',
-        url: '/documentos-contratos',
-        icon: FileSignature,
-        roles: ['Administrativo_Financeiro', 'Direcao_Admin'],
-      },
-      {
-        name: 'Auditoria',
-        url: '/auditoria',
-        icon: History,
-        roles: ['Administrativo_Financeiro', 'Tecnologia_TI', 'Direcao_Admin'],
-      },
-    ] as NavItem[],
+      { name: 'Alçadas (Aprovações)', url: '/alcadas', icon: ShieldCheck, requiresManager: true },
+      { name: 'Analytics', url: '/analytics', icon: BarChart },
+      { name: 'Relatórios', url: '/relatorios', icon: FileText },
+      { name: 'Revenue Mgmt', url: '/revenue', icon: TrendingUp },
+      { name: 'Vendas & Distribuição', url: '/sales-crm', icon: LineChart },
+      { name: 'Financeiro Corp', url: '/financeiro-corp', icon: Landmark },
+      { name: 'Auditoria Noturna', url: '/auditoria-noturna', icon: MoonStar },
+      { name: 'Pagamentos', url: '/pagamentos', icon: CreditCard },
+      { name: 'Equipe & RH', url: '/equipe', icon: Briefcase },
+      { name: 'HR Intelligence', url: '/hr', icon: UserCog },
+      { name: 'Documentos', url: '/documentos-contratos', icon: FileSignature },
+      { name: 'Auditoria', url: '/auditoria', icon: History },
+    ],
   },
   {
     label: 'Experiência & Marketing',
     items: [
-      {
-        name: 'CRM',
-        url: '/crm',
-        icon: HeartHandshake,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Fidelidade',
-        url: '/fidelidade-feedback',
-        icon: Star,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Marketing',
-        url: '/marketing',
-        icon: Megaphone,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
-      },
-      {
-        name: 'Eventos & MICE',
-        url: '/eventos',
-        icon: CalendarRange,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
-      },
-      {
-        name: 'Grupos (MICE)',
-        url: '/mice',
-        icon: Building,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin'],
-      },
-      {
-        name: 'Concierge',
-        url: '/concierge',
-        icon: ConciergeBell,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'IA Concierge',
-        url: '/ai-concierge',
-        icon: BotMessageSquare,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'Guest Journey',
-        url: '/guest-journey',
-        icon: Compass,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Omnichannel',
-        url: '/comunicacao',
-        icon: MessageSquare,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Comms Automáticas',
-        url: '/guest-comms',
-        icon: Mail,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-      {
-        name: 'Frota',
-        url: '/frota',
-        icon: Car,
-        roles: ['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      },
-    ] as NavItem[],
+      { name: 'CRM', url: '/crm', icon: HeartHandshake },
+      { name: 'Fidelidade', url: '/fidelidade-feedback', icon: Star },
+      { name: 'Marketing', url: '/marketing', icon: Megaphone },
+      { name: 'Eventos & MICE', url: '/eventos', icon: CalendarRange },
+      { name: 'Grupos (MICE)', url: '/mice', icon: Building },
+      { name: 'Concierge', url: '/concierge', icon: ConciergeBell },
+      { name: 'IA Concierge', url: '/ai-concierge', icon: BotMessageSquare },
+      { name: 'Guest Journey', url: '/guest-journey', icon: Compass },
+      { name: 'Omnichannel', url: '/comunicacao', icon: MessageSquare },
+      { name: 'Comms Automáticas', url: '/guest-comms', icon: Mail },
+      { name: 'Frota', url: '/frota', icon: Car },
+    ],
   },
   {
     label: 'Tecnologia & Infra',
     items: [
-      {
-        name: 'IT Admin',
-        url: '/it-admin',
-        icon: Server,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'Integrações',
-        url: '/integracoes',
-        icon: Plug,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'ChatOps',
-        url: '/chatops',
-        icon: Terminal,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'Governança IA',
-        url: '/ia-governanca',
-        icon: Bot,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'Mobilidade',
-        url: '/mobilidade',
-        icon: Smartphone,
-        roles: ['Manutencao_Oficina', 'Tecnologia_TI', 'Direcao_Admin'],
-      },
-      {
-        name: 'Segurança',
-        url: '/seguranca',
-        icon: ShieldAlert,
-        roles: ['Tecnologia_TI', 'Manutencao_Oficina', 'Direcao_Admin'],
-      },
-      {
-        name: 'Configurações',
-        url: '/configuracoes',
-        icon: Settings,
-        roles: ['Tecnologia_TI', 'Direcao_Admin'],
-      },
-    ] as NavItem[],
+      { name: 'IT Admin', url: '/it-admin', icon: Server },
+      { name: 'Integrações', url: '/integracoes', icon: Plug },
+      { name: 'ChatOps', url: '/chatops', icon: Terminal },
+      { name: 'Governança IA', url: '/ia-governanca', icon: Bot },
+      { name: 'Mobilidade', url: '/mobilidade', icon: Smartphone },
+      { name: 'Segurança', url: '/seguranca', icon: ShieldAlert },
+      { name: 'Configurações', url: '/configuracoes', icon: Settings },
+    ],
   },
 ]
 
 export function AppSidebar() {
   const location = useLocation()
   const { selectedHotel } = useHotelStore()
-  const { userRole } = useAuthStore()
   const { isManager, hasAccess } = useAccess()
 
   const [accordionValue, setAccordionValue] = useState<string>('')
@@ -498,49 +190,42 @@ export function AppSidebar() {
     if (!pb.authStore.isValid) return
 
     try {
-      if (hasAccess(['Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'], 'Manutenção')) {
-        const maint = await pb.collection('maintenance_tickets').getList(1, 1, {
-          filter: 'status = "open"',
-        })
+      if (hasAccess([], 'Manutenção')) {
+        const maint = await pb
+          .collection('maintenance_tickets')
+          .getList(1, 1, { filter: 'status = "open"' })
         setOpenMaintenance(maint.totalItems)
       }
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) {}
 
     try {
-      if (hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'Menu Impresso (PDF)')) {
-        const pdfs = await pb.collection('fb_pdf_versions').getList(1, 1, {
-          filter: 'status = "pending_approval"',
-        })
+      if (hasAccess([], 'Menu Impresso (PDF)')) {
+        const pdfs = await pb
+          .collection('fb_pdf_versions')
+          .getList(1, 1, { filter: 'status = "pending_approval"' })
         setPendingPdf(pdfs.totalItems)
       }
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) {}
 
     try {
-      if (hasAccess(['Spa_Wellness', 'Lavanderia_Limpeza', 'Direcao_Admin'], 'Lavanderia SPA')) {
-        const laundry = await pb.collection('laundry_logs').getList(1, 1, {
-          filter: 'location = "SPA" && status != "Entregue"',
-        })
+      if (hasAccess([], 'Lavanderia SPA')) {
+        const laundry = await pb
+          .collection('laundry_logs')
+          .getList(1, 1, { filter: 'location = "SPA" && status != "Entregue"' })
         setPendingSpaLaundry(laundry.totalItems)
       }
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) {}
   }
 
   useEffect(() => {
     loadBadgeCounts()
-  }, [userRole])
+  }, [])
 
   useRealtime('maintenance_tickets', loadBadgeCounts)
   useRealtime('fb_pdf_versions', loadBadgeCounts)
   useRealtime('laundry_logs', loadBadgeCounts)
 
   useEffect(() => {
-    // Automatically expand the group that contains the current active route
     const activeGroup = navGroups.find((group) =>
       group.items.some((item) => item.url === location.pathname),
     )
@@ -551,10 +236,16 @@ export function AppSidebar() {
 
   const hasModuleAccess = (item: NavItem) => {
     if (item.requiresManager && !isManager()) return false
-    return hasAccess(item.roles, item.name)
+    return hasAccess([], item.name)
   }
 
-  const quickAccessVisible = quickAccessItems.filter(hasModuleAccess)
+  const quickAccessVisible = quickAccessItems.filter((item) => {
+    if (item.name === 'Nova Reserva') return hasAccess([], 'Reservas')
+    if (item.name === 'Novo Ticket Manut.') return hasAccess([], 'Manutenção')
+    if (item.name === 'Agendamento Spa') return hasAccess([], 'Agenda Diária')
+    if (item.name === 'Room Service') return hasAccess([], 'F&B Básico')
+    return false
+  })
 
   return (
     <Sidebar variant="sidebar" collapsible="offcanvas">
@@ -604,7 +295,6 @@ export function AppSidebar() {
         >
           {navGroups.map((group) => {
             const visibleItems = group.items.filter(hasModuleAccess)
-
             if (visibleItems.length === 0) return null
 
             const isGroupActive = group.items.some((item) => item.url === location.pathname)
@@ -612,10 +302,7 @@ export function AppSidebar() {
             return (
               <AccordionItem key={group.label} value={group.label} className="border-none">
                 <AccordionTrigger
-                  className={cn(
-                    'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground py-2 px-2 rounded-md hover:no-underline text-sm font-medium',
-                    isGroupActive && 'text-primary font-semibold',
-                  )}
+                  className={`hover:bg-sidebar-accent hover:text-sidebar-accent-foreground py-2 px-2 rounded-md hover:no-underline text-sm font-medium ${isGroupActive ? 'text-primary font-semibold' : ''}`}
                 >
                   {group.label}
                 </AccordionTrigger>
@@ -623,7 +310,6 @@ export function AppSidebar() {
                   <SidebarMenu>
                     {visibleItems.map((item) => {
                       const isActive = location.pathname === item.url
-
                       let badgeCount = 0
                       let badgeColor = ''
 
@@ -653,10 +339,7 @@ export function AppSidebar() {
                           </SidebarMenuButton>
                           {badgeCount > 0 && (
                             <SidebarMenuBadge
-                              className={cn(
-                                'rounded-full px-1.5 min-w-5 flex justify-center text-[10px]',
-                                badgeColor,
-                              )}
+                              className={`rounded-full px-1.5 min-w-5 flex justify-center text-[10px] ${badgeColor}`}
                             >
                               {badgeCount}
                             </SidebarMenuBadge>

@@ -58,23 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     pb.collection('profiles')
       .subscribe(profile.id, (e) => {
-        if (e.action === 'update') {
-          setProfile(e.record)
-        }
+        if (e.action === 'update') setProfile(e.record)
       })
       .then((fn) => {
-        if (cancelled) {
-          fn().catch(() => {})
-        } else {
-          unsubscribeFn = fn
-        }
+        if (cancelled) fn().catch(() => {})
+        else unsubscribeFn = fn
       })
 
     return () => {
       cancelled = true
-      if (unsubscribeFn) {
-        unsubscribeFn().catch(() => {})
-      }
+      if (unsubscribeFn) unsubscribeFn().catch(() => {})
     }
   }, [profile?.id])
 
@@ -90,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     Tecnologia_TI: 'Administrador de Redes',
   }
 
-  const userName = userNameMap[userRole]
+  const userName = pb.authStore.record?.name || userNameMap[userRole]
 
   return React.createElement(
     AuthContext.Provider,
@@ -101,8 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export default function useAuthStore() {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuthStore must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuthStore must be used within an AuthProvider')
   return context
 }

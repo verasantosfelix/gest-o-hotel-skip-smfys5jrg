@@ -23,10 +23,10 @@ import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 import { useRealtime } from '@/hooks/use-realtime'
 import { getRooms, updateRoom, type RoomRecord } from '@/services/rooms'
-import useAuthStore from '@/stores/useAuthStore'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
+import useAuthStore from '@/stores/useAuthStore'
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -65,19 +65,17 @@ const getStatusConfig = (status: string) => {
 }
 
 export default function Rooms() {
-  const { hasAccess } = useAccess()
-  const { userRole } = useAuthStore()
+  const { hasAccess, canWrite } = useAccess()
+  const { profile } = useAuthStore()
 
   const [rooms, setRooms] = useState<RoomRecord[]>([])
   const [search, setSearch] = useState('')
   const [selectedRoom, setSelectedRoom] = useState<RoomRecord | null>(null)
 
-  const isMaintenance = userRole === 'Manutencao_Oficina'
+  const isMaintenance =
+    profile?.allowed_actions?.includes('Manutenção') &&
+    !profile?.allowed_actions?.includes('Quartos')
   const [filter, setFilter] = useState(isMaintenance ? 'maintenance' : 'all')
-
-  useEffect(() => {
-    if (isMaintenance) setFilter('maintenance')
-  }, [isMaintenance])
 
   const loadRooms = async () => {
     try {
@@ -91,21 +89,10 @@ export default function Rooms() {
   useEffect(() => {
     loadRooms()
   }, [])
-  useRealtime('rooms', () => {
-    loadRooms()
-  })
+  useRealtime('rooms', loadRooms)
 
-  if (
-    !hasAccess(
-      ['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk'],
-      'Quartos',
-    )
-  ) {
-    return (
-      <RestrictedAccess
-        requiredRoles={['Rececao_FrontOffice', 'Manutencao_Oficina', 'Direcao_Admin', 'Front_Desk']}
-      />
-    )
+  if (!hasAccess([], 'Quartos') && !hasAccess([], 'Manutenção')) {
+    return <RestrictedAccess />
   }
 
   const handleResolve = async (id: string) => {
@@ -122,8 +109,7 @@ export default function Rooms() {
   }
 
   const filteredRooms = rooms.filter((r) => {
-    const matchSearch = r.room_number.includes(search)
-    if (!matchSearch) return false
+    if (!r.room_number.includes(search)) return false
     if (isMaintenance) return r.status === 'maintenance'
     if (filter !== 'all') return r.status === filter
     return true
@@ -288,7 +274,7 @@ export default function Rooms() {
                 <Button variant="outline" onClick={() => setSelectedRoom(null)}>
                   Fechar
                 </Button>
-                {hasAccess(['Manutencao_Oficina', 'Direcao_Admin']) && (
+                {canWrite('Manutenção') && (
                   <Button
                     onClick={() => handleResolve(selectedRoom.id)}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"

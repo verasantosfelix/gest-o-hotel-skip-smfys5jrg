@@ -19,33 +19,10 @@ import { RestrictedAccess } from '@/components/RestrictedAccess'
 export default function ServiceGuestLookup() {
   const [searchTerm, setSearchTerm] = useState('')
   const { reservations } = useReservationStore()
-  const { hasAccess } = useAccess()
+  const { hasAccess, canWrite } = useAccess()
 
-  if (
-    !hasAccess(
-      [
-        'Restaurante_Bar',
-        'Spa_Wellness',
-        'Lavanderia_Limpeza',
-        'Rececao_FrontOffice',
-        'Direcao_Admin',
-        'Front_Desk',
-      ],
-      'Busca Hóspedes',
-    )
-  ) {
-    return (
-      <RestrictedAccess
-        requiredRoles={[
-          'Restaurante_Bar',
-          'Spa_Wellness',
-          'Lavanderia_Limpeza',
-          'Rececao_FrontOffice',
-          'Direcao_Admin',
-          'Front_Desk',
-        ]}
-      />
-    )
+  if (!hasAccess([], 'Busca Hóspedes')) {
+    return <RestrictedAccess />
   }
 
   const inHouse = reservations.filter((r) => r.status === 'checked-in')
@@ -58,8 +35,7 @@ export default function ServiceGuestLookup() {
     <div className="space-y-6 animate-fade-in pb-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          <UserCheck className="w-6 h-6 text-primary" />
-          Busca de Hóspedes (In-House)
+          <UserCheck className="w-6 h-6 text-primary" /> Busca de Hóspedes (In-House)
         </h1>
       </div>
 
@@ -96,11 +72,13 @@ export default function ServiceGuestLookup() {
                         <FileText className="w-4 h-4" /> Extrato
                       </Link>
                     </Button>
-                    <Button size="sm" asChild className="gap-2">
-                      <Link to={`/lancamento-servicos?reserva_id=${res.id}`}>
-                        <Receipt className="w-4 h-4" /> Lançar Consumo
-                      </Link>
-                    </Button>
+                    {canWrite('Lançamentos Rápidos') && (
+                      <Button size="sm" asChild className="gap-2">
+                        <Link to={`/lancamento-servicos?reserva_id=${res.id}`}>
+                          <Receipt className="w-4 h-4" /> Lançar Consumo
+                        </Link>
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

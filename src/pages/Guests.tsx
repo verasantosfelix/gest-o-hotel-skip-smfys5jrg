@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Users, Search, Star, Building } from 'lucide-react'
+import { Users, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -10,7 +10,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
@@ -29,13 +28,11 @@ const GUESTS = [
 ]
 
 export default function Guests() {
-  const { hasAccess } = useAccess()
+  const { hasAccess, canWrite } = useAccess()
   const [searchTerm, setSearchTerm] = useState('')
 
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Hóspedes')) {
-    return (
-      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
-    )
+  if (!hasAccess([], 'Hóspedes')) {
+    return <RestrictedAccess />
   }
 
   const filtered = GUESTS.filter(
@@ -53,9 +50,11 @@ export default function Guests() {
             Diretório de Hóspedes
           </h1>
         </div>
-        <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm">
-          <Users className="w-4 h-4 mr-2" /> Novo Hóspede
-        </Button>
+        {canWrite('Hóspedes') && (
+          <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm">
+            <Users className="w-4 h-4 mr-2" /> Novo Hóspede
+          </Button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border shadow-sm overflow-hidden">

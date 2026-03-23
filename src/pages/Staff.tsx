@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Briefcase, Shield, Crown, Trash2 } from 'lucide-react'
+import { Briefcase, Shield, Crown, Trash2, Eye } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,8 +57,8 @@ export default function Staff() {
   useRealtime('users', loadData)
   useRealtime('profiles', loadData)
 
-  if (!hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Equipe & RH')) {
-    return <RestrictedAccess requiredRoles={['Administrativo_Financeiro', 'Direcao_Admin']} />
+  if (!hasAccess([], 'Equipe & RH')) {
+    return <RestrictedAccess />
   }
 
   const handleRoleToggle = async (user: any) => {
@@ -111,10 +111,39 @@ export default function Staff() {
   }
 
   if (loading) {
-    return <div className="p-8 text-slate-500 animate-pulse">Carregando dados da equipe...</div>
+    return (
+      <div className="p-8 text-center text-slate-500 animate-pulse">
+        Carregando dados da equipe...
+      </div>
+    )
   }
 
   const unassignedUsers = users.filter((u) => !u.profile)
+
+  const getRoleBadge = (roleLevel: string) => {
+    switch (roleLevel) {
+      case 'Gerente_Geral':
+        return <Badge className="bg-indigo-600 text-white hover:bg-indigo-700">Gerente Geral</Badge>
+      case 'Director_Geral':
+        return (
+          <Badge className="bg-slate-700 text-white hover:bg-slate-800">
+            <Eye className="w-3 h-3 mr-1" /> Director
+          </Badge>
+        )
+      case 'Gerente_Area':
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Gerente Área</Badge>
+      case 'Responsavel_Equipa':
+        return <Badge className="bg-amber-100 text-amber-800 border-amber-200">Líder Equipa</Badge>
+      case 'Atendente':
+        return (
+          <Badge variant="outline" className="text-slate-600">
+            Atendente
+          </Badge>
+        )
+      default:
+        return <Badge variant="outline">Não Definido</Badge>
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
@@ -124,8 +153,12 @@ export default function Staff() {
             <Briefcase className="w-6 h-6 text-blue-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Equipe e Perfis</h1>
-            <p className="text-sm text-slate-500">Gerencie departamentos, cargos e permissões</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Equipe e Perfis (RBAC)
+            </h1>
+            <p className="text-sm text-slate-500">
+              Gerencie níveis hierárquicos e acesso a módulos
+            </p>
           </div>
         </div>
       </div>
@@ -133,14 +166,12 @@ export default function Staff() {
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Visão Geral & Membros</TabsTrigger>
-          <TabsTrigger value="profiles">Cargos e Perfis</TabsTrigger>
+          <TabsTrigger value="profiles">Cargos e Permissões (RBAC)</TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Overview & Members */}
         <TabsContent value="overview" className="space-y-6">
           <div className="flex justify-end mb-4">
-            {(hasAccess(['Administrativo_Financeiro', 'Direcao_Admin'], 'Equipe & RH') ||
-              isManager()) && <CreateUserDialog profiles={profiles} />}
+            {isManager() && <CreateUserDialog profiles={profiles} />}
           </div>
 
           <div className="space-y-8">
@@ -152,9 +183,11 @@ export default function Staff() {
                   <CardHeader className="bg-slate-50 border-b pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                        {profile.name}
+                        {profile.name} {getRoleBadge(profile.role_level)}
                       </CardTitle>
-                      <CardDescription>Membros e hierarquia departamental</CardDescription>
+                      <CardDescription>
+                        {profile.allowed_actions?.length} módulo(s) liberado(s)
+                      </CardDescription>
                     </div>
                     <div className="flex items-center gap-3 bg-white p-2 rounded-md border border-slate-200">
                       <span className="text-sm font-medium text-slate-600 whitespace-nowrap">
@@ -186,8 +219,8 @@ export default function Staff() {
                         <TableHeader>
                           <TableRow className="bg-white hover:bg-white">
                             <TableHead className="pl-6 w-[250px]">Membro</TableHead>
-                            <TableHead>Identificação (Email)</TableHead>
-                            <TableHead>Nível Base</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Nível Técnico</TableHead>
                             <TableHead className="text-right pr-6">Ações</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -230,14 +263,14 @@ export default function Staff() {
                                       variant="outline"
                                       className="bg-blue-50 border-blue-200 text-blue-700 flex items-center gap-1 w-fit shadow-sm"
                                     >
-                                      <Shield className="w-3 h-3" /> Manager
+                                      <Shield className="w-3 h-3" /> Tech Admin
                                     </Badge>
                                   ) : (
                                     <Badge
                                       variant="outline"
                                       className="bg-slate-50 text-slate-600 font-normal w-fit"
                                     >
-                                      Colaborador
+                                      Usuário
                                     </Badge>
                                   )}
                                 </TableCell>
@@ -249,13 +282,9 @@ export default function Staff() {
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleRoleToggle(u)}
-                                      className={`h-8 px-2 text-[11px] font-medium transition-colors ${
-                                        u.role === 'manager'
-                                          ? 'border-slate-200 text-slate-600 hover:bg-slate-100'
-                                          : 'border-blue-200 text-blue-600 hover:bg-blue-50'
-                                      }`}
+                                      className={`h-8 px-2 text-[11px] font-medium transition-colors ${u.role === 'manager' ? 'border-slate-200 text-slate-600 hover:bg-slate-100' : 'border-blue-200 text-blue-600 hover:bg-blue-50'}`}
                                     >
-                                      {u.role === 'manager' ? 'Rebaixar' : 'Promover'}
+                                      {u.role === 'manager' ? 'Tirar Admin' : 'Dar Admin'}
                                     </Button>
                                   </div>
                                 </TableCell>
@@ -310,15 +339,16 @@ export default function Staff() {
           </div>
         </TabsContent>
 
-        {/* Tab 2: Profile Management */}
         <TabsContent value="profiles" className="space-y-6">
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="border-b bg-slate-50 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg font-bold text-slate-800">
-                  Cargos Administrativos
+                  Cargos Administrativos (RBAC)
                 </CardTitle>
-                <CardDescription>Crie e gerencie níveis de permissões</CardDescription>
+                <CardDescription>
+                  Crie e gerencie níveis de permissões de toda a hierarquia
+                </CardDescription>
               </div>
               <CreateProfileDialog />
             </CardHeader>
@@ -328,7 +358,8 @@ export default function Staff() {
                   <TableHeader>
                     <TableRow className="bg-white hover:bg-white">
                       <TableHead className="pl-6">Nome do Cargo</TableHead>
-                      <TableHead>Permissões</TableHead>
+                      <TableHead>Nível RBAC</TableHead>
+                      <TableHead>Permissões/Módulos</TableHead>
                       <TableHead>Membros</TableHead>
                       <TableHead className="text-right pr-6">Ações</TableHead>
                     </TableRow>
@@ -336,31 +367,31 @@ export default function Staff() {
                   <TableBody>
                     {profiles.map((profile) => {
                       const usersCount = users.filter((u) => u.profile === profile.id).length
-                      const hasFullAccess =
-                        profile.allowed_actions &&
-                        Array.isArray(profile.allowed_actions) &&
-                        profile.allowed_actions.length > 0
+                      const isGlobal = ['Gerente_Geral', 'Director_Geral'].includes(
+                        profile.role_level,
+                      )
 
                       return (
                         <TableRow key={profile.id}>
                           <TableCell className="pl-6 font-medium text-slate-800">
                             {profile.name}
                           </TableCell>
+                          <TableCell>{getRoleBadge(profile.role_level)}</TableCell>
                           <TableCell>
-                            {hasFullAccess ? (
-                              <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 border-indigo-200">
-                                Acesso Total (Admin)
-                              </Badge>
+                            {isGlobal ? (
+                              <span className="text-xs text-indigo-600 font-medium">
+                                Acesso a todos os módulos
+                              </span>
                             ) : (
-                              <Badge
-                                variant="outline"
-                                className="bg-slate-50 text-slate-500 font-normal"
+                              <span
+                                className="text-xs text-slate-500 max-w-[200px] truncate inline-block"
+                                title={profile.allowed_actions?.join(', ')}
                               >
-                                Limitado / Específico
-                              </Badge>
+                                {profile.allowed_actions?.length || 0} módulos permitidos
+                              </span>
                             )}
                           </TableCell>
-                          <TableCell className="text-slate-600">
+                          <TableCell className="text-slate-600 font-mono">
                             {usersCount} {usersCount === 1 ? 'membro' : 'membros'}
                           </TableCell>
                           <TableCell className="text-right pr-6">
@@ -373,8 +404,7 @@ export default function Staff() {
                                 className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 h-8 px-2"
                                 title="Remover Cargo"
                               >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Remover
+                                <Trash2 className="w-4 h-4 mr-2" /> Remover
                               </Button>
                             </div>
                           </TableCell>

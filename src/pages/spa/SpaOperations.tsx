@@ -36,8 +36,8 @@ import { format } from 'date-fns'
 import { SpaAuditTab } from '@/components/spa/SpaAuditTab'
 
 export default function SpaOperations() {
-  const { hasAccess } = useAccess()
-  const hasAccessToOps = hasAccess(['Spa_Wellness', 'Direcao_Admin'], 'Operações & Salas')
+  const { hasAccess, canWrite } = useAccess()
+  const hasAccessToOps = hasAccess([], 'Operações & Salas')
 
   const [rooms, setRooms] = useState<SpaRoom[]>([])
   const [therapists, setTherapists] = useState<any[]>([])
@@ -65,7 +65,7 @@ export default function SpaOperations() {
   }, [hasAccessToOps])
 
   if (!hasAccessToOps) {
-    return <RestrictedAccess requiredRoles={['Spa_Wellness', 'Direcao_Admin']} />
+    return <RestrictedAccess />
   }
 
   const handleRoomSave = async () => {
@@ -105,9 +105,7 @@ export default function SpaOperations() {
       await deleteSpaBlockout(id)
       toast({ title: 'Removido' })
       loadData()
-    } catch (e) {
-      console.error(e)
-    }
+    } catch (e) {}
   }
 
   const roomColors: Record<string, string> = {
@@ -122,7 +120,7 @@ export default function SpaOperations() {
       <div className="flex items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <img
           src="https://framerusercontent.com/images/kC6yO9N1R5iW3Y8D9m0i7E9gT0.png"
-          alt="Complexo Agroturístico de Cacuso"
+          alt="Complexo Agroturístico"
           className="h-14 object-contain"
         />
         <div>
@@ -141,7 +139,6 @@ export default function SpaOperations() {
 
         <TabsContent value="operations" className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            {/* ROOMS */}
             <section className="space-y-4">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <DoorOpen className="w-5 h-5" /> Salas de Tratamento
@@ -152,8 +149,10 @@ export default function SpaOperations() {
                     key={r.id}
                     className="transition-all cursor-pointer hover:shadow-md hover:-translate-y-1"
                     onClick={() => {
-                      setRoomOpen(r)
-                      setNewStatus(r.status)
+                      if (canWrite('Operações & Salas')) {
+                        setRoomOpen(r)
+                        setNewStatus(r.status)
+                      }
                     }}
                   >
                     <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2">
@@ -170,15 +169,16 @@ export default function SpaOperations() {
               </div>
             </section>
 
-            {/* THERAPIST SHIFTS/BLOCKOUTS */}
             <section className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold flex items-center gap-2">
                   <CalendarOff className="w-5 h-5" /> Bloqueios & Escalas
                 </h2>
-                <Button size="sm" onClick={() => setBlockoutOpen(true)}>
-                  <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
-                </Button>
+                {canWrite('Operações & Salas') && (
+                  <Button size="sm" onClick={() => setBlockoutOpen(true)}>
+                    <Plus className="w-4 h-4 mr-1" /> Novo Bloqueio
+                  </Button>
+                )}
               </div>
               <div className="space-y-2">
                 {blockouts.map((b) => (
@@ -193,14 +193,16 @@ export default function SpaOperations() {
                           {format(new Date(b.end_date), 'dd/MM HH:mm')}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelBo(b.id)}
-                        className="text-rose-500 h-8 w-8"
-                      >
-                        &times;
-                      </Button>
+                      {canWrite('Operações & Salas') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelBo(b.id)}
+                          className="text-rose-500 h-8 w-8"
+                        >
+                          &times;
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

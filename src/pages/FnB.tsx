@@ -13,13 +13,14 @@ import { FnBRoutines } from '@/components/fnb/FnBRoutines'
 import { FnBKPIs } from '@/components/fnb/FnBKPIs'
 
 export default function FnB() {
-  const { hasAccess } = useAccess()
-  const { userRole } = useAuthStore()
-  const isFrontDesk = userRole === 'Front_Desk'
+  const { hasAccess, canWrite } = useAccess()
+  const { profile } = useAuthStore()
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk'], 'F&B Básico')) {
-    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin', 'Front_Desk']} />
+  if (!hasAccess([], 'F&B Básico')) {
+    return <RestrictedAccess />
   }
+
+  const isStaff = profile?.role_level === 'Atendente'
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
@@ -37,60 +38,64 @@ export default function FnB() {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="w-full">
+      <Tabs defaultValue={isStaff ? 'orders' : 'dashboard'} className="w-full">
         <TabsList className="mb-6 h-auto bg-slate-100 flex flex-wrap justify-start border border-slate-200 shadow-sm p-1 rounded-md">
-          <TabsTrigger value="dashboard" className="px-4 py-2 font-medium">
-            Dashboard
-          </TabsTrigger>
+          {!isStaff && (
+            <TabsTrigger value="dashboard" className="px-4 py-2 font-medium">
+              Dashboard
+            </TabsTrigger>
+          )}
           <TabsTrigger value="orders" className="px-4 py-2 font-medium">
             Mesas & Pedidos
           </TabsTrigger>
-          {!isFrontDesk && (
-            <TabsTrigger value="kds" className="px-4 py-2 font-medium">
-              KDS (Cozinha)
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="kds" className="px-4 py-2 font-medium">
+            KDS (Cozinha)
+          </TabsTrigger>
           <TabsTrigger value="room_service" className="px-4 py-2 font-medium">
             Room Service
           </TabsTrigger>
-          <TabsTrigger value="reservations" className="px-4 py-2 font-medium">
-            Reservas
-          </TabsTrigger>
-          {!isFrontDesk && (
+          {!isStaff && (
+            <TabsTrigger value="reservations" className="px-4 py-2 font-medium">
+              Reservas
+            </TabsTrigger>
+          )}
+          {!isStaff && (
             <TabsTrigger value="routines" className="px-4 py-2 font-medium">
               Rotinas
             </TabsTrigger>
           )}
-          {!isFrontDesk && (
+          {!isStaff && (
             <TabsTrigger value="kpis" className="px-4 py-2 font-medium">
               Analytics
             </TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="dashboard" className="mt-0 outline-none">
-          <FnBDashboard />
-        </TabsContent>
+        {!isStaff && (
+          <TabsContent value="dashboard" className="mt-0 outline-none">
+            <FnBDashboard />
+          </TabsContent>
+        )}
         <TabsContent value="orders" className="mt-0 outline-none">
           <FnBOrderManagement />
         </TabsContent>
-        {!isFrontDesk && (
-          <TabsContent value="kds" className="mt-0 outline-none">
-            <FnBKDS />
-          </TabsContent>
-        )}
+        <TabsContent value="kds" className="mt-0 outline-none">
+          <FnBKDS />
+        </TabsContent>
         <TabsContent value="room_service" className="mt-0 outline-none">
           <FnBRoomService />
         </TabsContent>
-        <TabsContent value="reservations" className="mt-0 outline-none">
-          <FnBReservations />
-        </TabsContent>
-        {!isFrontDesk && (
+        {!isStaff && (
+          <TabsContent value="reservations" className="mt-0 outline-none">
+            <FnBReservations />
+          </TabsContent>
+        )}
+        {!isStaff && (
           <TabsContent value="routines" className="mt-0 outline-none">
             <FnBRoutines />
           </TabsContent>
         )}
-        {!isFrontDesk && (
+        {!isStaff && (
           <TabsContent value="kpis" className="mt-0 outline-none">
             <FnBKPIs />
           </TabsContent>

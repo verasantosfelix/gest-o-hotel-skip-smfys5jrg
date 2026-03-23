@@ -27,8 +27,7 @@ export default function Housekeeping() {
 
   const loadData = async () => {
     try {
-      const data = await getRooms()
-      setRooms(data)
+      setRooms(await getRooms())
     } catch (e) {
       console.error(e)
     }
@@ -37,26 +36,13 @@ export default function Housekeeping() {
   useEffect(() => {
     loadData()
   }, [])
-
   useRealtime('rooms', loadData)
 
-  if (
-    !hasAccess(
-      ['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'],
-      'Governança',
-    )
-  ) {
-    return (
-      <RestrictedAccess
-        requiredRoles={['Lavanderia_Limpeza', 'Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']}
-      />
-    )
+  if (!hasAccess([], 'Governança')) {
+    return <RestrictedAccess />
   }
 
-  const handleAction = (type: ActionState['type'], room: RoomRecord) => {
-    setAction({ type, room })
-  }
-
+  const handleAction = (type: ActionState['type'], room: RoomRecord) => setAction({ type, room })
   const closeAction = () => setAction({ type: '', room: null })
 
   return (
@@ -99,7 +85,6 @@ export default function Housekeeping() {
         </TabsContent>
       </Tabs>
 
-      {/* Modals */}
       {action.type === 'checklist' && <ChecklistModal room={action.room} onClose={closeAction} />}
       {action.type === 'maintenance' && (
         <MaintenanceModal room={action.room} onClose={closeAction} />

@@ -14,25 +14,39 @@ import { ShiftRoutines } from '@/components/front-office/ShiftRoutines'
 import { FrontOfficeKPIs } from '@/components/front-office/FrontOfficeKPIs'
 
 export default function Index() {
-  const { userRole } = useAuthStore()
+  const { profile } = useAuthStore()
   const { selectedHotel } = useHotelStore()
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  if (userRole === 'Lavanderia_Limpeza') return <Navigate to="/governanca" replace />
-  if (userRole === 'Restaurante_Bar') return <Navigate to="/fnb" replace />
-  if (userRole === 'Spa_Wellness') return <Navigate to="/spa" replace />
-  if (userRole === 'Manutencao_Oficina') return <Navigate to="/manutencao" replace />
-  if (userRole === 'Tecnologia_TI') return <Navigate to="/it-admin" replace />
-  if (userRole === 'Administrativo_Financeiro') return <Navigate to="/financeiro-corp" replace />
+  if (!profile)
+    return (
+      <div className="p-8 text-center text-slate-500 animate-pulse">Carregando dashboard...</div>
+    )
 
-  const isExecutive = userRole === 'Direcao_Admin'
+  const isExecutive = ['Gerente_Geral', 'Director_Geral'].includes(profile.role_level)
+
+  const allowed = Array.isArray(profile.allowed_actions) ? profile.allowed_actions : []
+
+  if (!isExecutive && !allowed.includes('Dashboard')) {
+    if (allowed.includes('Governança')) return <Navigate to="/governanca" replace />
+    if (allowed.includes('F&B Básico')) return <Navigate to="/fnb" replace />
+    if (allowed.includes('Agenda Diária')) return <Navigate to="/spa/agenda" replace />
+    if (allowed.includes('Manutenção')) return <Navigate to="/manutencao" replace />
+    if (allowed.includes('IT Admin')) return <Navigate to="/it-admin" replace />
+    if (allowed.includes('Financeiro Corp')) return <Navigate to="/financeiro-corp" replace />
+    if (allowed.includes('Menu Digital')) return <Navigate to="/restaurante/menu-digital" replace />
+  }
 
   if (isExecutive) {
     return (
       <div className="space-y-6 animate-fade-in-up pb-8">
         <div className="mb-4">
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Executive Dashboard</h1>
-          <p className="text-slate-500">Visão Geral da Operação - {selectedHotel.name}</p>
+          <p className="text-slate-500">
+            Visão{' '}
+            {profile.role_level === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
+            {selectedHotel.name}
+          </p>
         </div>
         <div className="grid lg:grid-cols-4 gap-4 mb-6">
           <Card className="border-slate-200 shadow-sm">
@@ -83,16 +97,16 @@ export default function Index() {
             Dashboard
           </TabsTrigger>
           <TabsTrigger value="checkin" className="px-4 py-2">
-            Módulo Check-in
+            Check-in
           </TabsTrigger>
           <TabsTrigger value="checkout" className="px-4 py-2">
-            Módulo Check-out
+            Check-out
           </TabsTrigger>
           <TabsTrigger value="rotinas" className="px-4 py-2">
-            Rotinas de Turno
+            Rotinas
           </TabsTrigger>
           <TabsTrigger value="kpis" className="px-4 py-2">
-            KPIs & Analytics
+            KPIs
           </TabsTrigger>
         </TabsList>
 

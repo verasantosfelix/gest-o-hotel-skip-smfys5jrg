@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Receipt, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -22,10 +20,10 @@ import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function ServiceExpensePosting() {
-  const { hasAccess } = useAccess()
+  const { hasAccess, profile } = useAccess()
   const [searchParams] = useSearchParams()
   const { reservations, addConsumption } = useReservationStore()
-  const { userRole, userName } = useAuthStore()
+  const { userName } = useAuthStore()
   const { addLog } = useAuditStore()
   const { addRequest } = useApprovalStore()
 
@@ -33,35 +31,13 @@ export default function ServiceExpensePosting() {
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
   const [desconto, setDesconto] = useState('')
-  const [assinatura, setAssinatura] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
-  if (
-    !hasAccess(
-      [
-        'Restaurante_Bar',
-        'Spa_Wellness',
-        'Lavanderia_Limpeza',
-        'Rececao_FrontOffice',
-        'Direcao_Admin',
-        'Front_Desk',
-      ],
-      'Lançamentos Rápidos',
-    )
-  ) {
-    return (
-      <RestrictedAccess
-        requiredRoles={[
-          'Restaurante_Bar',
-          'Spa_Wellness',
-          'Lavanderia_Limpeza',
-          'Rececao_FrontOffice',
-          'Direcao_Admin',
-          'Front_Desk',
-        ]}
-      />
-    )
+  if (!hasAccess([], 'Lançamentos Rápidos')) {
+    return <RestrictedAccess />
   }
+
+  const roleName = profile?.role_level || 'Atendente'
 
   const inHouse = reservations.filter((r) => r.status === 'checked-in')
 
@@ -79,7 +55,7 @@ export default function ServiceExpensePosting() {
         discountAmount: valNum * (descNum / 100),
         finalAmount: valNum - valNum * (descNum / 100),
         requesterName: userName,
-        requesterRole: userRole,
+        requesterRole: roleName,
       })
       toast({ title: 'Aprovação solicitada' })
     } else {
@@ -92,9 +68,9 @@ export default function ServiceExpensePosting() {
         preco_unitario: valNum,
         desconto: 0,
         valor: valNum,
-        validacao_hospede: assinatura,
+        validacao_hospede: false,
         data_registro: new Date().toISOString(),
-        createdByRole: userRole,
+        createdByRole: roleName,
         createdBy: userName,
       })
       addLog('EXPENSE_POSTING', `${userName} lançou R${valNum} na reserva ${reservaId}`)
@@ -112,7 +88,7 @@ export default function ServiceExpensePosting() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Receipt /> Lançamento
+        <Receipt /> Lançamento Rápido
       </h1>
       <Card>
         <CardContent className="p-6 space-y-6">
@@ -145,7 +121,7 @@ export default function ServiceExpensePosting() {
               placeholder="Desconto (%)"
               value={desconto}
               onChange={(e) => setDesconto(e.target.value)}
-              disabled={userRole === 'Front_Desk'}
+              disabled={roleName === 'Atendente'}
             />
           </div>
         </CardContent>

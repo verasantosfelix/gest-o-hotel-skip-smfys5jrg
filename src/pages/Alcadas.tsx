@@ -19,20 +19,19 @@ import { toast } from '@/components/ui/use-toast'
 import { format } from 'date-fns'
 
 export default function Alcadas() {
-  const { hasAccess, isManager } = useAccess()
+  const { hasAccess, isManager, checkAccess } = useAccess()
   const [items, setItems] = useState<PendingItem[]>([])
 
   const loadData = async () => {
     try {
-      const data = await getPendingApprovals()
-      setItems(data)
+      setItems(await getPendingApprovals())
     } catch (e) {
       console.error(e)
     }
   }
 
   useEffect(() => {
-    if (isManager() || hasAccess(['Direcao_Admin'], 'Alçadas (Aprovações)')) {
+    if (isManager() || hasAccess([], 'Alçadas (Aprovações)')) {
       loadData()
     }
   }, [isManager, hasAccess])
@@ -42,11 +41,13 @@ export default function Alcadas() {
   useRealtime('hr_candidates', loadData)
   useRealtime('maintenance_tickets', loadData)
 
-  if (!isManager() && !hasAccess(['Direcao_Admin'], 'Alçadas (Aprovações)')) {
-    return <RestrictedAccess requiredRoles={['Direcao_Admin']} />
+  if (!isManager() && !hasAccess([], 'Alçadas (Aprovações)')) {
+    return <RestrictedAccess />
   }
 
   const handleApprove = async (item: PendingItem) => {
+    if (!checkAccess('Alçadas (Aprovações)', 'Aprovar', true)) return
+
     let newStatus = 'approved'
     if (item.collectionName === 'security_incidents') newStatus = 'resolved'
     if (item.collectionName === 'maintenance_tickets') newStatus = 'resolved'
@@ -61,6 +62,8 @@ export default function Alcadas() {
   }
 
   const handleReject = async (item: PendingItem) => {
+    if (!checkAccess('Alçadas (Aprovações)', 'Rejeitar', true)) return
+
     let newStatus = 'rejected'
     if (item.collectionName === 'security_incidents') newStatus = 'closed'
     if (item.collectionName === 'maintenance_tickets') {

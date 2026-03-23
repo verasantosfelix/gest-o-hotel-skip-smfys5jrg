@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T03:00:50.526Z",
+  "generatedAt": "2026-03-23T13:35:17.637Z",
   "collections": [
     {
       "name": "users",
@@ -1182,6 +1182,19 @@
           "required": false,
           "system": false,
           "collectionRef": "users"
+        },
+        {
+          "name": "role_level",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Gerente_Geral",
+            "Director_Geral",
+            "Gerente_Area",
+            "Responsavel_Equipa",
+            "Atendente"
+          ]
         }
       ],
       "indexes": ["CREATE INDEX `idx_profiles_manager` ON `profiles` (manager_id)"]

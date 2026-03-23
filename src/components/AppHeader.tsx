@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import useAuthStore, { Role } from '@/stores/useAuthStore'
-import { UserCircle, Shield, Bell } from 'lucide-react'
+import useAuthStore from '@/stores/useAuthStore'
+import { UserCircle, Bell, Crown, ShieldAlert, Eye } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useAccess } from '@/hooks/use-access'
 import pb from '@/lib/pocketbase/client'
@@ -136,7 +129,7 @@ function DynamicBreadcrumbs() {
 }
 
 export function AppHeader() {
-  const { userRole, setUserRole, userName } = useAuthStore()
+  const { profile } = useAuthStore()
   const { isManager } = useAccess()
   const [notifications, setNotifications] = useState<any[]>([])
 
@@ -162,10 +155,18 @@ export function AppHeader() {
     try {
       await pb.collection('notifications').update(id, { status: 'read' })
       setNotifications((prev) => prev.filter((n) => n.id !== id))
-    } catch (e) {
-      console.error('Failed to mark notification as read', e)
-    }
+    } catch (e) {}
   }
+
+  const roleLabels: Record<string, string> = {
+    Gerente_Geral: 'Gerente Geral',
+    Director_Geral: 'Director',
+    Gerente_Area: 'Gerente Área',
+    Responsavel_Equipa: 'Líder Equipa',
+    Atendente: 'Atendente',
+  }
+
+  const roleLevel = profile?.role_level || 'Atendente'
 
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6 shadow-sm z-10 sticky top-0">
@@ -254,43 +255,19 @@ export function AppHeader() {
           </Popover>
         )}
 
-        <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-          <UserCircle className="w-4 h-4" />
-          <span className="font-medium hidden sm:inline-block">{userName}</span>
+        <div className="flex flex-col items-end mr-1 hidden sm:flex">
+          <span className="text-sm font-bold text-slate-800">
+            {pb.authStore.record?.name || pb.authStore.record?.email}
+          </span>
+          <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1 uppercase">
+            {roleLevel === 'Gerente_Geral' && <Crown className="w-3 h-3 text-indigo-500" />}
+            {roleLevel === 'Director_Geral' && <Eye className="w-3 h-3 text-slate-500" />}
+            {profile?.name} • {roleLabels[roleLevel] || roleLevel}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-slate-400 hidden sm:block" />
-          <Select value={userRole} onValueChange={(v) => setUserRole(v as Role)}>
-            <SelectTrigger className="w-[180px] h-9 text-xs font-medium border-slate-200 focus:ring-slate-300">
-              <SelectValue placeholder="Perfil" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Direcao_Admin" className="text-xs">
-                Direção / Admin
-              </SelectItem>
-              <SelectItem value="Rececao_FrontOffice" className="text-xs">
-                Recepção / Front
-              </SelectItem>
-              <SelectItem value="Administrativo_Financeiro" className="text-xs">
-                Finanças / Adm
-              </SelectItem>
-              <SelectItem value="Restaurante_Bar" className="text-xs">
-                Restaurante / Bar
-              </SelectItem>
-              <SelectItem value="Lavanderia_Limpeza" className="text-xs">
-                Limpeza / Gov.
-              </SelectItem>
-              <SelectItem value="Spa_Wellness" className="text-xs">
-                Spa / Wellness
-              </SelectItem>
-              <SelectItem value="Manutencao_Oficina" className="text-xs">
-                Manutenção
-              </SelectItem>
-              <SelectItem value="Tecnologia_TI" className="text-xs">
-                Tecnologia / TI
-              </SelectItem>
-            </SelectContent>
-          </Select>
+
+        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-full border border-slate-200">
+          <UserCircle className="w-7 h-7 text-slate-400" />
         </div>
       </div>
     </header>

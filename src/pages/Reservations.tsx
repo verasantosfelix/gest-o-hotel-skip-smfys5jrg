@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -35,29 +35,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ReservationAssistant } from '@/components/ReservationAssistant'
 import useReservationStore, { Reservation } from '@/stores/useReservationStore'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
-import useAuthStore from '@/stores/useAuthStore'
 
 export default function Reservations() {
-  const { hasAccess } = useAccess()
-  const { userRole } = useAuthStore()
+  const { hasAccess, canWrite } = useAccess()
   const { reservations, getConsumptionsByReservation } = useReservationStore()
   const [selected, setSelected] = useState<Reservation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const isFrontDesk = userRole === 'Front_Desk'
-
-  if (!hasAccess(['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk'], 'Reservas')) {
-    return (
-      <RestrictedAccess requiredRoles={['Rececao_FrontOffice', 'Direcao_Admin', 'Front_Desk']} />
-    )
+  if (!hasAccess([], 'Reservas')) {
+    return <RestrictedAccess />
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -334,7 +326,7 @@ export default function Reservations() {
             </div>
           </div>
           <DrawerFooter className="border-t bg-slate-50/80 px-6 py-4 flex flex-row justify-between w-full">
-            {!isFrontDesk ? (
+            {canWrite('Reservas') ? (
               <div className="flex gap-2">
                 <Button variant="outline">Alterar Pagamento</Button>
                 <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -342,7 +334,7 @@ export default function Reservations() {
                 </Button>
               </div>
             ) : (
-              <div></div>
+              <div />
             )}
             <Button variant="secondary" onClick={() => setSelected(null)}>
               Fechar Visualização
