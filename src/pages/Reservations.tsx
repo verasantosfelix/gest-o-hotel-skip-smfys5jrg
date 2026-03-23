@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CalendarCheck,
   Terminal,
+  Plus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,12 +42,14 @@ import { ReservationAssistant } from '@/components/ReservationAssistant'
 import useReservationStore, { Reservation } from '@/stores/useReservationStore'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
 
 export default function Reservations() {
   const { hasAccess, canWrite } = useAccess()
   const { reservations, getConsumptionsByReservation } = useReservationStore()
   const [selected, setSelected] = useState<Reservation | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   if (!hasAccess([], 'Reservas')) {
     return <RestrictedAccess />
@@ -99,6 +102,11 @@ export default function Reservations() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Gestão de Reservas</h1>
           <p className="text-muted-foreground text-sm">Controle de estadias e assistente PMS.</p>
         </div>
+        {canWrite('Reservas') && (
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 bg-primary">
+            <Plus className="w-4 h-4" /> Nova Reserva
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -342,6 +350,8 @@ export default function Reservations() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      <CreateReservationDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
     </div>
   )
 }

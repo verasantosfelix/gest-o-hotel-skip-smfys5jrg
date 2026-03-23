@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Receipt, UserCheck, FileText } from 'lucide-react'
+import { Search, Receipt, UserCheck, FileText, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,9 +15,11 @@ import { Badge } from '@/components/ui/badge'
 import useReservationStore from '@/stores/useReservationStore'
 import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
 
 export default function ServiceGuestLookup() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const { reservations } = useReservationStore()
   const { hasAccess, canWrite } = useAccess()
 
@@ -33,10 +35,15 @@ export default function ServiceGuestLookup() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
-      <div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
           <UserCheck className="w-6 h-6 text-primary" /> Busca de Hóspedes (In-House)
         </h1>
+        {canWrite('Reservas') && (
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Nova Reserva
+          </Button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border shadow-sm p-4 space-y-4">
@@ -86,6 +93,8 @@ export default function ServiceGuestLookup() {
           </Table>
         </div>
       </div>
+
+      <CreateReservationDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
     </div>
   )
 }

@@ -15,10 +15,12 @@ import { PBReservation, getReservations } from '@/services/reservations'
 import { getRooms, RoomRecord } from '@/services/rooms'
 import { useRealtime } from '@/hooks/use-realtime'
 import { Badge } from '@/components/ui/badge'
+import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
 
 export function FrontOfficeMain({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const [reservations, setReservations] = useState<PBReservation[]>([])
   const [rooms, setRooms] = useState<RoomRecord[]>([])
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const loadData = async () => {
     Promise.all([getReservations(), getRooms()])
@@ -136,7 +138,11 @@ export function FrontOfficeMain({ onNavigate }: { onNavigate: (tab: string) => v
             >
               <LogOut className="w-4 h-4 text-rose-500" /> Efetuar Check-out
             </Button>
-            <Button variant="outline" className="justify-start gap-2 h-12 shadow-sm">
+            <Button
+              variant="outline"
+              className="justify-start gap-2 h-12 shadow-sm"
+              onClick={() => setIsCreateOpen(true)}
+            >
               <FileText className="w-4 h-4 text-blue-500" /> Criar Reserva Nova
             </Button>
             <Button variant="outline" className="justify-start gap-2 h-12 shadow-sm">
@@ -192,6 +198,8 @@ export function FrontOfficeMain({ onNavigate }: { onNavigate: (tab: string) => v
           </CardContent>
         </Card>
       </div>
+
+      <CreateReservationDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
     </div>
   )
 }
