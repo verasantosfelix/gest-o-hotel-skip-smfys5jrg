@@ -110,7 +110,7 @@ export default function Index() {
       },
       timeout: {
         title: 'Tempo Limite Excedido',
-        desc: 'Não foi possível carregar os dados a tempo (10 segundos). Verifique a sua conexão com a internet ou tente novamente.',
+        desc: 'Não foi possível carregar os dados a tempo ou múltiplas tentativas falharam. O circuito de proteção foi ativado.',
         icon: Clock,
         color: 'text-slate-600',
         bg: 'bg-slate-50',
@@ -193,16 +193,13 @@ export default function Index() {
 
             <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <Button
-                onClick={retryLoadProfile}
+                onClick={() => retryLoadProfile(true)}
                 className="gap-2 bg-slate-900 text-white hover:bg-slate-800 shadow-sm h-11 px-6"
               >
                 <RefreshCw className="w-4 h-4" /> Tentar Novamente
               </Button>
               <Button
-                onClick={() => {
-                  logout()
-                  window.location.reload()
-                }}
+                onClick={logout}
                 variant="outline"
                 className="gap-2 h-11 px-6 border-slate-300 text-slate-700"
               >
@@ -211,6 +208,16 @@ export default function Index() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  if (!profile && !pb.authStore.isValid) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="text-slate-500 text-center animate-pulse">
+          <p>Aguardando autenticação...</p>
+        </div>
       </div>
     )
   }

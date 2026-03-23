@@ -26,7 +26,7 @@ interface AuthStore {
   loadingProfile: boolean
   profileError: 'suspended' | 'not_found' | 'forbidden' | 'timeout' | 'fetch_error' | null
   errorDetails: any
-  retryLoadProfile: () => void
+  retryLoadProfile: (isRetry?: boolean) => void
   logout: () => void
 }
 
@@ -44,14 +44,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [errorDetails, setErrorDetails] = useState<any>(null)
 
   const loadingRef = useRef(false)
+  const currentUserIdRef = useRef<string | null>(null)
+  const retryCountRef = useRef<number>(0)
 
   const logout = useCallback(() => {
     pb.authStore.clear()
+    localStorage.clear()
+    sessionStorage.clear()
     window.location.href = '/'
   }, [])
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (isRetry = false) => {
     if (loadingRef.current) return
+
+    if (isRetry) {
+      retryCountRef.current += 1
+      if (retryCountRef.current >= 3) {
+        setProfileError('timeout')
+        setErrorDetails({
+          message:
+            'Múltiplas tentativas falharam. O circuito de proteção foi ativado para evitar sobrecarga na API.',
+        })
+        setLoadingProfile(false)
+        return
+      }
+    } else {
+      retryCountRef.current = 0
+    }
+
     loadingRef.current = true
     setLoadingProfile(true)
     setProfileError(null)
@@ -64,9 +84,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    currentUserIdRef.current = user.id
+
     try {
       const latestUser = await Promise.race([
-        pb.collection('users').getOne(user.id, { expand: 'profile', $autoCancel: false }),
+        pb.collection('users').getOne(user.id, { expand: 'profile', requestKey: null }),
         new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
       ])
       user = latestUser
@@ -114,12 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user.expand?.profile) {
       setProfile(user.expand.profile)
       setProfileError(null)
-      setLoadingProfile(false)
-      loadingRef.current = false
     } else {
       try {
         const p = await Promise.race([
-          pb.collection('profiles').getOne(user.profile, { $autoCancel: false }),
+          pb.collection('profiles').getOne(user.profile, { requestKey: null }),
           new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
         ])
 
@@ -137,18 +157,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setErrorDetails({ status: e.status, message: e.message, response: e.response })
         }
         setProfile(null)
-      } finally {
-        setLoadingProfile(false)
-        loadingRef.current = false
       }
     }
 
     try {
+      // Update last login without triggering infinite loadProfile loop
       await pb
         .collection('users')
-        .update(user.id, { last_login: new Date().toISOString() }, { $autoCancel: false })
+        .update(user.id, { last_login: new Date().toISOString() }, { requestKey: null })
     } catch (e) {
       // ignore
+    } finally {
+      setLoadingProfile(false)
+      loadingRef.current = false
     }
   }, [])
 
@@ -158,9 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!token || !record) {
         setProfile(null)
         setProfileError(null)
+        currentUserIdRef.current = null
       } else {
-        if (!loadingRef.current) {
-          loadProfile()
+        // Only load if the user ID actually changed (e.g., login as a different user).
+        // This prevents the infinite loop when updating 'last_login' which triggers onChange
+        if (record.id !== currentUserIdRef.current) {
+          if (!loadingRef.current) {
+            loadProfile()
+          }
         }
       }
     }, false)
