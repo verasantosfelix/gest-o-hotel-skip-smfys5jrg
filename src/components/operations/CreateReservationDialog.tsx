@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format, differenceInDays } from 'date-fns'
-import { CalendarIcon, Check, ChevronsUpDown, UserPlus, AlertCircle } from 'lucide-react'
+import { CalendarIcon, Check, ChevronsUpDown, UserPlus, AlertCircle, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -36,7 +36,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/ui/use-toast'
 import { getRooms, RoomRecord } from '@/services/rooms'
-import { getLoyalty, createLoyalty } from '@/services/guest_loyalty'
+import { getLoyalty, createLoyalty, GuestLoyalty } from '@/services/guest_loyalty'
 import { createReservation } from '@/services/reservations'
 import pb from '@/lib/pocketbase/client'
 import { useAccess } from '@/hooks/use-access'
@@ -46,6 +46,8 @@ const schema = z
     guestName: z.string().min(2, 'Nome obrigatório'),
     isNewGuest: z.boolean().default(false),
     guestEmail: z.string().email('Email inválido').optional().or(z.literal('')),
+    companyName: z.string().optional(),
+    vatNumber: z.string().optional(),
     roomId: z.string().min(1, 'Quarto obrigatório'),
     checkIn: z.date({ required_error: 'Check-in obrigatório' }),
     checkOut: z.date({ required_error: 'Check-out obrigatório' }),
@@ -66,7 +68,7 @@ export function CreateReservationDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const [rooms, setRooms] = useState<RoomRecord[]>([])
-  const [guests, setGuests] = useState<any[]>([])
+  const [guests, setGuests] = useState<GuestLoyalty[]>([])
   const [guestPopOpen, setGuestPopOpen] = useState(false)
   const [isAvailable, setIsAvailable] = useState(true)
   const [availabilityMsg, setAvailabilityMsg] = useState('')
@@ -85,6 +87,7 @@ export function CreateReservationDialog({
   const isVip = form.watch('isVip')
   const isCorporate = form.watch('isCorporate')
   const guestName = form.watch('guestName')
+  const isNewGuest = form.watch('isNewGuest')
 
   useEffect(() => {
     if (open) {
@@ -166,13 +169,17 @@ export function CreateReservationDialog({
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
     try {
-      if (v.isNewGuest)
+      if (v.isNewGuest) {
         await createLoyalty({
           guest_name: v.guestName,
           email: v.guestEmail,
+          company_name: v.companyName,
+          vat_number: v.vatNumber,
           points: 0,
           tier: 'Basic',
         })
+      }
+
       await createReservation({
         guest_name: v.guestName,
         room_id: v.roomId,
@@ -212,7 +219,7 @@ export function CreateReservationDialog({
                 render={({ field }) => (
                   <FormItem className="col-span-2 sm:col-span-1 flex flex-col pt-2">
                     <FormLabel>Hóspede</FormLabel>
-                    {!form.watch('isNewGuest') ? (
+                    {!isNewGuest ? (
                       <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -304,7 +311,7 @@ export function CreateReservationDialog({
                   </FormItem>
                 )}
               />
-              {form.watch('isNewGuest') && (
+              {isNewGuest && (
                 <FormField
                   control={form.control}
                   name="guestEmail"
@@ -319,15 +326,63 @@ export function CreateReservationDialog({
                   )}
                 />
               )}
+              {isNewGuest && (
+                <div
+                  className={cn(
+                    'col-span-2 grid grid-cols-2 gap-4 p-4 rounded-lg border',
+                    isCorporate ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100',
+                  )}
+                >
+                  <div className="col-span-2 flex items-center gap-2 mb-1">
+                    <Building2
+                      className={cn('w-4 h-4', isCorporate ? 'text-blue-600' : 'text-slate-500')}
+                    />
+                    <span className="text-sm font-semibold text-slate-700">
+                      Dados Corporativos (Opcional)
+                    </span>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2 sm:col-span-1">
+                        <FormLabel>Empresa</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nome da Empresa"
+                            {...field}
+                            className={isCorporate ? 'bg-white' : ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vatNumber"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2 sm:col-span-1">
+                        <FormLabel>Contribuinte / NIF</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Número de Contribuinte"
+                            {...field}
+                            className={isCorporate ? 'bg-white' : ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="roomId"
                 render={({ field }) => (
                   <FormItem
-                    className={cn(
-                      'pt-2',
-                      form.watch('isNewGuest') ? 'col-span-2' : 'col-span-2 sm:col-span-1',
-                    )}
+                    className={cn('pt-2', isNewGuest ? 'col-span-2' : 'col-span-2 sm:col-span-1')}
                   >
                     <FormLabel>Quarto Disponível</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>

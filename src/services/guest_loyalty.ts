@@ -1,3 +1,22 @@
 import pb from '@/lib/pocketbase/client'
-export const getLoyalty = () => pb.collection('guest_loyalty').getFullList({ sort: '-created' })
-export const createLoyalty = (data: any) => pb.collection('guest_loyalty').create(data)
+
+export interface GuestLoyalty {
+  id: string
+  guest_name: string
+  email?: string
+  points?: number
+  tier?: string
+  company_name?: string
+  vat_number?: string
+  created: string
+  updated: string
+}
+
+export const getLoyalty = () =>
+  pb.collection('guest_loyalty').getFullList<GuestLoyalty>({ sort: '-created' })
+
+export const createLoyalty = (data: Partial<GuestLoyalty>) =>
+  pb.collection('guest_loyalty').create<GuestLoyalty>(data)
+
+export const updateLoyalty = (id: string, data: Partial<GuestLoyalty>) =>
+  pb.collection('guest_loyalty').update<GuestLoyalty>(id, data)

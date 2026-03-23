@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T23:02:38.849Z",
+  "generatedAt": "2026-03-23T23:10:30.187Z",
   "collections": [
     {
       "name": "users",
@@ -344,6 +344,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "company_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "vat_number",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []
