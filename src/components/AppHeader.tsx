@@ -155,7 +155,9 @@ export function AppHeader() {
     try {
       await pb.collection('notifications').update(id, { status: 'read' })
       setNotifications((prev) => prev.filter((n) => n.id !== id))
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const roleLabels: Record<string, string> = {

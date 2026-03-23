@@ -196,7 +196,9 @@ export function AppSidebar() {
           .getList(1, 1, { filter: 'status = "open"' })
         setOpenMaintenance(maint.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
 
     try {
       if (hasAccess([], 'Menu Impresso (PDF)')) {
@@ -205,7 +207,9 @@ export function AppSidebar() {
           .getList(1, 1, { filter: 'status = "pending_approval"' })
         setPendingPdf(pdfs.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
 
     try {
       if (hasAccess([], 'Lavanderia SPA')) {
@@ -214,7 +218,9 @@ export function AppSidebar() {
           .getList(1, 1, { filter: 'location = "SPA" && status != "Entregue"' })
         setPendingSpaLaundry(laundry.totalItems)
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {

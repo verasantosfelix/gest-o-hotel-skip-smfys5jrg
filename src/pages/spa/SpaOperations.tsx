@@ -105,7 +105,9 @@ export default function SpaOperations() {
       await deleteSpaBlockout(id)
       toast({ title: 'Removido' })
       loadData()
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const roomColors: Record<string, string> = {

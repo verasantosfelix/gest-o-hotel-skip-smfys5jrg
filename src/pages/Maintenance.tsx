@@ -27,12 +27,6 @@ export default function Maintenance() {
   const { hasAccess } = useAccess()
   const { profile } = useAuthStore()
 
-  if (!hasAccess([], 'Manutenção')) {
-    return <RestrictedAccess />
-  }
-
-  const isStaff = profile?.role_level === 'Atendente'
-
   const [tickets, setTickets] = useState<any[]>([])
   const [sensors, setSensors] = useState<any[]>([])
   const [assets, setAssets] = useState<any[]>([])
@@ -50,7 +44,9 @@ export default function Maintenance() {
       setSensors(sData)
       setAssets(aData)
       setRooms(rData)
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   useEffect(() => {
@@ -60,6 +56,12 @@ export default function Maintenance() {
   useRealtime('iot_sensors', loadData)
   useRealtime('it_assets', loadData)
   useRealtime('rooms', loadData)
+
+  const isStaff = profile?.role_level === 'Atendente'
+
+  if (!hasAccess([], 'Manutenção')) {
+    return <RestrictedAccess />
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-20">

@@ -114,7 +114,9 @@ export default function SpaAgendaDaily() {
               link: '/spa/agenda',
             })
           }
-        } catch (err) {}
+        } catch (err) {
+          console.error(err)
+        }
       }
 
       setFormOpen(false)
