@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search,
   MoreHorizontal,
@@ -83,7 +83,7 @@ export default function Reservations() {
   const [corpData, setCorpData] = useState({ company_name: '', vat_number: '' })
   const [isInvoiceLoading, setIsInvoiceLoading] = useState(false)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [res, cons, rms] = await Promise.all([
         getReservations(),
@@ -94,16 +94,33 @@ export default function Reservations() {
       setConsumptions(cons)
       setRooms(rms)
     } catch (e) {
-      console.error(e)
+      console.error('Error loading reservations data:', e)
     }
-  }
+  }, [])
+
+  const realtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const debouncedLoadData = useCallback(() => {
+    if (realtimeTimeoutRef.current) {
+      clearTimeout(realtimeTimeoutRef.current)
+    }
+    realtimeTimeoutRef.current = setTimeout(() => {
+      loadData()
+    }, 800)
+  }, [loadData])
 
   useEffect(() => {
     loadData()
-  }, [])
-  useRealtime('reservations', loadData)
-  useRealtime('consumptions', loadData)
-  useRealtime('rooms', loadData)
+    return () => {
+      if (realtimeTimeoutRef.current) {
+        clearTimeout(realtimeTimeoutRef.current)
+      }
+    }
+  }, [loadData])
+
+  useRealtime('reservations', debouncedLoadData)
+  useRealtime('consumptions', debouncedLoadData)
+  useRealtime('rooms', debouncedLoadData)
 
   if (!hasAccess([], 'Reservas')) return <RestrictedAccess />
 
