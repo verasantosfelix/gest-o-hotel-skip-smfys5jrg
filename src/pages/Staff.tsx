@@ -165,6 +165,12 @@ export default function Staff() {
             <Eye className="w-3 h-3 mr-1" /> Director
           </Badge>
         )
+      case 'Administrativo_Geral':
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Admin Geral</Badge>
+      case 'Administrativo':
+        return (
+          <Badge className="bg-slate-100 text-slate-700 border-slate-300">Administrativo</Badge>
+        )
       case 'Gerente_Area':
         return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Gerente Área</Badge>
       case 'Responsavel_Equipa':
@@ -179,6 +185,16 @@ export default function Staff() {
         return <Badge variant="outline">Não Definido</Badge>
     }
   }
+
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    const cats = ['Direção', 'Managers', 'Administrativos', 'Operacionais', 'Especiais', 'Outros']
+    const idxA = cats.indexOf(a.category || 'Outros')
+    const idxB = cats.indexOf(b.category || 'Outros')
+    if (idxA !== idxB) {
+      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB)
+    }
+    return (a.name || '').localeCompare(b.name || '')
+  })
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
@@ -207,11 +223,11 @@ export default function Staff() {
 
         <TabsContent value="overview" className="space-y-6">
           <div className="flex justify-end mb-4">
-            {isManager() && <CreateUserDialog profiles={profiles} />}
+            {isManager() && <CreateUserDialog profiles={sortedProfiles} />}
           </div>
 
           <div className="space-y-8">
-            {profiles.map((profile) => {
+            {sortedProfiles.map((profile) => {
               const profileUsers = users.filter((u) => u.profile === profile.id)
 
               return (
@@ -221,8 +237,15 @@ export default function Staff() {
                       <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
                         {profile.name} {getRoleBadge(profile.role_level)}
                       </CardTitle>
-                      <CardDescription>
-                        {profile.allowed_actions?.length} módulo(s) liberado(s)
+                      <CardDescription className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                          {profile.category || 'Outros'}
+                        </Badge>
+                        <span className="text-xs">
+                          {profile.allowed_actions?.includes('*')
+                            ? 'Acesso a todos os módulos'
+                            : `${profile.allowed_actions?.length || 0} módulo(s) liberado(s)`}
+                        </span>
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-3 bg-white p-2 rounded-md border border-slate-200">
@@ -344,7 +367,7 @@ export default function Staff() {
                                     {pb.authStore.record?.role === 'manager' && (
                                       <ResendAccessDialog user={u} />
                                     )}
-                                    <EditUserDialog user={u} profiles={profiles} />
+                                    <EditUserDialog user={u} profiles={sortedProfiles} />
 
                                     {pb.authStore.record?.role === 'manager' &&
                                       u.id !== pb.authStore.record?.id && (
@@ -453,7 +476,7 @@ export default function Staff() {
                           {pb.authStore.record?.role === 'manager' && (
                             <ResendAccessDialog user={u} />
                           )}
-                          <EditUserDialog user={u} profiles={profiles} />
+                          <EditUserDialog user={u} profiles={sortedProfiles} />
 
                           {pb.authStore.record?.role === 'manager' &&
                             u.id !== pb.authStore.record?.id && (
@@ -523,11 +546,12 @@ export default function Staff() {
               <CreateProfileDialog />
             </CardHeader>
             <CardContent className="p-0">
-              {profiles.length > 0 ? (
+              {sortedProfiles.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-white hover:bg-white">
                       <TableHead className="pl-6">Nome do Cargo</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead>Nível RBAC</TableHead>
                       <TableHead>Permissões/Módulos</TableHead>
                       <TableHead>Membros</TableHead>
@@ -535,7 +559,7 @@ export default function Staff() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {profiles.map((profile) => {
+                    {sortedProfiles.map((profile) => {
                       const usersCount = users.filter((u) => u.profile === profile.id).length
                       const isGlobal = ['Gerente_Geral', 'Director_Geral'].includes(
                         profile.role_level,
@@ -545,6 +569,14 @@ export default function Staff() {
                         <TableRow key={profile.id}>
                           <TableCell className="pl-6 font-medium text-slate-800">
                             {profile.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] uppercase font-semibold"
+                            >
+                              {profile.category || 'Outros'}
+                            </Badge>
                           </TableCell>
                           <TableCell>{getRoleBadge(profile.role_level)}</TableCell>
                           <TableCell>

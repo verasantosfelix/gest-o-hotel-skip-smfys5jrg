@@ -27,6 +27,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -127,6 +129,25 @@ export function EditUserDialog({ user, profiles = [] }: { user: any; profiles?: 
     }
   }
 
+  const groupedProfiles = profiles.reduce(
+    (acc, p) => {
+      const cat = p.category || 'Outros'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(p)
+      return acc
+    },
+    {} as Record<string, any[]>,
+  )
+
+  const categories = [
+    'Direção',
+    'Managers',
+    'Administrativos',
+    'Operacionais',
+    'Especiais',
+    'Outros',
+  ]
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -211,11 +232,35 @@ export function EditUserDialog({ user, profiles = [] }: { user: any; profiles?: 
                       <SelectItem value="none" className="text-slate-400 italic">
                         Nenhum
                       </SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
+                      {categories.map((cat) => {
+                        if (!groupedProfiles[cat] || groupedProfiles[cat].length === 0) return null
+                        return (
+                          <SelectGroup key={cat}>
+                            <SelectLabel className="bg-slate-50 text-slate-500 text-xs uppercase">
+                              {cat}
+                            </SelectLabel>
+                            {groupedProfiles[cat].map((p: any) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        )
+                      })}
+                      {Object.keys(groupedProfiles)
+                        .filter((c) => !categories.includes(c))
+                        .map((cat) => (
+                          <SelectGroup key={cat}>
+                            <SelectLabel className="bg-slate-50 text-slate-500 text-xs uppercase">
+                              {cat}
+                            </SelectLabel>
+                            {groupedProfiles[cat].map((p: any) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

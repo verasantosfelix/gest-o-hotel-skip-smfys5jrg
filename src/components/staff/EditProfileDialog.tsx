@@ -91,6 +91,7 @@ const ALL_MODULES = [
 
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+  category: z.string().min(1, 'Selecione a categoria'),
   role_level: z.string().min(1, 'Selecione o nível de acesso'),
   allowed_actions: z.array(z.string()),
 })
@@ -105,6 +106,7 @@ export function EditProfileDialog({ profile }: { profile: any }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: profile.name || '',
+      category: profile.category || 'Outros',
       role_level: profile.role_level || 'Gerente_Area',
       allowed_actions: Array.isArray(profile.allowed_actions) ? profile.allowed_actions : [],
     },
@@ -114,6 +116,7 @@ export function EditProfileDialog({ profile }: { profile: any }) {
     if (open) {
       form.reset({
         name: profile.name || '',
+        category: profile.category || 'Outros',
         role_level: profile.role_level || 'Gerente_Area',
         allowed_actions: Array.isArray(profile.allowed_actions) ? profile.allowed_actions : [],
       })
@@ -128,6 +131,7 @@ export function EditProfileDialog({ profile }: { profile: any }) {
       )
       await updateProfile(profile.id, {
         name: values.name,
+        category: values.category,
         role_level: values.role_level,
         allowed_actions: isGlobal ? ['*'] : values.allowed_actions,
       })
@@ -153,7 +157,9 @@ export function EditProfileDialog({ profile }: { profile: any }) {
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Cargo</DialogTitle>
-          <DialogDescription>Modifique o nome, hierarquia e permissões.</DialogDescription>
+          <DialogDescription>
+            Modifique o nome, categoria, hierarquia e permissões.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -172,36 +178,64 @@ export function EditProfileDialog({ profile }: { profile: any }) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="role_level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nível de Acesso (RBAC)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a hierarquia" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Gerente_Geral">Gerente Geral (Acesso Total)</SelectItem>
-                      <SelectItem value="Director_Geral">
-                        Director Geral (Somente Leitura)
-                      </SelectItem>
-                      <SelectItem value="Administrativo_Geral">
-                        Administrativo Geral (Operacional Total)
-                      </SelectItem>
-                      <SelectItem value="Administrativo">Administrativo</SelectItem>
-                      <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
-                      <SelectItem value="Responsavel_Equipa">Responsável de Equipa</SelectItem>
-                      <SelectItem value="Atendente">Atendente / Empregado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria do Cargo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Direção">Direção</SelectItem>
+                        <SelectItem value="Managers">Managers</SelectItem>
+                        <SelectItem value="Administrativos">Administrativos</SelectItem>
+                        <SelectItem value="Operacionais">Operacionais</SelectItem>
+                        <SelectItem value="Especiais">Especiais</SelectItem>
+                        <SelectItem value="Outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role_level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível de Acesso (RBAC)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a hierarquia" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Gerente_Geral">Gerente Geral (Acesso Total)</SelectItem>
+                        <SelectItem value="Director_Geral">
+                          Director Geral (Somente Leitura)
+                        </SelectItem>
+                        <SelectItem value="Administrativo_Geral">
+                          Administrativo Geral (Operacional Total)
+                        </SelectItem>
+                        <SelectItem value="Administrativo">Administrativo</SelectItem>
+                        <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
+                        <SelectItem value="Responsavel_Equipa">Responsável de Equipa</SelectItem>
+                        <SelectItem value="Atendente">Atendente / Empregado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {!isGlobal && roleLevel && (
               <FormField

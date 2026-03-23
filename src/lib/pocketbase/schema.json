@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-23T21:16:13.572Z",
+  "generatedAt": "2026-03-23T21:52:18.070Z",
   "collections": [
     {
       "name": "users",
@@ -1224,6 +1224,26 @@
             "Gerente_Area",
             "Responsavel_Equipa",
             "Atendente"
+          ]
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "category",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Operacionais",
+            "Managers",
+            "Administrativos",
+            "Direção",
+            "Especiais",
+            "Outros"
           ]
         }
       ],

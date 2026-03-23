@@ -91,6 +91,7 @@ const ALL_MODULES = [
 
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+  category: z.string().min(1, 'Selecione a categoria'),
   role_level: z.string().min(1, 'Selecione o nível de acesso'),
   allowed_actions: z.array(z.string()),
 })
@@ -105,6 +106,7 @@ export function CreateProfileDialog() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      category: 'Outros',
       role_level: '',
       allowed_actions: [],
     },
@@ -118,6 +120,7 @@ export function CreateProfileDialog() {
       )
       await createProfile({
         name: values.name,
+        category: values.category,
         role_level: values.role_level,
         allowed_actions: isGlobal ? ['*'] : values.allowed_actions,
       })
@@ -145,7 +148,7 @@ export function CreateProfileDialog() {
         <DialogHeader>
           <DialogTitle>Criar Novo Cargo</DialogTitle>
           <DialogDescription>
-            Defina o nome do perfil, nível hierárquico e módulos permitidos.
+            Defina o nome do perfil, categoria, nível hierárquico e módulos permitidos.
           </DialogDescription>
         </DialogHeader>
 
@@ -165,36 +168,64 @@ export function CreateProfileDialog() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="role_level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nível de Acesso (RBAC)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a hierarquia" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Gerente_Geral">Gerente Geral (Acesso Total)</SelectItem>
-                      <SelectItem value="Director_Geral">
-                        Director Geral (Somente Leitura)
-                      </SelectItem>
-                      <SelectItem value="Administrativo_Geral">
-                        Administrativo Geral (Operacional Total)
-                      </SelectItem>
-                      <SelectItem value="Administrativo">Administrativo</SelectItem>
-                      <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
-                      <SelectItem value="Responsavel_Equipa">Responsável de Equipa</SelectItem>
-                      <SelectItem value="Atendente">Atendente / Empregado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria do Cargo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Direção">Direção</SelectItem>
+                        <SelectItem value="Managers">Managers</SelectItem>
+                        <SelectItem value="Administrativos">Administrativos</SelectItem>
+                        <SelectItem value="Operacionais">Operacionais</SelectItem>
+                        <SelectItem value="Especiais">Especiais</SelectItem>
+                        <SelectItem value="Outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role_level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível de Acesso (RBAC)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a hierarquia" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Gerente_Geral">Gerente Geral (Acesso Total)</SelectItem>
+                        <SelectItem value="Director_Geral">
+                          Director Geral (Somente Leitura)
+                        </SelectItem>
+                        <SelectItem value="Administrativo_Geral">
+                          Administrativo Geral (Operacional Total)
+                        </SelectItem>
+                        <SelectItem value="Administrativo">Administrativo</SelectItem>
+                        <SelectItem value="Gerente_Area">Gerente de Área</SelectItem>
+                        <SelectItem value="Responsavel_Equipa">Responsável de Equipa</SelectItem>
+                        <SelectItem value="Atendente">Atendente / Empregado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {!isGlobal && roleLevel && (
               <FormField
