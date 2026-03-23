@@ -24,8 +24,10 @@ interface AuthStore {
   previewSector: string | null
   setPreviewSector: (sector: string | null) => void
   loadingProfile: boolean
-  profileError: 'suspended' | 'not_found' | 'forbidden' | 'timeout' | null
+  profileError: 'suspended' | 'not_found' | 'forbidden' | 'timeout' | 'fetch_error' | null
+  errorDetails: any
   retryLoadProfile: () => void
+  logout: () => void
 }
 
 const AuthContext = createContext<AuthStore | undefined>(undefined)
@@ -38,13 +40,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [previewSector, setPreviewSector] = useState<string | null>(null)
 
   const [loadingProfile, setLoadingProfile] = useState(true)
-  const [profileError, setProfileError] = useState<
-    'suspended' | 'not_found' | 'forbidden' | 'timeout' | null
-  >(null)
+  const [profileError, setProfileError] = useState<AuthStore['profileError']>(null)
+  const [errorDetails, setErrorDetails] = useState<any>(null)
+
+  const logout = useCallback(() => {
+    pb.authStore.clear()
+    window.location.href = '/'
+  }, [])
 
   const loadProfile = useCallback(async () => {
     setLoadingProfile(true)
     setProfileError(null)
+    setErrorDetails(null)
 
     let user = pb.authStore.record
     if (!user) {
@@ -54,21 +61,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const latestUser = await Promise.race([
-        pb.collection('users').getOne(user.id, { $autoCancel: false }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
+        pb.collection('users').getOne(user.id, { expand: 'profile', $autoCancel: false }),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 7000)),
       ])
       user = latestUser
       pb.authStore.save(pb.authStore.token, user)
     } catch (e: any) {
       if (e.message === 'TIMEOUT') {
         setProfileError('timeout')
-        setLoadingProfile(false)
-        return
+        setErrorDetails({ message: 'Request timed out after 7000ms' })
+      } else {
+        if (e.status === 403) setProfileError('forbidden')
+        else if (e.status === 404) setProfileError('not_found')
+        else setProfileError('fetch_error')
+
+        setErrorDetails({
+          status: e.status,
+          message: e.message,
+          response: e.response,
+        })
       }
+      setProfile(null)
+      setLoadingProfile(false)
+      return
     }
 
     if (user.is_active === false) {
       setProfileError('suspended')
+      setErrorDetails({ message: 'Acesso negado: a sua conta está marcada como inativa.' })
       setProfile(null)
       setLoadingProfile(false)
       return
@@ -76,38 +96,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!user.profile) {
       setProfileError('not_found')
+      setErrorDetails({
+        message: 'O utilizador não possui um perfil associado. A propriedade "profile" está vazia.',
+      })
       setProfile(null)
       setLoadingProfile(false)
       return
     }
 
-    try {
-      const p = await Promise.race([
-        pb.collection('profiles').getOne(user.profile, { $autoCancel: false }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000)),
-      ])
-
-      setProfile(p)
+    if (user.expand?.profile) {
+      setProfile(user.expand.profile)
       setProfileError(null)
-
-      try {
-        await pb
-          .collection('users')
-          .update(user.id, { last_login: new Date().toISOString() }, { $autoCancel: false })
-      } catch (e) {
-        // ignore
-      }
-    } catch (e: any) {
-      if (e.message === 'TIMEOUT') {
-        setProfileError('timeout')
-      } else if (e.status === 403) {
-        setProfileError('forbidden')
-      } else {
-        setProfileError('not_found')
-      }
-      setProfile(null)
-    } finally {
       setLoadingProfile(false)
+    } else {
+      try {
+        const p = await Promise.race([
+          pb.collection('profiles').getOne(user.profile, { $autoCancel: false }),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 7000)),
+        ])
+
+        setProfile(p)
+        setProfileError(null)
+      } catch (e: any) {
+        if (e.message === 'TIMEOUT') {
+          setProfileError('timeout')
+          setErrorDetails({ message: 'Profile request timed out after 7000ms' })
+        } else if (e.status === 403) {
+          setProfileError('forbidden')
+          setErrorDetails({ status: e.status, message: e.message, response: e.response })
+        } else {
+          setProfileError('not_found')
+          setErrorDetails({ status: e.status, message: e.message, response: e.response })
+        }
+        setProfile(null)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    try {
+      await pb
+        .collection('users')
+        .update(user.id, { last_login: new Date().toISOString() }, { $autoCancel: false })
+    } catch (e) {
+      // ignore
     }
   }, [])
 
@@ -170,7 +202,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPreviewSector,
         loadingProfile,
         profileError,
+        errorDetails,
         retryLoadProfile: loadProfile,
+        logout,
       },
     },
     children,

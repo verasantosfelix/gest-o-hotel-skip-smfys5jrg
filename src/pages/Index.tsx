@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   BedDouble,
   ShieldCheck,
@@ -10,10 +10,16 @@ import {
   Clock,
   AlertCircle,
   ShieldAlert,
+  LogOut,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+
 import useAuthStore from '@/stores/useAuthStore'
 import useHotelStore from '@/stores/useHotelStore'
 import { useAccess } from '@/hooks/use-access'
@@ -29,10 +35,26 @@ import { useRealtime } from '@/hooks/use-realtime'
 import pb from '@/lib/pocketbase/client'
 
 export default function Index() {
-  const { profile, loadingProfile, profileError, retryLoadProfile } = useAuthStore()
+  const { profile, loadingProfile, profileError, errorDetails, retryLoadProfile, logout } =
+    useAuthStore()
   const { effectiveRoleLevel, effectiveAllowedActions } = useAccess()
   const { selectedHotel } = useHotelStore()
   const [activeTab, setActiveTab] = useState('dashboard')
+
+  const [loadingSeconds, setLoadingSeconds] = useState(0)
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (loadingProfile) {
+      interval = setInterval(() => {
+        setLoadingSeconds((s) => s + 1)
+      }, 1000)
+    } else {
+      setLoadingSeconds(0)
+    }
+    return () => clearInterval(interval)
+  }, [loadingProfile])
 
   useRealtime('users', (e) => {
     if (e.record.id === pb.authStore.record?.id) {
@@ -40,11 +62,26 @@ export default function Index() {
     }
   })
 
+  useRealtime('profiles', (e) => {
+    if (e.record.id === profile?.id || e.record.id === pb.authStore.record?.profile) {
+      retryLoadProfile()
+    }
+  })
+
   if (loadingProfile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-500 animate-pulse font-medium">Carregando dashboard...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+        <div className="text-center space-y-2">
+          <p className="text-slate-700 animate-pulse font-medium text-lg">
+            Carregando dashboard...
+          </p>
+          {loadingSeconds >= 5 && (
+            <p className="text-amber-600 text-sm animate-fade-in transition-opacity">
+              A conexão parece estar lenta. Aguarde mais um momento...
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -52,16 +89,16 @@ export default function Index() {
   if (profileError) {
     const errorConfig = {
       suspended: {
-        title: 'Conta Suspensa',
-        desc: 'A sua conta foi desativada pelo administrador. Você não tem acesso ao sistema no momento.',
+        title: 'Acesso Suspenso',
+        desc: 'A sua conta está marcada como inativa. Não tem acesso ao sistema no momento. Por favor, contacte a administração.',
         icon: ShieldAlert,
         color: 'text-rose-600',
         bg: 'bg-rose-50',
         border: 'border-rose-200',
       },
       not_found: {
-        title: 'Perfil Não Encontrado',
-        desc: 'Perfil não encontrado. Por favor, contacte o administrador para associar um cargo à sua conta.',
+        title: 'Erro de Configuração: Perfil Não Encontrado',
+        desc: 'A sua conta não possui um perfil válido associado. Por favor, contacte o administrador para resolver esta questão.',
         icon: UserX,
         color: 'text-amber-600',
         bg: 'bg-amber-50',
@@ -69,7 +106,7 @@ export default function Index() {
       },
       forbidden: {
         title: 'Acesso Negado',
-        desc: 'Você não tem permissão para carregar os dados deste perfil. Verifique com o suporte.',
+        desc: 'Você não tem permissão para carregar os dados deste perfil. Verifique as suas credenciais com o suporte técnico.',
         icon: AlertCircle,
         color: 'text-rose-600',
         bg: 'bg-rose-50',
@@ -77,31 +114,100 @@ export default function Index() {
       },
       timeout: {
         title: 'Tempo Limite Excedido',
-        desc: 'Não foi possível carregar os dados a tempo. Verifique sua conexão com a internet ou tente novamente.',
+        desc: 'Não foi possível carregar os dados a tempo (7 segundos). Verifique a sua conexão com a internet ou tente novamente.',
         icon: Clock,
         color: 'text-slate-600',
         bg: 'bg-slate-50',
         border: 'border-slate-200',
       },
-    }[profileError]
+      fetch_error: {
+        title: 'Erro de Comunicação',
+        desc: 'Ocorreu um erro ao tentar comunicar com os servidores do sistema.',
+        icon: AlertCircle,
+        color: 'text-rose-600',
+        bg: 'bg-rose-50',
+        border: 'border-rose-200',
+      },
+    }[profileError] || {
+      title: 'Erro Desconhecido',
+      desc: 'Ocorreu um problema inesperado ao inicializar a sua sessão.',
+      icon: AlertCircle,
+      color: 'text-slate-600',
+      bg: 'bg-slate-50',
+      border: 'border-slate-200',
+    }
 
     const Icon = errorConfig.icon
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
-        <Card className={`max-w-md w-full ${errorConfig.border} shadow-sm animate-fade-in-up`}>
-          <CardContent className="p-6 text-center space-y-4">
+        <Card
+          className={`max-w-xl w-full ${errorConfig.border} shadow-sm animate-fade-in-up bg-white`}
+        >
+          <CardContent className="p-8 text-center space-y-5">
             <div
-              className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${errorConfig.bg}`}
+              className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${errorConfig.bg}`}
             >
-              <Icon className={`w-8 h-8 ${errorConfig.color}`} />
+              <Icon className={`w-10 h-10 ${errorConfig.color}`} />
             </div>
-            <h2 className="text-xl font-bold text-slate-900">{errorConfig.title}</h2>
-            <p className="text-slate-500 text-sm leading-relaxed">{errorConfig.desc}</p>
+            <h2 className="text-2xl font-bold text-slate-900">{errorConfig.title}</h2>
+            <p className="text-slate-600 text-sm leading-relaxed max-w-md mx-auto">
+              {errorConfig.desc}
+            </p>
 
-            <div className="pt-4 flex justify-center">
-              <Button onClick={retryLoadProfile} variant="outline" className="gap-2">
+            {errorDetails && (
+              <Collapsible
+                open={showTechnicalDetails}
+                onOpenChange={setShowTechnicalDetails}
+                className="w-full text-left mt-6 border border-slate-100 rounded-md p-1 bg-slate-50"
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full flex justify-between text-slate-500 hover:text-slate-800"
+                  >
+                    <span className="font-medium text-xs uppercase tracking-wider">
+                      Mostrar Detalhes Técnicos
+                    </span>
+                    {showTechnicalDetails ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2 px-1 pb-1">
+                  <Alert
+                    variant="destructive"
+                    className="bg-slate-900 text-slate-300 border-0 rounded"
+                  >
+                    <AlertTitle className="text-slate-50 font-mono text-sm mb-2">
+                      Contexto do Erro JSON
+                    </AlertTitle>
+                    <AlertDescription>
+                      <pre className="w-full overflow-x-auto text-xs font-mono text-slate-400">
+                        {JSON.stringify(errorDetails, null, 2)}
+                      </pre>
+                    </AlertDescription>
+                  </Alert>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={retryLoadProfile}
+                className="gap-2 bg-slate-900 text-white hover:bg-slate-800 shadow-sm h-11 px-6"
+              >
                 <RefreshCw className="w-4 h-4" /> Tentar Novamente
+              </Button>
+              <Button
+                onClick={logout}
+                variant="outline"
+                className="gap-2 h-11 px-6 border-slate-300 text-slate-700"
+              >
+                <LogOut className="w-4 h-4" /> Terminar Sessão
               </Button>
             </div>
           </CardContent>
