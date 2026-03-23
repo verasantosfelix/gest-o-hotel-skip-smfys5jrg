@@ -21,7 +21,7 @@ export function useAccess() {
           'Equipe & RH',
           'Pagamentos',
         ]
-      default:
+      default: {
         const actions = new Set([...transversal])
 
         if (sector === 'Front_Desk') {
@@ -74,6 +74,7 @@ export function useAccess() {
         }
 
         return Array.from(actions)
+      }
     }
   }
 
