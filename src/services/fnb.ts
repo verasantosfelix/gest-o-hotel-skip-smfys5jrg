@@ -42,8 +42,8 @@ export interface FBReservationFNB {
   guest_name: string
   people_count: number
   reservation_time: string
-  table_id: string
-  status: 'confirmed' | 'arrived' | 'cancelled' | 'no_show'
+  table_id?: string
+  status: 'pending' | 'confirmed' | 'arrived' | 'cancelled' | 'no_show'
   notes: string
   expand?: { table_id?: FBTable }
 }

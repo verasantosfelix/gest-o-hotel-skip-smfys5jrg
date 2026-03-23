@@ -8,6 +8,9 @@ export interface GuestLoyalty {
   tier?: string
   company_name?: string
   vat_number?: string
+  marketing_consent?: boolean
+  consent_signature?: string
+  room_preferences?: string
   created: string
   updated: string
 }
@@ -18,5 +21,5 @@ export const getLoyalty = () =>
 export const createLoyalty = (data: Partial<GuestLoyalty>) =>
   pb.collection('guest_loyalty').create<GuestLoyalty>(data)
 
-export const updateLoyalty = (id: string, data: Partial<GuestLoyalty>) =>
+export const updateLoyalty = (id: string, data: Partial<GuestLoyalty> | FormData) =>
   pb.collection('guest_loyalty').update<GuestLoyalty>(id, data)

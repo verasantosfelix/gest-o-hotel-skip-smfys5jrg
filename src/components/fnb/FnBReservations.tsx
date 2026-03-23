@@ -22,6 +22,7 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { CalendarDays, MapPin } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
+import { useRealtime } from '@/hooks/use-realtime'
 
 export function FnBReservations() {
   const { userRole } = useAuthStore()
@@ -42,6 +43,7 @@ export function FnBReservations() {
   useEffect(() => {
     loadData()
   }, [])
+  useRealtime('fb_reservations_fnb', loadData)
 
   const handleCreate = async () => {
     if (!form.name || !form.people || !form.time)
@@ -69,6 +71,16 @@ export function FnBReservations() {
       await updateFBReservation(r.id, { status: 'arrived' })
       if (r.table_id) await updateFBTable(r.table_id, { status: 'occupied' })
       toast({ title: 'Check-in realizado. Mesa Ocupada.' })
+      loadData()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleConfirm = async (r: FBReservationFNB) => {
+    try {
+      await updateFBReservation(r.id, { status: 'confirmed' })
+      toast({ title: 'Reserva Confirmada.' })
       loadData()
     } catch (e) {
       console.error(e)
@@ -140,10 +152,13 @@ export function FnBReservations() {
       </div>
 
       <div className="md:col-span-2 space-y-4">
-        <h3 className="font-bold text-lg text-slate-800">Próximas Chegadas</h3>
+        <h3 className="font-bold text-lg text-slate-800">Próximas Chegadas & Pendentes</h3>
         <div className="space-y-3">
           {reservations.map((r) => (
-            <Card key={r.id} className="border-slate-200 shadow-sm transition-all hover:shadow-md">
+            <Card
+              key={r.id}
+              className={`border-l-4 shadow-sm transition-all hover:shadow-md ${r.status === 'pending' ? 'border-l-orange-500 bg-orange-50/50' : 'border-l-slate-300'}`}
+            >
               <CardContent className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
@@ -151,6 +166,14 @@ export function FnBReservations() {
                     <Badge variant="outline" className="bg-slate-100">
                       {r.people_count} Pax
                     </Badge>
+                    {r.status === 'pending' && (
+                      <Badge
+                        variant="outline"
+                        className="text-orange-600 border-orange-200 bg-orange-100"
+                      >
+                        CRM PENDENTE
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-slate-500">
                     <span className="flex items-center gap-1 font-mono">
@@ -164,7 +187,16 @@ export function FnBReservations() {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col sm:flex-row items-center gap-2">
+                  {r.status === 'pending' && !isFrontDesk && (
+                    <Button
+                      onClick={() => handleConfirm(r)}
+                      variant="outline"
+                      className="border-orange-500 text-orange-600 hover:bg-orange-50 w-full sm:w-auto"
+                    >
+                      Aprovar Reserva
+                    </Button>
+                  )}
                   {r.status === 'confirmed' ? (
                     !isFrontDesk ? (
                       <Button
@@ -179,14 +211,16 @@ export function FnBReservations() {
                       </Badge>
                     )
                   ) : (
-                    <Badge
-                      className={
-                        r.status === 'arrived' ? 'bg-emerald-500' : 'bg-slate-300 text-slate-700'
-                      }
-                      variant="secondary"
-                    >
-                      {r.status.toUpperCase()}
-                    </Badge>
+                    r.status !== 'pending' && (
+                      <Badge
+                        className={
+                          r.status === 'arrived' ? 'bg-emerald-500' : 'bg-slate-300 text-slate-700'
+                        }
+                        variant="secondary"
+                      >
+                        {r.status.toUpperCase()}
+                      </Badge>
+                    )
                   )}
                 </div>
               </CardContent>
@@ -194,7 +228,7 @@ export function FnBReservations() {
           ))}
           {reservations.length === 0 && (
             <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-500">
-              Nenhuma reserva agendada para hoje.
+              Nenhuma reserva agendada.
             </div>
           )}
         </div>

@@ -23,7 +23,7 @@ routerAdd(
       }
     }
 
-    if (!companyName || !vatNumber) {
+    if (res.get('is_corporate') === true && (!companyName || !vatNumber)) {
       throw new BadRequestError('Company Name and VAT Number are required for corporate invoices.')
     }
 
@@ -35,11 +35,13 @@ routerAdd(
       0,
     )
 
-    let invoiceText = `===== FATURA CORPORATIVA / INVOICE REQUEST =====\n\n`
+    let invoiceText = `===== FATURA ${res.get('is_corporate') ? 'CORPORATIVA' : 'HÓSPEDE'} / INVOICE REQUEST =====\n\n`
     invoiceText += `Reserva ID: ${id}\n`
     invoiceText += `Hóspede: ${res.get('guest_name')}\n`
-    invoiceText += `Empresa: ${companyName}\n`
-    invoiceText += `NIF/VAT: ${vatNumber}\n`
+    if (companyName || vatNumber) {
+      invoiceText += `Empresa: ${companyName}\n`
+      invoiceText += `NIF/VAT: ${vatNumber}\n`
+    }
     invoiceText += `Data de Check-in: ${res.get('check_in')}\n`
     invoiceText += `Data de Check-out: ${res.get('check_out')}\n\n`
     invoiceText += `--- DETALHE DE CONSUMOS ---\n`
@@ -76,7 +78,7 @@ routerAdd(
         notif.set('title', 'Novo Pedido de Fatura')
         notif.set(
           'message',
-          `Fatura corporativa solicitada para ${companyName} (${res.get('guest_name')}).`,
+          `Fatura solicitada para ${res.get('guest_name')}${companyName ? ` (${companyName})` : ''}.`,
         )
         notif.set('type', 'approval_request')
         notif.set('status', 'unread')
