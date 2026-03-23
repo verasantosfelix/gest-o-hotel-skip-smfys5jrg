@@ -30,6 +30,7 @@ import { EditUserDialog } from '@/components/staff/EditUserDialog'
 import { StaffDocumentsSheet } from '@/components/staff/StaffDocumentsSheet'
 import { CreateProfileDialog } from '@/components/staff/CreateProfileDialog'
 import { EditProfileDialog } from '@/components/staff/EditProfileDialog'
+import { ResendAccessDialog } from '@/components/staff/ResendAccessDialog'
 import pb from '@/lib/pocketbase/client'
 
 export default function Staff() {
@@ -277,6 +278,9 @@ export default function Staff() {
                                 <TableCell className="text-right pr-6">
                                   <div className="flex justify-end items-center gap-2">
                                     <StaffDocumentsSheet user={u} />
+                                    {pb.authStore.record?.role === 'manager' && (
+                                      <ResendAccessDialog user={u} />
+                                    )}
                                     <EditUserDialog user={u} profiles={profiles} />
                                     <Button
                                       variant="outline"
@@ -329,6 +333,7 @@ export default function Staff() {
                           </Avatar>
                           {u.name || u.email}
                         </Badge>
+                        {pb.authStore.record?.role === 'manager' && <ResendAccessDialog user={u} />}
                         <EditUserDialog user={u} profiles={profiles} />
                       </div>
                     ))}

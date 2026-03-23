@@ -84,3 +84,12 @@ export const uploadStaffDocument = async (
 export const deleteStaffDocument = async (id: string) => {
   return await pb.collection('staff_documents').delete(id)
 }
+
+// Resend Access Email
+export const resendAccessEmail = async (userId: string) => {
+  return await pb.send('/backend/v1/users/resend-access', {
+    method: 'POST',
+    body: JSON.stringify({ userId }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
