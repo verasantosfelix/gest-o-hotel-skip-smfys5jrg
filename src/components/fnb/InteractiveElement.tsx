@@ -1,32 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
-import { FBTable } from '@/services/fnb'
-import { cn } from '@/lib/utils'
+import { FBLayoutElement } from '@/services/fnb'
 import { RotateCw, GripHorizontal, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-interface InteractiveTableProps {
-  table: FBTable
+interface InteractiveElementProps {
+  element: FBLayoutElement
   isEditMode: boolean
-  onUpdate: (id: string, updates: Partial<FBTable>) => void
+  onUpdate: (id: string, updates: Partial<FBLayoutElement>) => void
   onDelete: (id: string) => void
-  onClick: (table: FBTable) => void
 }
 
-const statusStyles = {
-  free: 'bg-emerald-50 border-emerald-400 text-emerald-800 shadow-emerald-100',
-  occupied: 'bg-rose-50 border-rose-400 text-rose-800 shadow-rose-100',
-  reserved: 'bg-orange-50 border-orange-400 text-orange-800 shadow-orange-100',
-}
-
-export function InteractiveTable({
-  table,
+export function InteractiveElement({
+  element,
   isEditMode,
   onUpdate,
   onDelete,
-  onClick,
-}: InteractiveTableProps) {
-  const [pos, setPos] = useState({ x: table.pos_x ?? 50, y: table.pos_y ?? 50 })
-  const [size, setSize] = useState({ w: table.width ?? 80, h: table.height ?? 80 })
-  const [rot, setRot] = useState(table.rotation ?? 0)
+}: InteractiveElementProps) {
+  const [pos, setPos] = useState({ x: element.pos_x ?? 50, y: element.pos_y ?? 50 })
+  const [size, setSize] = useState({ w: element.width ?? 80, h: element.height ?? 80 })
+  const [rot, setRot] = useState(element.rotation ?? 0)
 
   const elementRef = useRef<HTMLDivElement>(null)
   const isInteracting = useRef(false)
@@ -34,25 +26,22 @@ export function InteractiveTable({
 
   useEffect(() => {
     if (!isInteracting.current) {
-      setPos({ x: table.pos_x ?? 50, y: table.pos_y ?? 50 })
-      setSize({ w: table.width ?? 80, h: table.height ?? 80 })
-      setRot(table.rotation ?? 0)
+      setPos({ x: element.pos_x ?? 50, y: element.pos_y ?? 50 })
+      setSize({ w: element.width ?? 80, h: element.height ?? 80 })
+      setRot(element.rotation ?? 0)
       stateRef.current = {
-        pos: { x: table.pos_x ?? 50, y: table.pos_y ?? 50 },
-        size: { w: table.width ?? 80, h: table.height ?? 80 },
-        rot: table.rotation ?? 0,
+        pos: { x: element.pos_x ?? 50, y: element.pos_y ?? 50 },
+        size: { w: element.width ?? 80, h: element.height ?? 80 },
+        rot: element.rotation ?? 0,
       }
     }
-  }, [table.pos_x, table.pos_y, table.width, table.height, table.rotation])
+  }, [element.pos_x, element.pos_y, element.width, element.height, element.rotation])
 
   const handlePointerDown = (
     e: React.PointerEvent<HTMLDivElement>,
     action: 'move' | 'resize' | 'rotate',
   ) => {
-    if (!isEditMode) {
-      if (action === 'move') onClick(table)
-      return
-    }
+    if (!isEditMode) return
 
     e.stopPropagation()
     e.preventDefault()
@@ -79,8 +68,8 @@ export function InteractiveTable({
         stateRef.current.pos = newPos
       } else if (action === 'resize') {
         const newSize = {
-          w: Math.max(40, startSize.w + (moveEvent.clientX - startX)),
-          h: Math.max(40, startSize.h + (moveEvent.clientY - startY)),
+          w: Math.max(20, startSize.w + (moveEvent.clientX - startX)),
+          h: Math.max(20, startSize.h + (moveEvent.clientY - startY)),
         }
         setSize(newSize)
         stateRef.current.size = newSize
@@ -97,7 +86,7 @@ export function InteractiveTable({
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
 
-      onUpdate(table.id, {
+      onUpdate(element.id, {
         pos_x: Math.round(stateRef.current.pos.x),
         pos_y: Math.round(stateRef.current.pos.y),
         width: Math.round(stateRef.current.size.w),
@@ -114,6 +103,29 @@ export function InteractiveTable({
     window.addEventListener('pointerup', handlePointerUp)
   }
 
+  let customStyle = ''
+  switch (element.type) {
+    case 'wall':
+      customStyle = 'bg-slate-700 border-slate-900'
+      break
+    case 'column':
+      customStyle = 'bg-slate-400 rounded-full border-2 border-slate-500'
+      break
+    case 'counter':
+      customStyle = 'bg-slate-200 border-2 border-slate-400 rounded'
+      break
+    case 'door':
+      customStyle = 'bg-transparent border-4 border-dashed border-slate-400'
+      break
+    case 'window':
+      customStyle = 'bg-blue-100 border-2 border-blue-300 rounded-sm opacity-70'
+      break
+    case 'staircase':
+      customStyle =
+        'bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#cbd5e1_10px,#cbd5e1_20px)] border-2 border-slate-400'
+      break
+  }
+
   return (
     <div
       ref={elementRef}
@@ -128,15 +140,18 @@ export function InteractiveTable({
         touchAction: 'none',
       }}
       className={cn(
-        'border-2 flex flex-col items-center justify-center rounded-lg shadow-sm transition-all duration-100 ease-linear select-none',
-        statusStyles[table.status],
+        'flex items-center justify-center select-none shadow-sm',
+        customStyle,
         isEditMode
-          ? 'cursor-move ring-offset-2 hover:ring-2 ring-slate-300 z-20'
-          : 'cursor-pointer hover:-translate-y-1 hover:shadow-md z-20',
+          ? 'cursor-move ring-offset-2 hover:ring-2 ring-blue-400'
+          : 'pointer-events-none opacity-90',
       )}
     >
-      <span className="font-black text-xl leading-none">{table.table_number.replace('T', '')}</span>
-      <span className="text-xs font-medium opacity-80 mt-1">{table.capacity} Pax</span>
+      {element.label && (
+        <span className="text-xs font-bold text-slate-800 bg-white/70 px-1.5 py-0.5 rounded truncate pointer-events-none">
+          {element.label}
+        </span>
+      )}
 
       {isEditMode && (
         <>
@@ -144,27 +159,27 @@ export function InteractiveTable({
             className="absolute -top-8 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-alias z-10"
             onPointerDown={(e) => handlePointerDown(e, 'rotate')}
           >
-            <div className="w-7 h-7 bg-slate-800 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-              <RotateCw className="w-3.5 h-3.5" />
+            <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+              <RotateCw className="w-3 h-3" />
             </div>
-            <div className="w-[2px] h-3 bg-slate-800" />
+            <div className="w-[2px] h-3 bg-blue-600" />
           </div>
 
           <div
-            className="absolute -bottom-3 -right-3 w-6 h-6 bg-white border-2 border-slate-800 rounded flex items-center justify-center cursor-se-resize shadow-md hover:scale-110 transition-transform z-10"
+            className="absolute -bottom-3 -right-3 w-5 h-5 bg-white border-2 border-blue-600 rounded flex items-center justify-center cursor-se-resize shadow-md hover:scale-110 transition-transform z-10"
             onPointerDown={(e) => handlePointerDown(e, 'resize')}
           >
-            <GripHorizontal className="w-3 h-3 text-slate-800 -rotate-45" />
+            <GripHorizontal className="w-3 h-3 text-blue-600 -rotate-45" />
           </div>
 
           <div
-            className="absolute -top-3 -left-3 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:scale-110 z-10"
+            className="absolute -top-3 -right-3 w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:scale-110 z-10"
             onPointerDown={(e) => {
               e.stopPropagation()
-              onDelete(table.id)
+              onDelete(element.id)
             }}
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-2.5 h-2.5" />
           </div>
         </>
       )}

@@ -2,6 +2,28 @@ import pb from '@/lib/pocketbase/client'
 import { RoomRecord } from './rooms'
 import { PBReservation } from './reservations'
 
+export interface FBLayoutPreset {
+  id: string
+  name: string
+  is_active: boolean
+  created: string
+  updated: string
+}
+
+export interface FBLayoutElement {
+  id: string
+  type: 'wall' | 'column' | 'counter' | 'door' | 'window' | 'staircase'
+  label?: string
+  pos_x: number
+  pos_y: number
+  width: number
+  height: number
+  rotation: number
+  preset_id: string
+  created: string
+  updated: string
+}
+
 export interface FBTable {
   id: string
   table_number: string
@@ -12,6 +34,7 @@ export interface FBTable {
   width?: number
   height?: number
   rotation?: number
+  preset_id?: string
   created: string
   updated: string
 }
@@ -81,10 +104,32 @@ export interface FBOrderItem {
   updated: string
 }
 
-export const getFBTables = () =>
-  pb.collection('fb_tables').getFullList<FBTable>({ sort: 'table_number' })
+export const getFBLayoutPresets = () =>
+  pb.collection('fb_layout_presets').getFullList<FBLayoutPreset>({ sort: 'name' })
+export const createFBPreset = (data: Partial<FBLayoutPreset>) =>
+  pb.collection('fb_layout_presets').create<FBLayoutPreset>(data)
+export const updateFBPreset = (id: string, data: Partial<FBLayoutPreset>) =>
+  pb.collection('fb_layout_presets').update<FBLayoutPreset>(id, data)
+
+export const getFBLayoutElements = (presetId: string) =>
+  pb
+    .collection('fb_layout_elements')
+    .getFullList<FBLayoutElement>({ filter: `preset_id="${presetId}"` })
+export const createFBLayoutElement = (data: Partial<FBLayoutElement>) =>
+  pb.collection('fb_layout_elements').create<FBLayoutElement>(data)
+export const updateFBLayoutElement = (id: string, data: Partial<FBLayoutElement>) =>
+  pb.collection('fb_layout_elements').update<FBLayoutElement>(id, data)
+export const deleteFBLayoutElement = (id: string) => pb.collection('fb_layout_elements').delete(id)
+
+export const getFBTables = (presetId?: string) => {
+  const filter = presetId ? `preset_id='${presetId}' || preset_id=''` : undefined
+  return pb.collection('fb_tables').getFullList<FBTable>({ filter, sort: 'table_number' })
+}
+export const createFBTable = (data: Partial<FBTable>) =>
+  pb.collection('fb_tables').create<FBTable>(data)
 export const updateFBTable = (id: string, data: Partial<FBTable>) =>
   pb.collection('fb_tables').update<FBTable>(id, data)
+export const deleteFBTable = (id: string) => pb.collection('fb_tables').delete(id)
 
 export const getFBMenuCategories = () =>
   pb.collection('fb_menu_categories').getFullList<FBMenuCategory>({ sort: 'order' })
@@ -110,11 +155,13 @@ export const updateFBOrder = (id: string, data: FormData | Partial<FBOrder>) =>
   pb.collection('fb_orders').update<FBOrder>(id, data)
 
 export const getFBOrderItems = (filter?: string) =>
-  pb.collection('fb_order_items').getFullList<FBOrderItem>({
-    filter,
-    expand: 'product_id,order_id.table_id,order_id.room_id',
-    sort: 'created',
-  })
+  pb
+    .collection('fb_order_items')
+    .getFullList<FBOrderItem>({
+      filter,
+      expand: 'product_id,order_id.table_id,order_id.room_id',
+      sort: 'created',
+    })
 export const createFBOrderItem = (data: Partial<FBOrderItem>) =>
   pb.collection('fb_order_items').create<FBOrderItem>(data)
 export const updateFBOrderItem = (id: string, data: Partial<FBOrderItem>) =>
