@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Search,
   MoreHorizontal,
@@ -13,6 +14,9 @@ import {
   Receipt,
   Building2,
   AlertCircle,
+  UtensilsCrossed,
+  BellRing,
+  CalendarHeart,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,9 +69,11 @@ import pb from '@/lib/pocketbase/client'
 import { formatCurrency } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import { createFinancialDoc } from '@/services/financial'
+import useAuthStore from '@/stores/useAuthStore'
 
 export default function Reservations() {
   const { hasAccess, canWrite } = useAccess()
+  const { profile } = useAuthStore()
   const [viewMode, setViewMode] = useState<'list' | 'gantt'>('list')
   const [reservations, setReservations] = useState<PBReservation[]>([])
   const [consumptions, setConsumptions] = useState<PBConsumption[]>([])
@@ -82,6 +88,10 @@ export default function Reservations() {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false)
   const [corpData, setCorpData] = useState({ company_name: '', vat_number: '' })
   const [isInvoiceLoading, setIsInvoiceLoading] = useState(false)
+
+  const isFrontDeskManager =
+    (profile?.name === 'Front_Desk' || profile?.name === 'Rececao_FrontOffice') &&
+    ['Gerente_Area', 'Responsavel_Equipa'].includes(profile?.role_level || '')
 
   const loadData = useCallback(async () => {
     try {
@@ -280,6 +290,38 @@ export default function Reservations() {
           </CardContent>
         </Card>
       </div>
+
+      {isFrontDeskManager && (
+        <div className="flex flex-wrap gap-3 py-2 animate-fade-in-up">
+          <Button
+            variant="outline"
+            asChild
+            className="gap-2 border-slate-300 shadow-sm text-slate-700 bg-white hover:bg-slate-50"
+          >
+            <Link to="/spa/agenda">
+              <CalendarHeart className="w-4 h-4 text-rose-600" /> Agenda SPA
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="gap-2 border-slate-300 shadow-sm text-slate-700 bg-white hover:bg-slate-50"
+          >
+            <Link to="/fnb">
+              <UtensilsCrossed className="w-4 h-4 text-orange-600" /> Mesas F&B
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="gap-2 border-slate-300 shadow-sm text-slate-700 bg-white hover:bg-slate-50"
+          >
+            <Link to="/fb/room-service">
+              <BellRing className="w-4 h-4 text-purple-600" /> Lançar Room Service
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {viewMode === 'gantt' ? (
         <div className="animate-fade-in-up">

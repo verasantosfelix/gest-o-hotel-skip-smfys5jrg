@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/use-access'
 import useAuthStore from '@/stores/useAuthStore'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
+import { useLocation } from 'react-router-dom'
 
 import { FnBDashboard } from '@/components/fnb/FnBDashboard'
 import { FnBOrderManagement } from '@/components/fnb/FnBOrderManagement'
@@ -13,14 +14,29 @@ import { FnBRoutines } from '@/components/fnb/FnBRoutines'
 import { FnBKPIs } from '@/components/fnb/FnBKPIs'
 
 export default function FnB() {
-  const { hasAccess, canWrite } = useAccess()
+  const { hasAccess } = useAccess()
   const { profile } = useAuthStore()
+  const location = useLocation()
 
   if (!hasAccess([], 'F&B Básico')) {
     return <RestrictedAccess />
   }
 
   const isStaff = profile?.role_level === 'Atendente'
+  const isFrontDeskManager =
+    (profile?.name === 'Front_Desk' || profile?.name === 'Rececao_FrontOffice') &&
+    ['Gerente_Area', 'Responsavel_Equipa'].includes(profile?.role_level || '')
+
+  const defaultTab = location.pathname.includes('/fb/room-service')
+    ? 'room_service'
+    : isStaff || isFrontDeskManager
+      ? 'orders'
+      : 'dashboard'
+
+  const showDashboard = !isStaff && !isFrontDeskManager
+  const showKds = !isFrontDeskManager
+  const showRoutines = !isStaff && !isFrontDeskManager
+  const showKpis = !isStaff && !isFrontDeskManager
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
@@ -30,17 +46,19 @@ export default function FnB() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Restaurante & Bar Operacional
+            {isFrontDeskManager ? 'Operações F&B (Front Desk)' : 'Restaurante & Bar Operacional'}
           </h1>
           <p className="text-sm text-slate-500">
-            Gestão Integrada de F&B, KDS Cozinha e Lançamento PMS
+            {isFrontDeskManager
+              ? 'Gestão rápida de Room Service e Mesas'
+              : 'Gestão Integrada de F&B, KDS Cozinha e Lançamento PMS'}
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue={isStaff ? 'orders' : 'dashboard'} className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-6 h-auto bg-slate-100 flex flex-wrap justify-start border border-slate-200 shadow-sm p-1 rounded-md">
-          {!isStaff && (
+          {showDashboard && (
             <TabsTrigger value="dashboard" className="px-4 py-2 font-medium">
               Dashboard
             </TabsTrigger>
@@ -48,9 +66,11 @@ export default function FnB() {
           <TabsTrigger value="orders" className="px-4 py-2 font-medium">
             Mesas & Pedidos
           </TabsTrigger>
-          <TabsTrigger value="kds" className="px-4 py-2 font-medium">
-            KDS (Cozinha)
-          </TabsTrigger>
+          {showKds && (
+            <TabsTrigger value="kds" className="px-4 py-2 font-medium">
+              KDS (Cozinha)
+            </TabsTrigger>
+          )}
           <TabsTrigger value="room_service" className="px-4 py-2 font-medium">
             Room Service
           </TabsTrigger>
@@ -59,19 +79,19 @@ export default function FnB() {
               Reservas
             </TabsTrigger>
           )}
-          {!isStaff && (
+          {showRoutines && (
             <TabsTrigger value="routines" className="px-4 py-2 font-medium">
               Rotinas
             </TabsTrigger>
           )}
-          {!isStaff && (
+          {showKpis && (
             <TabsTrigger value="kpis" className="px-4 py-2 font-medium">
               Analytics
             </TabsTrigger>
           )}
         </TabsList>
 
-        {!isStaff && (
+        {showDashboard && (
           <TabsContent value="dashboard" className="mt-0 outline-none">
             <FnBDashboard />
           </TabsContent>
@@ -79,9 +99,11 @@ export default function FnB() {
         <TabsContent value="orders" className="mt-0 outline-none">
           <FnBOrderManagement />
         </TabsContent>
-        <TabsContent value="kds" className="mt-0 outline-none">
-          <FnBKDS />
-        </TabsContent>
+        {showKds && (
+          <TabsContent value="kds" className="mt-0 outline-none">
+            <FnBKDS />
+          </TabsContent>
+        )}
         <TabsContent value="room_service" className="mt-0 outline-none">
           <FnBRoomService />
         </TabsContent>
@@ -90,12 +112,12 @@ export default function FnB() {
             <FnBReservations />
           </TabsContent>
         )}
-        {!isStaff && (
+        {showRoutines && (
           <TabsContent value="routines" className="mt-0 outline-none">
             <FnBRoutines />
           </TabsContent>
         )}
-        {!isStaff && (
+        {showKpis && (
           <TabsContent value="kpis" className="mt-0 outline-none">
             <FnBKPIs />
           </TabsContent>
