@@ -156,15 +156,15 @@ export function FnBOrderManagement() {
       toast({ title: 'Erro ao remover mesa', variant: 'destructive' })
     }
   }
-  const handleAddTable = async () => {
+  const handleAddTable = async (x: number = 200, y: number = 200) => {
     if (!selectedPresetId) return
     try {
       await createFBTable({
         table_number: `T${tables.length + 1}`,
         status: 'free',
         capacity: 4,
-        pos_x: 200,
-        pos_y: 200,
+        pos_x: Math.round(x),
+        pos_y: Math.round(y),
         width: 80,
         height: 80,
         rotation: 0,
@@ -189,14 +189,14 @@ export function FnBOrderManagement() {
       toast({ title: 'Erro ao remover elemento', variant: 'destructive' })
     }
   }
-  const handleAddElement = async (type: string) => {
+  const handleAddElement = async (type: string, x: number = 150, y: number = 150) => {
     if (!selectedPresetId) return
     try {
       await createFBLayoutElement({
         type: type as any,
         label: type.charAt(0).toUpperCase() + type.slice(1),
-        pos_x: 150,
-        pos_y: 150,
+        pos_x: Math.round(x),
+        pos_y: Math.round(y),
         width: type === 'column' ? 60 : 100,
         height: type === 'wall' ? 20 : type === 'column' ? 60 : 100,
         rotation: 0,

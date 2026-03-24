@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 interface InteractiveElementProps {
   element: FBLayoutElement
   isEditMode: boolean
+  scale: number
+  snapToGrid: boolean
   onUpdate: (id: string, updates: Partial<FBLayoutElement>) => void
   onDelete: (id: string) => void
 }
@@ -13,6 +15,8 @@ interface InteractiveElementProps {
 export function InteractiveElement({
   element,
   isEditMode,
+  scale,
+  snapToGrid,
   onUpdate,
   onDelete,
 }: InteractiveElementProps) {
@@ -51,6 +55,7 @@ export function InteractiveElement({
     const startY = e.clientY
     const startPos = { ...stateRef.current.pos }
     const startSize = { ...stateRef.current.size }
+    const startRot = stateRef.current.rot
 
     const rect = elementRef.current?.getBoundingClientRect()
     const centerX = rect ? rect.left + rect.width / 2 : 0
@@ -59,24 +64,38 @@ export function InteractiveElement({
     const handlePointerMove = (moveEvent: PointerEvent) => {
       moveEvent.preventDefault()
 
+      const dx = (moveEvent.clientX - startX) / scale
+      const dy = (moveEvent.clientY - startY) / scale
+
       if (action === 'move') {
-        const newPos = {
-          x: startPos.x + (moveEvent.clientX - startX),
-          y: startPos.y + (moveEvent.clientY - startY),
+        let newX = startPos.x + dx
+        let newY = startPos.y + dy
+        if (snapToGrid) {
+          newX = Math.round(newX / 20) * 20
+          newY = Math.round(newY / 20) * 20
         }
-        setPos(newPos)
-        stateRef.current.pos = newPos
+        setPos({ x: newX, y: newY })
+        stateRef.current.pos = { x: newX, y: newY }
       } else if (action === 'resize') {
-        const newSize = {
-          w: Math.max(20, startSize.w + (moveEvent.clientX - startX)),
-          h: Math.max(20, startSize.h + (moveEvent.clientY - startY)),
+        const rad = -startRot * (Math.PI / 180)
+        const localDx = dx * Math.cos(rad) - dy * Math.sin(rad)
+        const localDy = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+        let newW = Math.max(20, startSize.w + localDx)
+        let newH = Math.max(20, startSize.h + localDy)
+        if (snapToGrid) {
+          newW = Math.round(newW / 20) * 20
+          newH = Math.round(newH / 20) * 20
         }
-        setSize(newSize)
-        stateRef.current.size = newSize
+        setSize({ w: newW, h: newH })
+        stateRef.current.size = { w: newW, h: newH }
       } else if (action === 'rotate') {
         const angle =
           Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * (180 / Math.PI)
-        const newRot = angle + 90
+        let newRot = angle + 90
+        if (snapToGrid) {
+          newRot = Math.round(newRot / 15) * 15
+        }
         setRot(newRot)
         stateRef.current.rot = newRot
       }
