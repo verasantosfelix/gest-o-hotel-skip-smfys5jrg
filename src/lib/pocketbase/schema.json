@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T00:03:02.979Z",
+  "generatedAt": "2026-03-24T00:15:34.934Z",
   "collections": [
     {
       "name": "users",
@@ -1828,6 +1828,36 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "pos_x",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pos_y",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "width",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "rotation",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": []

@@ -7,6 +7,11 @@ export interface FBTable {
   table_number: string
   status: 'free' | 'occupied' | 'reserved'
   capacity: number
+  pos_x?: number
+  pos_y?: number
+  width?: number
+  height?: number
+  rotation?: number
   created: string
   updated: string
 }
