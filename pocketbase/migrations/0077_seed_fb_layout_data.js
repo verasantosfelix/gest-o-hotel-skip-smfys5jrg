@@ -8,8 +8,36 @@ migrate(
 
     const tablesCol = app.findCollectionByNameOrId('fb_tables')
     const tables = app.findRecordsByFilter(tablesCol.id, '1=1', '', 1000, 0)
+
+    let defaultX = 50
+    let defaultY = 50
+
     for (const table of tables) {
       table.set('preset_id', presetRecord.id)
+
+      // Ensure all spatial fields have a valid number to prevent "cannot be blank" validation errors
+      const rot = table.get('rotation')
+      if (rot === null || rot === undefined || rot === '') table.set('rotation', 0)
+
+      const w = table.get('width')
+      if (w === null || w === undefined || w === '') table.set('width', 80)
+
+      const h = table.get('height')
+      if (h === null || h === undefined || h === '') table.set('height', 80)
+
+      const px = table.get('pos_x')
+      if (px === null || px === undefined || px === '') {
+        table.set('pos_x', defaultX)
+        defaultX += 100
+        if (defaultX > 800) {
+          defaultX = 50
+          defaultY += 100
+        }
+      }
+
+      const py = table.get('pos_y')
+      if (py === null || py === undefined || py === '') table.set('pos_y', defaultY)
+
       app.save(table)
     }
 

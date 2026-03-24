@@ -155,13 +155,11 @@ export const updateFBOrder = (id: string, data: FormData | Partial<FBOrder>) =>
   pb.collection('fb_orders').update<FBOrder>(id, data)
 
 export const getFBOrderItems = (filter?: string) =>
-  pb
-    .collection('fb_order_items')
-    .getFullList<FBOrderItem>({
-      filter,
-      expand: 'product_id,order_id.table_id,order_id.room_id',
-      sort: 'created',
-    })
+  pb.collection('fb_order_items').getFullList<FBOrderItem>({
+    filter,
+    expand: 'product_id,order_id.table_id,order_id.room_id',
+    sort: 'created',
+  })
 export const createFBOrderItem = (data: Partial<FBOrderItem>) =>
   pb.collection('fb_order_items').create<FBOrderItem>(data)
 export const updateFBOrderItem = (id: string, data: Partial<FBOrderItem>) =>
