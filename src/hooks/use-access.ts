@@ -36,7 +36,11 @@ export function useAccess() {
           if (role === 'Responsavel_Equipa' || role === 'Gerente_Area') {
             actions.add('Auditoria Noturna').add('Guest Journey')
             // Cross-department operational modules for Area/Team Leaders
-            actions.add('Agenda Diária').add('F&B Básico').add('Vendas & Distribuição')
+            actions
+              .add('Agenda Diária')
+              .add('F&B Básico')
+              .add('Vendas & Distribuição')
+              .add('F&B Operações')
           }
           if (role === 'Gerente_Area') {
             actions.add('Revenue Mgmt').add('CRM').add('Manutenção').add('Governança')

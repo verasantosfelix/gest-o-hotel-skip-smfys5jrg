@@ -68,8 +68,8 @@ export default function FBOps() {
     }
   }
 
-  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin', 'Gerente_Area'])) {
-    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin', 'Gerente_Area']} />
+  if (!hasAccess(['Restaurante_Bar', 'Direcao_Admin'], 'F&B Operações')) {
+    return <RestrictedAccess requiredRoles={['Restaurante_Bar', 'Direcao_Admin']} />
   }
 
   const pending = orders.filter((o) => o.status === 'pending')
