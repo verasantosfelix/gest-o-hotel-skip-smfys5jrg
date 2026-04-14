@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/command'
 import { toast } from '@/components/ui/use-toast'
 import { getRooms, RoomRecord } from '@/services/rooms'
+import { getRoomTypeConfigs, RoomTypeConfig } from '@/services/room_type_configs'
 import { getLoyalty, createLoyalty, GuestLoyalty } from '@/services/guest_loyalty'
 import { createReservation } from '@/services/reservations'
 import pb from '@/lib/pocketbase/client'
@@ -48,9 +49,6 @@ const ROOM_TYPOLOGIES = [
   'Quádruplo',
   'Vivenda T1',
   'Vivenda T2',
-  'standard',
-  'suite',
-  'luxo',
 ]
 
 const roomSchema = z.object({
@@ -140,6 +138,7 @@ export function CreateReservationDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const [roomsList, setRoomsList] = useState<RoomRecord[]>([])
+  const [roomConfigs, setRoomConfigs] = useState<RoomTypeConfig[]>([])
   const [guests, setGuests] = useState<GuestLoyalty[]>([])
   const [overlappingRes, setOverlappingRes] = useState<any[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -174,6 +173,7 @@ export function CreateReservationDialog({
   useEffect(() => {
     if (open) {
       getRooms().then(setRoomsList)
+      getRoomTypeConfigs().then(setRoomConfigs)
       getLoyalty().then(setGuests)
       form.reset({
         isCreatingGuest: false,
@@ -201,7 +201,7 @@ export function CreateReservationDialog({
   }, [checkIn, checkOut])
 
   useEffect(() => {
-    if (nights > 0 && roomsList.length > 0) {
+    if (nights > 0 && (roomsList.length > 0 || roomConfigs.length > 0)) {
       const currentRooms = form.getValues('rooms')
       currentRooms.forEach((r, index) => {
         if (r.roomId) {
@@ -211,10 +211,17 @@ export function CreateReservationDialog({
               shouldValidate: true,
             })
           }
+        } else if (r.typology) {
+          const config = roomConfigs.find((c) => c.name === r.typology)
+          if (config) {
+            form.setValue(`rooms.${index}.rate`, (config.base_price || 0) * nights, {
+              shouldValidate: true,
+            })
+          }
         }
       })
     }
-  }, [nights, roomsList, form])
+  }, [nights, roomsList, roomConfigs, form])
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
     try {
@@ -828,6 +835,18 @@ export function CreateReservationDialog({
                                 onValueChange={(val) => {
                                   f.onChange(val)
                                   form.setValue(`rooms.${index}.roomId`, '')
+                                  const config = roomConfigs.find((c) => c.name === val)
+                                  if (config && nights > 0) {
+                                    form.setValue(
+                                      `rooms.${index}.rate`,
+                                      (config.base_price || 0) * nights,
+                                      { shouldValidate: true },
+                                    )
+                                  } else {
+                                    form.setValue(`rooms.${index}.rate`, 0, {
+                                      shouldValidate: true,
+                                    })
+                                  }
                                 }}
                                 value={f.value}
                               >
@@ -914,6 +933,17 @@ export function CreateReservationDialog({
                                         shouldValidate: true,
                                       },
                                     )
+                                  } else if (!roomId && nights > 0) {
+                                    const config = roomConfigs.find((c) => c.name === val)
+                                    if (config) {
+                                      form.setValue(
+                                        `rooms.${index}.rate`,
+                                        (config.base_price || 0) * nights,
+                                        {
+                                          shouldValidate: true,
+                                        },
+                                      )
+                                    }
                                   }
                                 }}
                                 value={f.value}
