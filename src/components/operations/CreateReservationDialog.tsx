@@ -41,6 +41,7 @@ import { getRoomTypeConfigs, RoomTypeConfig } from '@/services/room_type_configs
 import { getRoomDiscounts, RoomDiscount } from '@/services/room_discounts'
 import { getLoyalty, createLoyalty, GuestLoyalty } from '@/services/guest_loyalty'
 import { createReservation } from '@/services/reservations'
+import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 
 const roomSchema = z.object({
@@ -295,54 +296,58 @@ export function CreateReservationDialog({
       }
 
       for (const r of v.rooms) {
+        const payload: any = {
+          room_id: r.roomId,
+          check_in: format(v.checkIn, 'yyyy-MM-dd'),
+          check_out: format(v.checkOut, 'yyyy-MM-dd'),
+          status: 'previsto',
+          balance: r.rate,
+          total_value: r.rate,
+          guests_count: r.guestsCount,
+        }
+
+        if (r.typology) {
+          payload.applied_rate_type = r.typology
+        }
+
         if (v.reservationType === 'corporate') {
           const companyNameStr = finalCompanyId
             ? guests.find((g) => g.id === finalCompanyId)?.company_name
             : v.companyName
 
-          await createReservation({
-            guest_name: companyNameStr || 'Empresa Desconhecida',
-            company_id: finalCompanyId,
-            room_id: r.roomId,
-            applied_rate_type: r.typology,
-            billing_type: 'empresa',
-            check_in: format(v.checkIn, 'yyyy-MM-dd'),
-            check_out: format(v.checkOut, 'yyyy-MM-dd'),
-            status: 'previsto',
-            is_corporate: true,
-            balance: r.rate,
-            total_value: r.rate,
-            guests_count: r.guestsCount,
-            additional_guests: v.additionalGuests || [],
-          })
+          payload.guest_name = companyNameStr || 'Empresa Desconhecida'
+          payload.billing_type = 'empresa'
+          payload.is_corporate = true
+
+          if (finalCompanyId) payload.company_id = finalCompanyId
+
+          if (v.additionalGuests && v.additionalGuests.length > 0) {
+            payload.additional_guests = v.additionalGuests
+          }
         } else {
           const guestNameStr = finalGuestId
             ? guests.find((g) => g.id === finalGuestId)?.guest_name
             : v.guestName
 
-          await createReservation({
-            guest_name: guestNameStr || 'Desconhecido',
-            guest_id: finalGuestId,
-            company_id: ['empresa', 'ambos'].includes(v.billingType) ? finalCompanyId : undefined,
-            room_id: r.roomId,
-            applied_rate_type: r.typology,
-            billing_type: v.billingType,
-            check_in: format(v.checkIn, 'yyyy-MM-dd'),
-            check_out: format(v.checkOut, 'yyyy-MM-dd'),
-            status: 'previsto',
-            is_corporate: false,
-            balance: r.rate,
-            total_value: r.rate,
-            guests_count: r.guestsCount,
-          })
+          payload.guest_name = guestNameStr || 'Desconhecido'
+          payload.billing_type = v.billingType
+          payload.is_corporate = false
+
+          if (finalGuestId) payload.guest_id = finalGuestId
+          if (['empresa', 'ambos'].includes(v.billingType) && finalCompanyId) {
+            payload.company_id = finalCompanyId
+          }
         }
+
+        await createReservation(payload)
       }
 
       toast({ title: 'Sucesso', description: 'Reserva(s) criada(s) com sucesso!' })
       onOpenChange(false)
     } catch (err) {
       console.error(err)
-      toast({ title: 'Erro', description: 'Erro ao criar reserva.', variant: 'destructive' })
+      const msg = getErrorMessage(err)
+      toast({ title: 'Erro', description: msg || 'Erro ao criar reserva.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }
