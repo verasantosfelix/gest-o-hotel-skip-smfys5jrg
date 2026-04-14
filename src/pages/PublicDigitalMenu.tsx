@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getFBProducts, getFBMenuCategories, FBProduct, FBMenuCategory } from '@/services/fnb'
 import { formatCurrency } from '@/lib/utils'
 import pb from '@/lib/pocketbase/client'
+import { useNavigate } from 'react-router-dom'
 import { Utensils, Info, ShieldAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -34,12 +35,16 @@ export default function PublicDigitalMenu() {
   }, [])
 
   const t = DICT[lang]
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-[#faf9f7] font-sans text-slate-800 pb-20 selection:bg-slate-200">
       <header className="bg-white border-b border-slate-200/60 sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-lg text-slate-900 tracking-tight">
+          <div
+            className="flex items-center gap-2 font-bold text-lg text-slate-900 tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/')}
+          >
             <Utensils className="w-5 h-5 text-slate-700" />
             SKIP Restaurant
           </div>

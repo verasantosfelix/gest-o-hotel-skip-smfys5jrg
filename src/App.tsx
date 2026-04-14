@@ -178,6 +178,7 @@ const App = () => {
                           <Route path="/seguranca" element={<Security />} />
                           <Route path="/revenue" element={<Revenue />} />
                           <Route path="/tarifario" element={<Tarifario />} />
+                          <Route path="/tarifas" element={<Navigate to="/tarifario" replace />} />
                           <Route path="/mobilidade" element={<TechMobility />} />
                           <Route path="/ia-governanca" element={<AIGovernance />} />
                           <Route path="/guest-journey" element={<GuestJourney />} />

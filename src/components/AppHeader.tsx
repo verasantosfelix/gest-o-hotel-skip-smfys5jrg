@@ -55,6 +55,7 @@ const PATH_LABELS: Record<string, string> = {
   seguranca: 'Segurança',
   revenue: 'Revenue',
   tarifario: 'Tarifário',
+  tarifas: 'Tarifário',
   mobilidade: 'Mobilidade',
   'ia-governanca': 'Governança IA',
   'guest-journey': 'Guest Journey',
