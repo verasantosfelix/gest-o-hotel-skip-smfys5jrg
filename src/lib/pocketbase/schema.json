@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T16:25:49.431Z",
+  "generatedAt": "2026-04-14T16:42:07.722Z",
   "collections": [
     {
       "name": "users",
@@ -1610,6 +1610,38 @@
           "type": "number",
           "required": false,
           "system": false
+        },
+        {
+          "name": "applied_rate_type",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Single",
+            "Duplo/Casal",
+            "Casal",
+            "Especial",
+            "Quádruplo",
+            "Vivenda T1",
+            "Vivenda T2",
+            "standard",
+            "suite",
+            "luxo"
+          ]
+        },
+        {
+          "name": "billing_type",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["hospede", "empresa", "ambos"]
+        },
+        {
+          "name": "company_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "guest_loyalty"
         }
       ],
       "indexes": [

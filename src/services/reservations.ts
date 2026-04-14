@@ -10,6 +10,9 @@ export interface PBReservation {
   status: 'previsto' | 'in_house' | 'checked_out' | 'cancelado' | 'no_show'
   is_vip: boolean
   is_corporate?: boolean
+  billing_type?: 'hospede' | 'empresa' | 'ambos'
+  applied_rate_type?: string
+  company_id?: string
   signature_file?: string
   balance: number
   total_value?: number
