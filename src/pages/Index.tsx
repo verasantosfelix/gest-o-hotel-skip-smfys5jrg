@@ -38,6 +38,7 @@ import pb from '@/lib/pocketbase/client'
 
 import { getReservations, updateReservation, PBReservation } from '@/services/reservations'
 import { getRooms, RoomRecord } from '@/services/rooms'
+import { LoginForm } from '@/components/auth/LoginForm'
 
 export default function Index() {
   const { profile, loadingProfile, profileError, errorDetails, retryLoadProfile, logout } =
@@ -254,13 +255,7 @@ export default function Index() {
   }
 
   if (!profile && !pb.authStore.isValid) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="text-slate-500 text-center animate-pulse">
-          <p>Aguardando autenticação...</p>
-        </div>
-      </div>
-    )
+    return <LoginForm />
   }
 
   if (!profile) return null

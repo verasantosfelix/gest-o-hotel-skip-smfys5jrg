@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 
 const originalConsoleError = console.error
 console.error = (...args: any[]) => {
@@ -58,7 +58,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import pb from '@/lib/pocketbase/client'
 
 import Index from './pages/Index'
 import Reservations from './pages/Reservations'
@@ -131,14 +130,6 @@ import { RoomProvider } from './stores/useRoomStore'
 import { ApprovalProvider } from './stores/useApprovalStore'
 
 const App = () => {
-  useEffect(() => {
-    if (!pb.authStore.isValid) {
-      pb.collection('users')
-        .authWithPassword('verasantos.cql@gmail.com', 'securepassword123')
-        .catch(console.error)
-    }
-  }, [])
-
   return (
     <AuthProvider>
       <AuditProvider>
