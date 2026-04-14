@@ -129,6 +129,8 @@ import { AuditProvider } from './stores/useAuditStore'
 import { AuthProvider } from './stores/useAuthStore'
 import { RoomProvider } from './stores/useRoomStore'
 import { ApprovalProvider } from './stores/useApprovalStore'
+import { AutoLogoff } from './components/AutoLogoff'
+import GuestLogin from './pages/GuestLogin'
 
 const App = () => {
   return (
@@ -145,9 +147,11 @@ const App = () => {
                     <TooltipProvider>
                       <Toaster />
                       <Sonner />
+                      <AutoLogoff />
                       <Routes>
                         <Route path="/menu" element={<PublicDigitalMenu />} />
                         <Route path="/spa-menu" element={<SpaPublicMenu />} />
+                        <Route path="/portal/login" element={<GuestLogin />} />
                         <Route path="/portal/guest/:reserva_id" element={<GuestPortal />} />
 
                         <Route element={<Layout />}>

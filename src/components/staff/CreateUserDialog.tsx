@@ -35,6 +35,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/components/ui/use-toast'
 import { createUser } from '@/services/staff'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import useAuthStore from '@/stores/useAuthStore'
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
@@ -43,6 +44,8 @@ const formSchema = z
   .object({
     name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
     email: z.string().email('Email inválido'),
+    phone: z.string().optional(),
+    employee_number: z.string().optional(),
     role: z.enum(['manager', 'user'], { required_error: 'Selecione um nível de acesso base' }),
     profile: z.string().optional(),
     password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
@@ -67,6 +70,8 @@ export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
     defaultValues: {
       name: '',
       email: '',
+      phone: '',
+      employee_number: '',
       role: 'user',
       profile: 'none',
       password: '',
@@ -112,6 +117,8 @@ export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
       const payload: any = {
         name: values.name,
         email: values.email,
+        phone: values.phone || '',
+        employee_number: values.employee_number || '',
         password: values.password,
         passwordConfirm: values.passwordConfirm,
         role: values.role,
@@ -153,7 +160,18 @@ export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
     }
   }
 
-  const groupedProfiles = profiles.reduce(
+  const { profile: currentUserProfile } = useAuthStore()
+
+  const isSuperAdmin =
+    currentUserProfile?.role_level === 'Gerente_Geral' ||
+    currentUserProfile?.role_level === 'Director_Geral'
+
+  const allowedProfiles = profiles.filter((p) => {
+    if (isSuperAdmin) return true
+    return p.role_level === 'Atendente' || p.category === 'Operacionais'
+  })
+
+  const groupedProfiles = allowedProfiles.reduce(
     (acc, p) => {
       const cat = p.category || 'Outros'
       if (!acc[cat]) acc[cat] = []
@@ -251,19 +269,47 @@ export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: joao@hotel.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: joao@hotel.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: 912345678" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="employee_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nº Colaborador</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: EMP001" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

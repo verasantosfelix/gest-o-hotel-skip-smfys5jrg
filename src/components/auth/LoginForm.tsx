@@ -8,6 +8,7 @@ import { AlertCircle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import pb from '@/lib/pocketbase/client'
 import useAuthStore from '@/stores/useAuthStore'
+import { toast } from '@/components/ui/use-toast'
 
 export function LoginForm() {
   const [identifier, setIdentifier] = useState('')
@@ -17,6 +18,23 @@ export function LoginForm() {
   const { retryLoadProfile } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const handleResetPassword = async () => {
+    if (!identifier || !identifier.includes('@')) {
+      setError('Para recuperar a palavra-passe, insira o seu email no campo acima.')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      await pb.collection('users').requestPasswordReset(identifier)
+      toast({ title: 'Email enviado', description: 'Verifique a sua caixa de entrada.' })
+    } catch (err: any) {
+      setError('Erro ao solicitar recuperação. Verifique se o email está correto.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,6 +116,13 @@ export function LoginForm() {
                 <Label htmlFor="password" className="text-slate-700">
                   Palavra-passe
                 </Label>
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Esqueceu a senha?
+                </button>
               </div>
               <Input
                 id="password"
