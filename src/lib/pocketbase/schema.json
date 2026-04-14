@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T14:45:42.318Z",
+  "generatedAt": "2026-04-14T15:01:20.836Z",
   "collections": [
     {
       "name": "users",
@@ -1380,9 +1380,6 @@
           "required": false,
           "system": false,
           "selectValues": [
-            "standard",
-            "suite",
-            "luxo",
             "Single",
             "Duplo/Casal",
             "Casal",
@@ -1391,6 +1388,36 @@
             "Vivenda T1",
             "Vivenda T2"
           ]
+        },
+        {
+          "name": "max_occupancy",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "bed_count",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "allow_extra_bed",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "appliances",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "base_rate",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

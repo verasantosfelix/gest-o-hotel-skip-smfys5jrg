@@ -3,24 +3,11 @@ import pb from '@/lib/pocketbase/client'
 export interface RoomRecord {
   id: string
   room_number: string
-  status:
-    | 'available'
-    | 'occupied'
-    | 'cleaning'
-    | 'maintenance'
-    | 'out_of_order'
-    | 'vago_pronto'
-    | 'sujo'
-    | 'em_arrumacao'
-    | 'nao_perturbar'
-    | 'ocupado_pronto'
+  status: 'Disponível' | 'Ocupado' | 'Manutenção' | 'Limpeza'
   maintenance_description?: string
   priority?: 'low' | 'medium' | 'high' | ''
   housekeeping_priority?: 'normal' | 'vip' | 'early_checkin' | 'late_checkout'
   room_type?:
-    | 'standard'
-    | 'suite'
-    | 'luxo'
     | 'Single'
     | 'Duplo/Casal'
     | 'Casal'
@@ -31,6 +18,11 @@ export interface RoomRecord {
     | string
   floor: number
   assigned_staff?: string
+  max_occupancy?: number
+  bed_count?: number
+  allow_extra_bed?: boolean
+  appliances?: string[]
+  base_rate?: number
   created: string
   updated: string
 }
@@ -40,3 +32,6 @@ export const getRooms = () =>
 
 export const updateRoom = (id: string, data: Partial<RoomRecord>) =>
   pb.collection('rooms').update<RoomRecord>(id, data)
+
+export const createRoom = (data: Partial<RoomRecord>) =>
+  pb.collection('rooms').create<RoomRecord>(data)
