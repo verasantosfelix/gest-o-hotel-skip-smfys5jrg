@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { z } from 'zod'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { CalendarIcon, Plus, Trash2, Check, ChevronsUpDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -165,6 +165,7 @@ export function CreateReservationDialog({
   const checkOut = form.watch('checkOut')
   const selectedRooms = form.watch('rooms')
   const billingType = form.watch('billingType')
+  const nights = checkIn && checkOut && checkOut > checkIn ? differenceInDays(checkOut, checkIn) : 0
   const isCreatingGuest = form.watch('isCreatingGuest')
   const isCreatingCompany = form.watch('isCreatingCompany')
   const guestId = form.watch('guestId')
@@ -190,7 +191,7 @@ export function CreateReservationDialog({
       const outStr = format(checkOut, 'yyyy-MM-dd')
       pb.collection('reservations')
         .getFullList({
-          filter: `status != 'cancelado' && status != 'checked_out' && check_in < "${outStr}" && check_out > "${inStr}"`,
+          filter: `(status = 'previsto' || status = 'in_house') && check_in < "${outStr}" && check_out > "${inStr}"`,
         })
         .then(setOverlappingRes)
         .catch(() => {})
@@ -198,6 +199,22 @@ export function CreateReservationDialog({
       setOverlappingRes([])
     }
   }, [checkIn, checkOut])
+
+  useEffect(() => {
+    if (nights > 0 && roomsList.length > 0) {
+      const currentRooms = form.getValues('rooms')
+      currentRooms.forEach((r, index) => {
+        if (r.roomId) {
+          const room = roomsList.find((rm) => rm.id === r.roomId)
+          if (room) {
+            form.setValue(`rooms.${index}.rate`, (room.base_rate || 0) * nights, {
+              shouldValidate: true,
+            })
+          }
+        }
+      })
+    }
+  }, [nights, roomsList, form])
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
     try {
@@ -262,7 +279,13 @@ export function CreateReservationDialog({
 
   const getAvailableRooms = (typology: string) => {
     return roomsList.filter((r) => {
-      if (r.status === 'maintenance' || r.status === 'out_of_order') return false
+      if (
+        r.status === 'Ocupado' ||
+        r.status === 'Manutenção' ||
+        r.status === 'maintenance' ||
+        r.status === 'out_of_order'
+      )
+        return false
       if (typology && r.room_type !== typology) return false
       if (overlappingRes.some((ov) => ov.room_id === r.id)) return false
       if (selectedRooms.some((sr) => sr.roomId === r.id)) return false
@@ -271,6 +294,7 @@ export function CreateReservationDialog({
   }
 
   const physicalGuests = guests.filter((g) => !g.company_name)
+  const totalGeral = selectedRooms.reduce((acc, curr) => acc + (Number(curr.rate) || 0), 0)
   const corporateGuests = guests.filter((g) => g.company_name)
   const selectedGuest = guests.find((g) => g.id === guestId)
   const selectedCompany = guests.find((g) => g.id === companyId)
@@ -832,7 +856,19 @@ export function CreateReservationDialog({
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Quarto Disponível</FormLabel>
                               <Select
-                                onValueChange={f.onChange}
+                                onValueChange={(val) => {
+                                  f.onChange(val)
+                                  const room = roomsList.find((rm) => rm.id === val)
+                                  if (room && nights > 0) {
+                                    form.setValue(
+                                      `rooms.${index}.rate`,
+                                      (room.base_rate || 0) * nights,
+                                      {
+                                        shouldValidate: true,
+                                      },
+                                    )
+                                  }
+                                }}
                                 value={f.value}
                                 disabled={!typology}
                               >
@@ -849,7 +885,7 @@ export function CreateReservationDialog({
                                   )}
                                   {availableRooms.map((r) => (
                                     <SelectItem key={r.id} value={r.id} className="text-xs">
-                                      Q.{r.room_number} ({r.status})
+                                      {r.bloco}-{r.room_number}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -865,7 +901,23 @@ export function CreateReservationDialog({
                           render={({ field: f }) => (
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Tarifa Aplicada</FormLabel>
-                              <Select onValueChange={f.onChange} value={f.value}>
+                              <Select
+                                onValueChange={(val) => {
+                                  f.onChange(val)
+                                  const roomId = form.getValues(`rooms.${index}.roomId`)
+                                  const room = roomsList.find((rm) => rm.id === roomId)
+                                  if (room && nights > 0) {
+                                    form.setValue(
+                                      `rooms.${index}.rate`,
+                                      (room.base_rate || 0) * nights,
+                                      {
+                                        shouldValidate: true,
+                                      },
+                                    )
+                                  }
+                                }}
+                                value={f.value}
+                              >
                                 <FormControl>
                                   <SelectTrigger className="bg-white h-8 text-xs">
                                     <SelectValue placeholder="Cobrar como..." />
@@ -944,10 +996,18 @@ export function CreateReservationDialog({
               )}
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 mt-4 border-t">
+              <div className="text-sm font-semibold text-slate-700">
+                Total Geral ({nights} {nights === 1 ? 'noite' : 'noites'}):
+                <span className="text-lg text-emerald-700 ml-2">
+                  {new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(
+                    totalGeral,
+                  )}
+                </span>
+              </div>
               <Button
                 type="submit"
-                className="bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto px-8"
+                className="bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto px-8 mt-4 sm:mt-0"
                 disabled={isSubmitting || !checkIn || !checkOut}
               >
                 {isSubmitting ? 'A Processar...' : 'Confirmar Reserva'}
