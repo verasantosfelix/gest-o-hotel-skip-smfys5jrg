@@ -46,7 +46,15 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>
 
-export function EditUserDialog({ user, profiles = [] }: { user: any; profiles?: any[] }) {
+export function EditUserDialog({
+  user,
+  profiles = [],
+  trigger,
+}: {
+  user: any
+  profiles?: any[]
+  trigger?: React.ReactNode
+}) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -151,9 +159,11 @@ export function EditUserDialog({ user, profiles = [] }: { user: any; profiles?: 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Editar Perfil">
-          <Edit2 className="w-4 h-4 text-slate-500" />
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Editar Perfil">
+            <Edit2 className="w-4 h-4 text-slate-500" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>

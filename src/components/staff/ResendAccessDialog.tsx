@@ -14,7 +14,7 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { resendAccessEmail } from '@/services/staff'
 
-export function ResendAccessDialog({ user }: { user: any }) {
+export function ResendAccessDialog({ user, trigger }: { user: any; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -50,9 +50,16 @@ export function ResendAccessDialog({ user }: { user: any }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 w-8 p-0" title="Enviar E-mail de Acesso">
-          <Mail className="w-4 h-4 text-slate-500" />
-        </Button>
+        {trigger || (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            title="Enviar E-mail de Acesso"
+          >
+            <Mail className="w-4 h-4 text-slate-500" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
