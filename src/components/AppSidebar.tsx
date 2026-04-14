@@ -153,7 +153,6 @@ const navGroups = [
       { name: 'Segurança', url: '/seguranca', icon: ShieldAlert, requiresManager: true },
       { name: 'Auditoria', url: '/auditoria', icon: History, requiresManager: true },
       { name: 'Relatórios', url: '/relatorios', icon: FileText, requiresManager: true },
-      { name: 'Tarifas', url: '/tarifas', icon: Tags, requiresManager: true },
       { name: 'Tarifário', url: '/tarifario', icon: Landmark, requiresManager: true },
       { name: 'Alçadas (Aprovações)', url: '/alcadas', icon: ShieldCheck, requiresManager: true },
       { name: 'Analytics', url: '/analytics', icon: BarChart, requiresManager: true },

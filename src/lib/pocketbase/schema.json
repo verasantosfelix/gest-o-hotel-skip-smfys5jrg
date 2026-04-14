@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T21:39:37.208Z",
+  "generatedAt": "2026-04-14T21:51:35.849Z",
   "collections": [
     {
       "name": "users",
@@ -4048,6 +4048,53 @@
         }
       ],
       "indexes": ["CREATE UNIQUE INDEX idx_room_type_configs_name ON room_type_configs (name)"]
+    },
+    {
+      "name": "room_discounts",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["percentage", "fixed_amount"]
+        },
+        {
+          "name": "value",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }

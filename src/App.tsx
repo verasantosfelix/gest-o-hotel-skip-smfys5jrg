@@ -104,7 +104,6 @@ import GuestComms from './pages/GuestComms'
 import AIConcierge from './pages/AIConcierge'
 import FinanceCorporate from './pages/FinanceCorporate'
 import NightAudit from './pages/NightAudit'
-import Rates from './pages/Rates'
 import Tarifario from './pages/Tarifario'
 
 import HRIntelligence from './pages/HRIntelligence'
@@ -178,7 +177,6 @@ const App = () => {
                           <Route path="/manutencao" element={<Maintenance />} />
                           <Route path="/seguranca" element={<Security />} />
                           <Route path="/revenue" element={<Revenue />} />
-                          <Route path="/tarifas" element={<Rates />} />
                           <Route path="/tarifario" element={<Tarifario />} />
                           <Route path="/mobilidade" element={<TechMobility />} />
                           <Route path="/ia-governanca" element={<AIGovernance />} />
