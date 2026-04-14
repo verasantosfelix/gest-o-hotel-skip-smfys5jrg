@@ -35,3 +35,5 @@ export const updateRoom = (id: string, data: Partial<RoomRecord>) =>
 
 export const createRoom = (data: Partial<RoomRecord>) =>
   pb.collection('rooms').create<RoomRecord>(data)
+
+export const deleteRoom = (id: string) => pb.collection('rooms').delete(id)
