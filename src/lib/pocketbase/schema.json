@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T11:06:26.039Z",
+  "generatedAt": "2026-04-14T11:10:56.025Z",
   "collections": [
     {
       "name": "users",
@@ -386,6 +386,18 @@
         {
           "name": "last_interaction_date",
           "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "document_id",
+          "type": "text",
           "required": false,
           "system": false
         }
@@ -1531,6 +1543,19 @@
         {
           "name": "signature_file",
           "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "guest_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "guest_loyalty"
+        },
+        {
+          "name": "total_value",
+          "type": "number",
           "required": false,
           "system": false
         }

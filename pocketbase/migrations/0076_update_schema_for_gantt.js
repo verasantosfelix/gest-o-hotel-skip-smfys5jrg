@@ -43,14 +43,17 @@ migrate(
         app.save(guest)
       }
 
-      const resList = app.findRecordsByFilter('reservations', "guest_id = ''", '', 50, 0)
-      for (let r of resList) {
-        r.set('guest_id', guest.id)
-        if (!r.get('total_value')) {
-          r.set('total_value', 1500.0)
-        }
-        app.save(r)
-      }
+      app
+        .db()
+        .newQuery(`
+        UPDATE reservations 
+        SET 
+          guest_id = {:guestId},
+          total_value = CASE WHEN total_value IS NULL OR total_value = 0 THEN 1500.0 ELSE total_value END
+        WHERE guest_id = '' OR guest_id IS NULL
+      `)
+        .bind({ guestId: guest.id })
+        .execute()
     } catch (err) {
       console.log('Error seeding data:', err)
     }
