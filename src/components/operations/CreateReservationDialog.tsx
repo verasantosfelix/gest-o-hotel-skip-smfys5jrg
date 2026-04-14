@@ -361,8 +361,10 @@ export function CreateReservationDialog({
     })
   }
 
-  const getAvailableRooms = (typology: string, currentIndex: number) => {
+  const getAvailableRooms = (typology: string, currentIndex: number, currentRoomId?: string) => {
     return roomsList.filter((r) => {
+      if (currentRoomId && r.id === currentRoomId) return true
+
       if (
         r.status === 'Ocupado' ||
         r.status === 'Manutenção' ||
@@ -1089,7 +1091,8 @@ export function CreateReservationDialog({
                 <div className="space-y-3">
                   {fields.map((field, index) => {
                     const typology = form.watch(`rooms.${index}.typology`)
-                    const availableRooms = getAvailableRooms(typology, index)
+                    const currentRoomId = form.watch(`rooms.${index}.roomId`)
+                    const availableRooms = getAvailableRooms(typology, index, currentRoomId)
 
                     return (
                       <div
