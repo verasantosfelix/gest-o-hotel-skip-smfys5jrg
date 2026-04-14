@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format, differenceInDays } from 'date-fns'
-import { CalendarIcon, Check, ChevronsUpDown, UserPlus, AlertCircle, Building2 } from 'lucide-react'
+import { format } from 'date-fns'
+import { CalendarIcon, Plus, Trash2, Check, ChevronsUpDown, User, Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Command,
   CommandEmpty,
@@ -33,32 +34,69 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/ui/use-toast'
 import { getRooms, RoomRecord } from '@/services/rooms'
 import { getLoyalty, createLoyalty, GuestLoyalty } from '@/services/guest_loyalty'
 import { createReservation } from '@/services/reservations'
 import pb from '@/lib/pocketbase/client'
-import { useAccess } from '@/hooks/use-access'
+
+const roomSchema = z.object({
+  typology: z.string().min(1, 'Obrigatório'),
+  roomId: z.string().min(1, 'Obrigatório'),
+  guestsCount: z.number().min(1, 'Mínimo 1'),
+  rate: z.number().min(0, 'Inválido'),
+})
 
 const schema = z
   .object({
-    guestName: z.string().min(2, 'Nome obrigatório'),
-    isNewGuest: z.boolean().default(false),
+    guestType: z.enum(['fisico', 'corporativo']),
+
+    guestName: z.string().optional(),
     guestEmail: z.string().email('Email inválido').optional().or(z.literal('')),
+    guestPhone: z.string().optional(),
+    guestDocument: z.string().optional(),
+    associatedCompany: z.string().optional(),
+
     companyName: z.string().optional(),
     vatNumber: z.string().optional(),
-    roomId: z.string().min(1, 'Quarto obrigatório'),
-    checkIn: z.date({ required_error: 'Check-in obrigatório' }),
-    checkOut: z.date({ required_error: 'Check-out obrigatório' }),
-    isVip: z.boolean().default(false),
-    isCorporate: z.boolean().default(false),
-    totalAmount: z.number().min(0, 'Valor inválido'),
+
+    checkIn: z.date({ required_error: 'Obrigatório' }),
+    checkOut: z.date({ required_error: 'Obrigatório' }),
+
+    rooms: z.array(roomSchema).min(1, 'Adicione pelo menos um quarto'),
   })
-  .refine((data) => data.checkOut >= data.checkIn, {
-    message: 'Check-out inválido',
+  .refine((data) => data.checkOut > data.checkIn, {
+    message: 'Check-out deve ser posterior ao Check-in',
     path: ['checkOut'],
   })
+  .refine(
+    (data) => {
+      if (data.guestType === 'fisico') return !!data.guestName && data.guestName.length >= 2
+      return true
+    },
+    { message: 'Nome obrigatório', path: ['guestName'] },
+  )
+  .refine(
+    (data) => {
+      if (data.guestType === 'corporativo')
+        return !!data.companyName && data.companyName.length >= 2
+      return true
+    },
+    { message: 'Nome da empresa obrigatório', path: ['companyName'] },
+  )
+
+const ROOM_TYPOLOGIES = [
+  'Single',
+  'Duplo/Casal',
+  'Casal',
+  'Especial',
+  'Quádruplo',
+  'Vivenda T1',
+  'Vivenda T2',
+  'standard',
+  'suite',
+  'luxo',
+]
 
 export function CreateReservationDialog({
   open,
@@ -67,358 +105,164 @@ export function CreateReservationDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
-  const [rooms, setRooms] = useState<RoomRecord[]>([])
+  const [roomsList, setRoomsList] = useState<RoomRecord[]>([])
   const [guests, setGuests] = useState<GuestLoyalty[]>([])
-  const [guestPopOpen, setGuestPopOpen] = useState(false)
-  const [isAvailable, setIsAvailable] = useState(true)
-  const [availabilityMsg, setAvailabilityMsg] = useState('')
-
-  const { isManager } = useAccess()
-  const managerAccess = isManager()
+  const [overlappingRes, setOverlappingRes] = useState<any[]>([])
+  const [companyPopOpen, setCompanyPopOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { isNewGuest: false, isVip: false, isCorporate: false, totalAmount: 0 },
+    defaultValues: {
+      guestType: 'fisico',
+      rooms: [{ typology: '', roomId: '', guestsCount: 1, rate: 0 }],
+    },
   })
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'rooms',
+  })
+
+  const guestType = form.watch('guestType')
   const checkIn = form.watch('checkIn')
   const checkOut = form.watch('checkOut')
-  const roomId = form.watch('roomId')
-  const isVip = form.watch('isVip')
-  const isCorporate = form.watch('isCorporate')
-  const guestName = form.watch('guestName')
-  const isNewGuest = form.watch('isNewGuest')
+  const selectedRooms = form.watch('rooms')
 
   useEffect(() => {
     if (open) {
-      getRooms().then((rs) => setRooms(rs.filter((r) => !['out_of_order'].includes(r.status))))
+      getRooms().then(setRoomsList)
       getLoyalty().then(setGuests)
-      form.reset()
-      setIsAvailable(true)
-      setAvailabilityMsg('')
+      form.reset({
+        guestType: 'fisico',
+        rooms: [{ typology: '', roomId: '', guestsCount: 1, rate: 0 }],
+      })
+      setOverlappingRes([])
     }
   }, [open, form])
 
   useEffect(() => {
-    if (checkIn && checkOut && roomId) {
-      const room = rooms.find((r) => r.id === roomId)
-      if (!room) return
-
-      const type = room.room_type || 'standard'
-      let baseRate = 100
-      if (type === 'suite') baseRate = 250
-      if (type === 'luxo') baseRate = 500
-
-      const nights = Math.max(1, differenceInDays(checkOut, checkIn))
-      let totalBase = baseRate * nights
-
-      const month = checkIn.getMonth()
-      if ([5, 6, 7, 11].includes(month)) {
-        totalBase = totalBase * 1.2
-      }
-
-      let discount = 0
-      const guest = guests.find((g) => g.guest_name === guestName)
-      const isGold = guest?.tier === 'Gold'
-
-      if (isGold || isVip) discount = 0.15
-      else if (isCorporate) discount = 0.1
-
-      const finalAmount = totalBase * (1 - discount)
-      form.setValue('totalAmount', parseFloat(finalAmount.toFixed(2)))
-    }
-  }, [checkIn, checkOut, roomId, isVip, isCorporate, guestName, rooms, guests, form])
-
-  useEffect(() => {
-    const checkAvailability = async () => {
-      if (!checkIn || !checkOut || !roomId) {
-        setIsAvailable(true)
-        setAvailabilityMsg('')
-        return
-      }
-
-      const room = rooms.find((r) => r.id === roomId)
-      if (room?.status === 'maintenance') {
-        setIsAvailable(false)
-        setAvailabilityMsg('Quarto indisponível para o período selecionado ou em manutenção.')
-        return
-      }
-
+    if (checkIn && checkOut && checkOut > checkIn) {
       const inStr = format(checkIn, 'yyyy-MM-dd')
       const outStr = format(checkOut, 'yyyy-MM-dd')
-
-      try {
-        const overlaps = await pb.collection('reservations').getFullList({
-          filter: `room_id = "${roomId}" && status != 'cancelado' && status != 'checked_out' && check_in < "${outStr}" && check_out > "${inStr}"`,
+      pb.collection('reservations')
+        .getFullList({
+          filter: `status != 'cancelado' && status != 'checked_out' && check_in < "${outStr}" && check_out > "${inStr}"`,
         })
-
-        if (overlaps.length > 0) {
-          setIsAvailable(false)
-          setAvailabilityMsg('Quarto indisponível para o período selecionado ou em manutenção.')
-        } else {
-          setIsAvailable(true)
-          setAvailabilityMsg('')
-        }
-      } catch (e) {
-        console.error('Error checking availability', e)
-      }
+        .then(setOverlappingRes)
+        .catch(() => {})
+    } else {
+      setOverlappingRes([])
     }
-
-    checkAvailability()
-  }, [checkIn, checkOut, roomId, rooms])
+  }, [checkIn, checkOut])
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
     try {
-      if (v.isNewGuest) {
-        await createLoyalty({
-          guest_name: v.guestName,
-          email: v.guestEmail,
-          company_name: v.companyName,
-          vat_number: v.vatNumber,
-          points: 0,
-          tier: 'Basic',
+      setIsSubmitting(true)
+      let guestId = ''
+
+      if (v.guestType === 'fisico') {
+        const existing = guests.find(
+          (g) =>
+            g.guest_name.toLowerCase() === v.guestName?.toLowerCase() &&
+            g.document_id === v.guestDocument,
+        )
+        if (existing) {
+          guestId = existing.id
+        } else {
+          const newG = await createLoyalty({
+            guest_name: v.guestName,
+            email: v.guestEmail,
+            phone: v.guestPhone,
+            document_id: v.guestDocument,
+            company_name: v.associatedCompany,
+            tier: 'Basic',
+          })
+          guestId = newG.id
+        }
+      } else {
+        const existing = guests.find(
+          (g) => g.company_name?.toLowerCase() === v.companyName?.toLowerCase(),
+        )
+        if (existing) {
+          guestId = existing.id
+        } else {
+          const newG = await createLoyalty({
+            guest_name: v.companyName,
+            company_name: v.companyName,
+            vat_number: v.vatNumber,
+            email: v.guestEmail,
+            phone: v.guestPhone,
+            tier: 'Corporate',
+          })
+          guestId = newG.id
+        }
+      }
+
+      for (const r of v.rooms) {
+        await createReservation({
+          guest_name: v.guestType === 'fisico' ? v.guestName : v.companyName,
+          guest_id: guestId,
+          room_id: r.roomId,
+          check_in: format(v.checkIn, 'yyyy-MM-dd'),
+          check_out: format(v.checkOut, 'yyyy-MM-dd'),
+          status: 'previsto',
+          is_corporate: v.guestType === 'corporativo',
+          balance: r.rate,
+          total_value: r.rate,
+          guests_count: r.guestsCount,
         })
       }
 
-      await createReservation({
-        guest_name: v.guestName,
-        room_id: v.roomId,
-        check_in: format(v.checkIn, 'yyyy-MM-dd'),
-        check_out: format(v.checkOut, 'yyyy-MM-dd'),
-        status: 'previsto',
-        is_vip: v.isVip,
-        is_corporate: v.isCorporate,
-        balance: v.totalAmount,
-      })
-      toast({ title: 'Sucesso', description: 'Reserva criada com sucesso!' })
+      toast({ title: 'Sucesso', description: 'Reserva(s) criada(s) com sucesso!' })
       onOpenChange(false)
     } catch (err) {
+      console.error(err)
       toast({ title: 'Erro', description: 'Erro ao criar reserva.', variant: 'destructive' })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const getAvailableRooms = (typology: string) => {
+    return roomsList.filter((r) => {
+      if (r.status === 'maintenance' || r.status === 'out_of_order') return false
+      if (typology && r.room_type !== typology) return false
+
+      const isOverlapping = overlappingRes.some((ov) => ov.room_id === r.id)
+      if (isOverlapping) return false
+
+      const isSelected = selectedRooms.some((sr) => sr.roomId === r.id)
+      if (isSelected) return false
+
+      return true
+    })
+  }
+
+  const corporateGuests = guests.filter((g) => g.company_name)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Reserva & Check-in Rápido</DialogTitle>
+          <DialogTitle className="text-xl">Nova Reserva Avançada</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {!isAvailable && availabilityMsg && (
-              <div className="bg-destructive/15 text-destructive p-3 rounded-md flex items-center gap-2 text-sm animate-fade-in">
-                <AlertCircle className="w-4 h-4" />
-                {availabilityMsg}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="guestName"
-                render={({ field }) => (
-                  <FormItem className="col-span-2 sm:col-span-1 flex flex-col pt-2">
-                    <FormLabel>Hóspede</FormLabel>
-                    {!isNewGuest ? (
-                      <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                'justify-between font-normal',
-                                !field.value && 'text-muted-foreground',
-                              )}
-                            >
-                              {field.value || 'Buscar hóspede...'}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0">
-                          <Command>
-                            <CommandInput placeholder="Buscar..." />
-                            <CommandList>
-                              <CommandEmpty>
-                                <Button
-                                  variant="ghost"
-                                  className="w-full justify-start text-emerald-600"
-                                  onClick={() => {
-                                    form.setValue('isNewGuest', true)
-                                    form.setValue('guestName', '')
-                                    setGuestPopOpen(false)
-                                  }}
-                                >
-                                  <UserPlus className="mr-2 h-4 w-4" /> Criar Novo Hóspede
-                                </Button>
-                              </CommandEmpty>
-                              <CommandGroup>
-                                {guests.map((g) => (
-                                  <CommandItem
-                                    key={g.id}
-                                    value={g.guest_name}
-                                    onSelect={(val) => {
-                                      const s = guests.find(
-                                        (x) => x.guest_name.toLowerCase() === val.toLowerCase(),
-                                      )
-                                      form.setValue('guestName', s?.guest_name || val)
-                                      setGuestPopOpen(false)
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        'mr-2 h-4 w-4',
-                                        g.guest_name === field.value ? 'opacity-100' : 'opacity-0',
-                                      )}
-                                    />
-                                    {g.guest_name}
-                                  </CommandItem>
-                                ))}
-                                {guests.length > 0 && (
-                                  <Button
-                                    variant="ghost"
-                                    className="w-full justify-start mt-2 border-t text-emerald-600"
-                                    onClick={() => {
-                                      form.setValue('isNewGuest', true)
-                                      form.setValue('guestName', '')
-                                      setGuestPopOpen(false)
-                                    }}
-                                  >
-                                    <UserPlus className="mr-2 h-4 w-4" /> Criar Novo Hóspede
-                                  </Button>
-                                )}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      <div className="space-y-2">
-                        <Input placeholder="Nome completo" {...field} />
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="h-auto p-0 text-xs text-muted-foreground"
-                          onClick={() => form.setValue('isNewGuest', false)}
-                        >
-                          Cancelar criação e buscar
-                        </Button>
-                      </div>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {isNewGuest && (
-                <FormField
-                  control={form.control}
-                  name="guestEmail"
-                  render={({ field }) => (
-                    <FormItem className="col-span-2 sm:col-span-1 pt-2 animate-fade-in">
-                      <FormLabel>E-mail (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="email@exemplo.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-              {isNewGuest && (
-                <div
-                  className={cn(
-                    'col-span-2 grid grid-cols-2 gap-4 p-4 rounded-lg border',
-                    isCorporate ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100',
-                  )}
-                >
-                  <div className="col-span-2 flex items-center gap-2 mb-1">
-                    <Building2
-                      className={cn('w-4 h-4', isCorporate ? 'text-blue-600' : 'text-slate-500')}
-                    />
-                    <span className="text-sm font-semibold text-slate-700">
-                      Dados Corporativos (Opcional)
-                    </span>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>Empresa</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nome da Empresa"
-                            {...field}
-                            className={isCorporate ? 'bg-white' : ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="vatNumber"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2 sm:col-span-1">
-                        <FormLabel>Contribuinte / NIF</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Número de Contribuinte"
-                            {...field}
-                            className={isCorporate ? 'bg-white' : ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-              <FormField
-                control={form.control}
-                name="roomId"
-                render={({ field }) => (
-                  <FormItem
-                    className={cn('pt-2', isNewGuest ? 'col-span-2' : 'col-span-2 sm:col-span-1')}
-                  >
-                    <FormLabel>Quarto Disponível</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um quarto..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {rooms.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            Q.{r.room_number} - {r.room_type || 'Standard'} (
-                            {r.status.replace('_', ' ')})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
               <FormField
                 control={form.control}
                 name="checkIn"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Check-in</FormLabel>
+                    <FormLabel>Check-in Global</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             className={cn(
-                              'pl-3 text-left font-normal',
+                              'pl-3 text-left font-normal bg-white',
                               !field.value && 'text-muted-foreground',
                             )}
                           >
@@ -449,14 +293,14 @@ export function CreateReservationDialog({
                 name="checkOut"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Check-out</FormLabel>
+                    <FormLabel>Check-out Global</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
                             variant="outline"
                             className={cn(
-                              'pl-3 text-left font-normal',
+                              'pl-3 text-left font-normal bg-white',
                               !field.value && 'text-muted-foreground',
                             )}
                           >
@@ -484,67 +328,378 @@ export function CreateReservationDialog({
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="guestType"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Reserva</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0 border rounded-md p-3 flex-1 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <FormControl>
+                          <RadioGroupItem value="fisico" />
+                        </FormControl>
+                        <User className="w-4 h-4 text-slate-500" />
+                        <FormLabel className="font-normal cursor-pointer w-full">
+                          Hóspede Físico
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0 border rounded-md p-3 flex-1 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <FormControl>
+                          <RadioGroupItem value="corporativo" />
+                        </FormControl>
+                        <Building2 className="w-4 h-4 text-slate-500" />
+                        <FormLabel className="font-normal cursor-pointer w-full">
+                          Faturamento Corporativo
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="totalAmount"
-                render={({ field }) => (
-                  <FormItem className="col-span-2 sm:col-span-1 pt-2">
-                    <FormLabel>Rate Sugerida (USD)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value)
-                          field.onChange(isNaN(val) ? 0 : val)
-                        }}
-                        disabled={!managerAccess}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {guestType === 'fisico' ? (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="guestName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome Completo</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: João Silva" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="guestDocument"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Documento (BI/Passaporte)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nº do Documento" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="guestEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="email@exemplo.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="guestPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+244..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="associatedCompany"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <FormLabel>Empresa Associada (Opcional)</FormLabel>
+                        <Popover open={companyPopOpen} onOpenChange={setCompanyPopOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  'w-full justify-between font-normal',
+                                  !field.value && 'text-muted-foreground',
+                                )}
+                              >
+                                {field.value || 'Buscar empresa...'}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                            <Command>
+                              <CommandInput placeholder="Buscar empresa..." />
+                              <CommandList>
+                                <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                                <CommandGroup>
+                                  {corporateGuests.map((g) => (
+                                    <CommandItem
+                                      key={g.id}
+                                      value={g.company_name || ''}
+                                      onSelect={(val) => {
+                                        form.setValue('associatedCompany', val)
+                                        setCompanyPopOpen(false)
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          'mr-2 h-4 w-4',
+                                          g.company_name === field.value
+                                            ? 'opacity-100'
+                                            : 'opacity-0',
+                                        )}
+                                      />
+                                      {g.company_name}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              ) : (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Empresa</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Acme Corp" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vatNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>NIF / Contribuinte</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nº de Contribuinte" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="guestEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email de Contacto</FormLabel>
+                        <FormControl>
+                          <Input placeholder="contacto@empresa.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="guestPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone de Contacto</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+244..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </div>
 
-            <div className="flex gap-6 py-4 border-t mt-4">
-              <FormField
-                control={form.control}
-                name="isVip"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="cursor-pointer font-normal">Marcar como VIP</FormLabel>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="isCorporate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="cursor-pointer font-normal">
-                      Faturamento Corporativo
-                    </FormLabel>
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg text-slate-800">
+                  Acomodações ({fields.length})
+                </h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ typology: '', roomId: '', guestsCount: 1, rate: 0 })}
+                  className="gap-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                >
+                  <Plus className="w-4 h-4" /> Adicionar Quarto
+                </Button>
+              </div>
+
+              {!checkIn || !checkOut ? (
+                <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200 animate-fade-in">
+                  Por favor, selecione as datas de Check-in e Check-out primeiro para verificar a
+                  disponibilidade.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {fields.map((field, index) => {
+                    const typology = form.watch(`rooms.${index}.typology`)
+                    const availableRooms = getAvailableRooms(typology)
+
+                    return (
+                      <div
+                        key={field.id}
+                        className="grid grid-cols-12 gap-3 items-start p-3 bg-slate-50/50 border rounded-lg animate-fade-in-up"
+                      >
+                        <FormField
+                          control={form.control}
+                          name={`rooms.${index}.typology`}
+                          render={({ field: f }) => (
+                            <FormItem className="col-span-12 sm:col-span-3 space-y-1">
+                              <FormLabel className="text-xs">Tipologia</FormLabel>
+                              <Select
+                                onValueChange={(val) => {
+                                  f.onChange(val)
+                                  form.setValue(`rooms.${index}.roomId`, '')
+                                }}
+                                value={f.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="bg-white">
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {ROOM_TYPOLOGIES.map((t) => (
+                                    <SelectItem key={t} value={t}>
+                                      {t}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`rooms.${index}.roomId`}
+                          render={({ field: f }) => (
+                            <FormItem className="col-span-12 sm:col-span-4 space-y-1">
+                              <FormLabel className="text-xs">Quarto</FormLabel>
+                              <Select
+                                onValueChange={f.onChange}
+                                value={f.value}
+                                disabled={!typology}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="bg-white">
+                                    <SelectValue placeholder="Quarto disponível" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableRooms.length === 0 && (
+                                    <SelectItem value="none" disabled>
+                                      Sem quartos disponíveis
+                                    </SelectItem>
+                                  )}
+                                  {availableRooms.map((r) => (
+                                    <SelectItem key={r.id} value={r.id}>
+                                      Q.{r.room_number} ({r.status.replace('_', ' ')})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`rooms.${index}.guestsCount`}
+                          render={({ field: f }) => (
+                            <FormItem className="col-span-6 sm:col-span-2 space-y-1">
+                              <FormLabel className="text-xs">Hóspedes</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  {...f}
+                                  onChange={(e) => f.onChange(parseInt(e.target.value) || 1)}
+                                  className="bg-white"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`rooms.${index}.rate`}
+                          render={({ field: f }) => (
+                            <FormItem className="col-span-6 sm:col-span-2 space-y-1">
+                              <FormLabel className="text-xs">Tarifa (Total)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  {...f}
+                                  onChange={(e) => f.onChange(parseFloat(e.target.value) || 0)}
+                                  className="bg-white"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="col-span-12 sm:col-span-1 flex justify-end sm:mt-[22px]">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            disabled={fields.length === 1}
+                            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-            <div className="flex justify-end pt-2">
+
+            <div className="flex justify-end pt-4 border-t">
               <Button
                 type="submit"
-                className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
-                disabled={!isAvailable}
+                className="bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto px-8"
+                disabled={isSubmitting || !checkIn || !checkOut}
               >
-                Confirmar Reserva
+                {isSubmitting ? 'A Processar...' : 'Confirmar Reservas'}
               </Button>
             </div>
           </form>

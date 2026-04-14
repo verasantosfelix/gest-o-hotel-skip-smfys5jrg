@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T11:10:56.025Z",
+  "generatedAt": "2026-04-14T14:45:42.318Z",
   "collections": [
     {
       "name": "users",
@@ -1379,7 +1379,18 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["standard", "suite", "luxo"]
+          "selectValues": [
+            "standard",
+            "suite",
+            "luxo",
+            "Single",
+            "Duplo/Casal",
+            "Casal",
+            "Especial",
+            "Quádruplo",
+            "Vivenda T1",
+            "Vivenda T2"
+          ]
         }
       ],
       "indexes": [
@@ -1555,6 +1566,12 @@
         },
         {
           "name": "total_value",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "guests_count",
           "type": "number",
           "required": false,
           "system": false

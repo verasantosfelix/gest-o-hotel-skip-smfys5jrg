@@ -27,6 +27,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import useAuthStore from '@/stores/useAuthStore'
+import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -71,6 +72,7 @@ export default function Rooms() {
   const [rooms, setRooms] = useState<RoomRecord[]>([])
   const [search, setSearch] = useState('')
   const [selectedRoom, setSelectedRoom] = useState<RoomRecord | null>(null)
+  const [newResOpen, setNewResOpen] = useState(false)
 
   const isMaintenance =
     profile?.allowed_actions?.includes('Manutenção') &&
@@ -119,7 +121,18 @@ export default function Rooms() {
     <div className="space-y-6 animate-fade-in pb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mapa de Acomodações</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Mapa de Acomodações</h1>
+            {!isMaintenance && (
+              <Button
+                onClick={() => setNewResOpen(true)}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                Nova Reserva
+              </Button>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">
             {isMaintenance
               ? 'Visão focada em reparos e manutenções pendentes.'
@@ -307,6 +320,8 @@ export default function Rooms() {
           )}
         </DialogContent>
       </Dialog>
+
+      <CreateReservationDialog open={newResOpen} onOpenChange={setNewResOpen} />
     </div>
   )
 }

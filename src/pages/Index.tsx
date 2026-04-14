@@ -39,6 +39,7 @@ import pb from '@/lib/pocketbase/client'
 import { getReservations, updateReservation, PBReservation } from '@/services/reservations'
 import { getRooms, RoomRecord } from '@/services/rooms'
 import { LoginForm } from '@/components/auth/LoginForm'
+import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
 
 export default function Index() {
   const { profile, loadingProfile, profileError, errorDetails, retryLoadProfile, logout } =
@@ -52,6 +53,7 @@ export default function Index() {
 
   const [reservations, setReservations] = useState<PBReservation[]>([])
   const [rooms, setRooms] = useState<RoomRecord[]>([])
+  const [newResOpen, setNewResOpen] = useState(false)
 
   const loadData = async () => {
     try {
@@ -294,13 +296,23 @@ export default function Index() {
 
     return (
       <div className="space-y-6 animate-fade-in-up pb-8">
-        <div className="mb-4">
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Executive Dashboard</h1>
-          <p className="text-slate-500">
-            Visão{' '}
-            {effectiveRoleLevel === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
-            {selectedHotel.name}
-          </p>
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900">
+              Executive Dashboard
+            </h1>
+            <p className="text-slate-500">
+              Visão{' '}
+              {effectiveRoleLevel === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
+              {selectedHotel.name}
+            </p>
+          </div>
+          <Button
+            onClick={() => setNewResOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            Nova Reserva
+          </Button>
         </div>
         <div className="grid lg:grid-cols-4 gap-4 mb-6">
           <Card className="border-slate-200 shadow-sm">
@@ -338,6 +350,7 @@ export default function Index() {
           <h2 className="text-xl font-bold text-slate-800">Visão Geral de Reservas (Gantt)</h2>
           <GanttChart reservations={reservations} rooms={rooms} onMove={handleMoveReservation} />
         </div>
+        <CreateReservationDialog open={newResOpen} onOpenChange={setNewResOpen} />
       </div>
     )
   }
@@ -371,8 +384,16 @@ export default function Index() {
 
         <TabsContent value="dashboard" className="outline-none mt-0 space-y-8">
           <FrontOfficeMain onNavigate={setActiveTab} />
-          <div className="space-y-3 pt-6 border-t border-slate-100">
-            <h2 className="text-lg font-bold text-slate-800">Mapa Global de Ocupação (Gantt)</h2>
+          <div className="space-y-3 pt-6 border-t border-slate-100 relative">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800">Mapa Global de Ocupação (Gantt)</h2>
+              <Button
+                onClick={() => setNewResOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 h-8 text-xs"
+              >
+                Nova Reserva
+              </Button>
+            </div>
             <GanttChart reservations={reservations} rooms={rooms} onMove={handleMoveReservation} />
           </div>
         </TabsContent>
@@ -389,6 +410,7 @@ export default function Index() {
           <FrontOfficeKPIs />
         </TabsContent>
       </Tabs>
+      <CreateReservationDialog open={newResOpen} onOpenChange={setNewResOpen} />
     </div>
   )
 }

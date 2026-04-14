@@ -17,7 +17,18 @@ export interface RoomRecord {
   maintenance_description?: string
   priority?: 'low' | 'medium' | 'high' | ''
   housekeeping_priority?: 'normal' | 'vip' | 'early_checkin' | 'late_checkout'
-  room_type?: string
+  room_type?:
+    | 'standard'
+    | 'suite'
+    | 'luxo'
+    | 'Single'
+    | 'Duplo/Casal'
+    | 'Casal'
+    | 'Especial'
+    | 'Quádruplo'
+    | 'Vivenda T1'
+    | 'Vivenda T2'
+    | string
   floor: number
   assigned_staff?: string
   created: string

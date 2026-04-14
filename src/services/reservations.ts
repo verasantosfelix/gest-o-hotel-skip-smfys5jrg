@@ -12,6 +12,8 @@ export interface PBReservation {
   is_corporate?: boolean
   signature_file?: string
   balance: number
+  total_value?: number
+  guests_count?: number
   document_digitalization?: string
   created: string
   updated: string

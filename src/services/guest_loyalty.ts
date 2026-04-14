@@ -12,6 +12,8 @@ export interface GuestLoyalty {
   consent_signature?: string
   room_preferences?: string
   last_interaction_date?: string
+  phone?: string
+  document_id?: string
   created: string
   updated: string
 }
