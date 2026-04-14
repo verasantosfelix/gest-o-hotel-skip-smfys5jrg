@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import {
   BedDouble,
@@ -13,12 +13,27 @@ import {
   LogOut,
   ChevronDown,
   ChevronUp,
+  CalendarPlus,
+  PenTool,
+  UserPlus,
+  Utensils,
+  Wrench,
+  Clock as ClockIcon,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 
 import useAuthStore from '@/stores/useAuthStore'
@@ -40,6 +55,7 @@ import { getReservations, updateReservation, PBReservation } from '@/services/re
 import { getRooms, RoomRecord } from '@/services/rooms'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { CreateReservationDialog } from '@/components/operations/CreateReservationDialog'
+import { format } from 'date-fns'
 
 export default function Index() {
   const { profile, loadingProfile, profileError, errorDetails, retryLoadProfile, logout } =
@@ -53,16 +69,24 @@ export default function Index() {
 
   const [reservations, setReservations] = useState<PBReservation[]>([])
   const [rooms, setRooms] = useState<RoomRecord[]>([])
+  const [maintenanceTickets, setMaintenanceTickets] = useState<any[]>([])
+  const [recentFbOrders, setRecentFbOrders] = useState<any[]>([])
   const [newResOpen, setNewResOpen] = useState(false)
 
   const loadData = async () => {
     try {
-      const [res, rms] = await Promise.all([
+      const [res, rms, maint, fb] = await Promise.all([
         pb.collection('reservations').getFullList({ expand: 'guest_id' }),
         getRooms(),
+        pb
+          .collection('maintenance_tickets')
+          .getFullList({ filter: 'status = "open" || priority = "urgent"' }),
+        pb.collection('fb_orders').getList(1, 5, { sort: '-created', expand: 'table_id,room_id' }),
       ])
       setReservations(res as any)
       setRooms(rms)
+      setMaintenanceTickets(maint)
+      setRecentFbOrders(fb.items)
     } catch (e) {
       console.error(e)
     }
@@ -95,6 +119,8 @@ export default function Index() {
   })
   useRealtime('reservations', loadData)
   useRealtime('rooms', loadData)
+  useRealtime('maintenance_tickets', loadData)
+  useRealtime('fb_orders', loadData)
 
   const handleMoveReservation = async (
     id: string,
@@ -294,32 +320,32 @@ export default function Index() {
       (r) => r.check_in.startsWith(todayStr) && r.status === 'previsto',
     ).length
 
+    const revPar = 450 // Static mock for now
+
     return (
       <div className="space-y-6 animate-fade-in-up pb-8">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-slate-900">
-              Executive Dashboard
+              Operations Dashboard
             </h1>
             <p className="text-slate-500">
-              Visão{' '}
-              {effectiveRoleLevel === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Operacional'} -{' '}
+              Visão {effectiveRoleLevel === 'Director_Geral' ? 'Estratégica (Leitura)' : 'Geral'} -{' '}
               {selectedHotel.name}
             </p>
           </div>
-          <Button
-            onClick={() => setNewResOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700"
-          >
-            Nova Reserva
-          </Button>
         </div>
+
+        {/* Real-time Status Widgets */}
         <div className="grid lg:grid-cols-4 gap-4 mb-6">
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-6">
               <BedDouble className="w-6 h-6 mb-2 text-blue-600" />
               <p className="text-sm font-bold text-slate-600">Ocupação Global</p>
-              <p className="text-3xl font-black text-slate-800 mt-1">{occupancy}%</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl font-black text-slate-800">{occupancy}%</p>
+                <p className="text-sm text-slate-500 font-medium">{inHouseCount} quartos</p>
+              </div>
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">
@@ -331,19 +357,163 @@ export default function Index() {
           </Card>
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-6">
-              <Sparkles className="w-6 h-6 mb-2 text-amber-500" />
-              <p className="text-sm font-bold text-slate-600">Limpeza Pendente</p>
-              <p className="text-3xl font-black text-slate-800 mt-1">12</p>
+              <Wrench className="w-6 h-6 mb-2 text-amber-500" />
+              <p className="text-sm font-bold text-slate-600">Alertas de Manutenção</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="text-3xl font-black text-slate-800">{maintenanceTickets.length}</p>
+                <p className="text-sm text-slate-500 font-medium">pendentes</p>
+              </div>
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-6">
               <LayoutGrid className="w-6 h-6 mb-2 text-purple-600" />
               <p className="text-sm font-bold text-slate-600">RevPAR Atual</p>
-              <p className="text-3xl font-black text-slate-800 mt-1">R$ 450</p>
+              <p className="text-3xl font-black text-slate-800 mt-1">R$ {revPar}</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Action Command Center & Recent Orders */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-4">
+            <h2 className="text-xl font-bold text-slate-800">Ações Rápidas</h2>
+            <div className="grid grid-cols-1 gap-3">
+              <Button
+                size="lg"
+                onClick={() => setNewResOpen(true)}
+                className="w-full justify-start h-16 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 hover:text-indigo-600 shadow-sm"
+              >
+                <div className="bg-indigo-100 p-2 rounded-md mr-4 text-indigo-600">
+                  <CalendarPlus className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <div className="font-bold">Nova Reserva</div>
+                  <div className="text-xs text-slate-500 font-normal">Agendar novo hóspede</div>
+                </div>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="w-full justify-start h-16 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 hover:text-rose-600 shadow-sm"
+              >
+                <Link to="/maintenance/new">
+                  <div className="bg-rose-100 p-2 rounded-md mr-4 text-rose-600">
+                    <PenTool className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold">Ticket de Manutenção</div>
+                    <div className="text-xs text-slate-500 font-normal">
+                      Reportar problema no quarto
+                    </div>
+                  </div>
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="w-full justify-start h-16 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 hover:text-emerald-600 shadow-sm"
+              >
+                <Link to="/hospedes">
+                  <div className="bg-emerald-100 p-2 rounded-md mr-4 text-emerald-600">
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold">Novo Hóspede</div>
+                    <div className="text-xs text-slate-500 font-normal">
+                      Cadastrar ficha de hóspede
+                    </div>
+                  </div>
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="w-full justify-start h-16 bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 hover:text-amber-600 shadow-sm"
+              >
+                <Link to="/fb/room-service">
+                  <div className="bg-amber-100 p-2 rounded-md mr-4 text-amber-600">
+                    <Utensils className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold">Room Service</div>
+                    <div className="text-xs text-slate-500 font-normal">Lançar pedido de F&B</div>
+                  </div>
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <Card className="h-full flex flex-col shadow-sm border-slate-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Utensils className="w-5 h-5 text-amber-500" />
+                  Pedidos Recentes (F&B)
+                </CardTitle>
+                <CardDescription>
+                  Últimos 5 pedidos processados no restaurante ou room service
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1">
+                {recentFbOrders.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-500 py-8">
+                    <ClockIcon className="w-8 h-8 mb-2 opacity-50" />
+                    <p>Nenhum pedido recente.</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hora</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Mesa/Quarto</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentFbOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-mono text-xs">
+                            {format(new Date(order.created), 'HH:mm')}
+                          </TableCell>
+                          <TableCell className="capitalize">
+                            {order.type.replace('_', ' ')}
+                          </TableCell>
+                          <TableCell>
+                            {order.type === 'table'
+                              ? `Mesa ${order.expand?.table_id?.table_number || '-'}`
+                              : `Qto ${order.expand?.room_id?.room_number || '-'}`}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                order.status === 'delivered' || order.status === 'closed'
+                                  ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
+                                  : 'border-amber-200 text-amber-700 bg-amber-50'
+                              }
+                            >
+                              {order.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-slate-700">
+                            {new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(order.total_amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         <FinancialDashboard />
 
         <div className="mt-8 space-y-3">
