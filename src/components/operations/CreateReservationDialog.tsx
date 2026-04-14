@@ -361,7 +361,7 @@ export function CreateReservationDialog({
     })
   }
 
-  const getAvailableRooms = (typology: string) => {
+  const getAvailableRooms = (typology: string, currentIndex: number) => {
     return roomsList.filter((r) => {
       if (
         r.status === 'Ocupado' ||
@@ -372,7 +372,7 @@ export function CreateReservationDialog({
         return false
       if (typology && r.room_type !== typology) return false
       if (overlappingRes.some((ov) => ov.room_id === r.id)) return false
-      if (selectedRooms.some((sr) => sr.roomId === r.id)) return false
+      if (selectedRooms.some((sr, idx) => idx !== currentIndex && sr.roomId === r.id)) return false
       return true
     })
   }
@@ -1089,7 +1089,7 @@ export function CreateReservationDialog({
                 <div className="space-y-3">
                   {fields.map((field, index) => {
                     const typology = form.watch(`rooms.${index}.typology`)
-                    const availableRooms = getAvailableRooms(typology)
+                    const availableRooms = getAvailableRooms(typology, index)
 
                     return (
                       <div
