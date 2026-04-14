@@ -45,18 +45,18 @@ import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import pb from '@/lib/pocketbase/client'
 
 const roomSchema = z.object({
-  typology: z.string().min(1, 'Obrigatório'),
-  roomId: z.string().min(1, 'Obrigatório'),
+  typology: z.string().min(1, 'Selecione uma tipologia'),
+  roomId: z.string().min(1, 'Selecione um quarto'),
   discountId: z.string().optional(),
-  guestsCount: z.number().min(1, 'Mínimo 1'),
-  rate: z.number().min(0, 'Inválido'),
+  guestsCount: z.number().min(1, 'Mínimo 1 hóspede'),
+  rate: z.number().min(0, 'Valor inválido'),
 })
 
 const schema = z
   .object({
     reservationType: z.enum(['individual', 'corporate']).default('individual'),
-    checkIn: z.date({ required_error: 'Obrigatório' }),
-    checkOut: z.date({ required_error: 'Obrigatório' }),
+    checkIn: z.date({ required_error: 'Data de check-in obrigatória' }),
+    checkOut: z.date({ required_error: 'Data de check-out obrigatória' }),
     isCreatingGuest: z.boolean(),
     guestId: z.string().optional(),
     guestName: z.string().optional(),
@@ -77,16 +77,16 @@ const schema = z
     if (data.checkOut && data.checkIn && data.checkOut <= data.checkIn) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Check-out deve ser posterior',
+        message: 'O check-out deve ser posterior ao check-in',
         path: ['checkOut'],
       })
     }
     if (data.reservationType === 'corporate') {
       if (data.isCreatingCompany) {
-        if (!data.companyName || data.companyName.length < 2) {
+        if (!data.companyName || data.companyName.trim().length < 2) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Nome da empresa obrigatório',
+            message: 'O nome da empresa é obrigatório',
             path: ['companyName'],
           })
         }
@@ -101,10 +101,10 @@ const schema = z
       }
     } else {
       if (data.isCreatingGuest) {
-        if (!data.guestName || data.guestName.length < 2) {
+        if (!data.guestName || data.guestName.trim().length < 2) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Nome obrigatório',
+            message: 'O nome do hóspede é obrigatório',
             path: ['guestName'],
           })
         }
@@ -119,10 +119,10 @@ const schema = z
       }
       if (data.billingType === 'empresa' || data.billingType === 'ambos') {
         if (data.isCreatingCompany) {
-          if (!data.companyName || data.companyName.length < 2) {
+          if (!data.companyName || data.companyName.trim().length < 2) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: 'Nome da empresa obrigatório',
+              message: 'O nome da empresa é obrigatório',
               path: ['companyName'],
             })
           }
@@ -353,6 +353,14 @@ export function CreateReservationDialog({
     }
   }
 
+  const onInvalid = () => {
+    toast({
+      title: 'Erro de validação',
+      description: 'Verifique os campos assinalados antes de confirmar.',
+      variant: 'destructive',
+    })
+  }
+
   const getAvailableRooms = (typology: string) => {
     return roomsList.filter((r) => {
       if (
@@ -416,11 +424,17 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="companyName"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Nome Empresa</FormLabel>
                     <FormControl>
-                      <Input className="h-8 text-sm" {...field} />
+                      <Input
+                        className={cn(
+                          'h-8 text-sm',
+                          fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -429,11 +443,17 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="vatNumber"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-xs">NIF / Contribuinte</FormLabel>
                     <FormControl>
-                      <Input className="h-8 text-sm" {...field} />
+                      <Input
+                        className={cn(
+                          'h-8 text-sm',
+                          fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -442,11 +462,17 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="companyEmail"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Email</FormLabel>
                     <FormControl>
-                      <Input className="h-8 text-sm" {...field} />
+                      <Input
+                        className={cn(
+                          'h-8 text-sm',
+                          fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -455,11 +481,17 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="companyPhone"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Telefone</FormLabel>
                     <FormControl>
-                      <Input className="h-8 text-sm" {...field} />
+                      <Input
+                        className={cn(
+                          'h-8 text-sm',
+                          fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                        )}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
@@ -471,7 +503,7 @@ export function CreateReservationDialog({
           <FormField
             control={form.control}
             name="companyId"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <Popover open={companyPopOpen} onOpenChange={setCompanyPopOpen}>
                   <PopoverTrigger asChild>
@@ -481,6 +513,7 @@ export function CreateReservationDialog({
                         className={cn(
                           'w-full justify-between bg-white text-sm',
                           !field.value && 'text-muted-foreground',
+                          fieldState.invalid && 'border-destructive text-destructive',
                         )}
                       >
                         {field.value
@@ -545,7 +578,7 @@ export function CreateReservationDialog({
       <FormField
         control={form.control}
         name="additionalGuests"
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel className="font-semibold text-sm text-slate-800">
               Hóspedes Associados
@@ -558,6 +591,7 @@ export function CreateReservationDialog({
                     className={cn(
                       'w-full justify-between bg-white text-sm h-auto min-h-[40px] py-2',
                       (!field.value || field.value.length === 0) && 'text-muted-foreground',
+                      fieldState.invalid && 'border-destructive text-destructive',
                     )}
                   >
                     {field.value && field.value.length > 0 ? (
@@ -630,7 +664,7 @@ export function CreateReservationDialog({
           <DialogTitle className="text-xl">Nova Reserva</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-2">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6 mt-2">
             <FormField
               control={form.control}
               name="reservationType"
@@ -678,7 +712,7 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="checkIn"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Check-in Global</FormLabel>
                     <Popover>
@@ -689,6 +723,7 @@ export function CreateReservationDialog({
                             className={cn(
                               'pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground',
+                              fieldState.invalid && 'border-destructive text-destructive',
                             )}
                           >
                             {field.value ? (
@@ -716,7 +751,7 @@ export function CreateReservationDialog({
               <FormField
                 control={form.control}
                 name="checkOut"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Check-out Global</FormLabel>
                     <Popover>
@@ -727,6 +762,7 @@ export function CreateReservationDialog({
                             className={cn(
                               'pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground',
+                              fieldState.invalid && 'border-destructive text-destructive',
                             )}
                           >
                             {field.value ? (
@@ -799,11 +835,18 @@ export function CreateReservationDialog({
                             <FormField
                               control={form.control}
                               name="guestName"
-                              render={({ field }) => (
+                              render={({ field, fieldState }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Nome</FormLabel>
                                   <FormControl>
-                                    <Input className="h-8 text-sm" {...field} />
+                                    <Input
+                                      className={cn(
+                                        'h-8 text-sm',
+                                        fieldState.invalid &&
+                                          'border-destructive focus-visible:ring-destructive',
+                                      )}
+                                      {...field}
+                                    />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
@@ -812,11 +855,18 @@ export function CreateReservationDialog({
                             <FormField
                               control={form.control}
                               name="guestDocument"
-                              render={({ field }) => (
+                              render={({ field, fieldState }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Documento</FormLabel>
                                   <FormControl>
-                                    <Input className="h-8 text-sm" {...field} />
+                                    <Input
+                                      className={cn(
+                                        'h-8 text-sm',
+                                        fieldState.invalid &&
+                                          'border-destructive focus-visible:ring-destructive',
+                                      )}
+                                      {...field}
+                                    />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
@@ -825,11 +875,18 @@ export function CreateReservationDialog({
                             <FormField
                               control={form.control}
                               name="guestEmail"
-                              render={({ field }) => (
+                              render={({ field, fieldState }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Email</FormLabel>
                                   <FormControl>
-                                    <Input className="h-8 text-sm" {...field} />
+                                    <Input
+                                      className={cn(
+                                        'h-8 text-sm',
+                                        fieldState.invalid &&
+                                          'border-destructive focus-visible:ring-destructive',
+                                      )}
+                                      {...field}
+                                    />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
@@ -838,11 +895,18 @@ export function CreateReservationDialog({
                             <FormField
                               control={form.control}
                               name="guestPhone"
-                              render={({ field }) => (
+                              render={({ field, fieldState }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Telefone</FormLabel>
                                   <FormControl>
-                                    <Input className="h-8 text-sm" {...field} />
+                                    <Input
+                                      className={cn(
+                                        'h-8 text-sm',
+                                        fieldState.invalid &&
+                                          'border-destructive focus-visible:ring-destructive',
+                                      )}
+                                      {...field}
+                                    />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
@@ -854,7 +918,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name="guestId"
-                          render={({ field }) => (
+                          render={({ field, fieldState }) => (
                             <FormItem>
                               <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
                                 <PopoverTrigger asChild>
@@ -864,6 +928,7 @@ export function CreateReservationDialog({
                                       className={cn(
                                         'w-full justify-between bg-white text-sm',
                                         !field.value && 'text-muted-foreground',
+                                        fieldState.invalid && 'border-destructive text-destructive',
                                       )}
                                     >
                                       {field.value
@@ -1034,7 +1099,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name={`rooms.${index}.typology`}
-                          render={({ field: f }) => (
+                          render={({ field: f, fieldState }) => (
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Tipologia</FormLabel>
                               <Select
@@ -1051,7 +1116,13 @@ export function CreateReservationDialog({
                                 value={f.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="bg-white h-8 text-xs">
+                                  <SelectTrigger
+                                    className={cn(
+                                      'bg-white h-8 text-xs',
+                                      fieldState.invalid &&
+                                        'border-destructive focus:ring-destructive',
+                                    )}
+                                  >
                                     <SelectValue placeholder="Selecione o tipo..." />
                                   </SelectTrigger>
                                 </FormControl>
@@ -1071,7 +1142,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name={`rooms.${index}.roomId`}
-                          render={({ field: f }) => (
+                          render={({ field: f, fieldState }) => (
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Quarto</FormLabel>
                               <Select
@@ -1080,7 +1151,13 @@ export function CreateReservationDialog({
                                 disabled={!typology}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="bg-white h-8 text-xs">
+                                  <SelectTrigger
+                                    className={cn(
+                                      'bg-white h-8 text-xs',
+                                      fieldState.invalid &&
+                                        'border-destructive focus:ring-destructive',
+                                    )}
+                                  >
                                     <SelectValue placeholder="Selecione um quarto" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -1105,7 +1182,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name={`rooms.${index}.discountId`}
-                          render={({ field: f }) => (
+                          render={({ field: f, fieldState }) => (
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Desconto Aplicado</FormLabel>
                               <Select
@@ -1121,7 +1198,13 @@ export function CreateReservationDialog({
                                 value={f.value || 'none'}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="bg-white h-8 text-xs">
+                                  <SelectTrigger
+                                    className={cn(
+                                      'bg-white h-8 text-xs',
+                                      fieldState.invalid &&
+                                        'border-destructive focus:ring-destructive',
+                                    )}
+                                  >
                                     <SelectValue placeholder="Nenhum" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -1144,7 +1227,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name={`rooms.${index}.guestsCount`}
-                          render={({ field: f }) => (
+                          render={({ field: f, fieldState }) => (
                             <FormItem className="col-span-6 sm:col-span-1 space-y-1">
                               <FormLabel className="text-xs">Hósp.</FormLabel>
                               <FormControl>
@@ -1153,7 +1236,11 @@ export function CreateReservationDialog({
                                   min={1}
                                   {...f}
                                   onChange={(e) => f.onChange(parseInt(e.target.value) || 1)}
-                                  className="bg-white h-8 text-xs"
+                                  className={cn(
+                                    'bg-white h-8 text-xs',
+                                    fieldState.invalid &&
+                                      'border-destructive focus-visible:ring-destructive',
+                                  )}
                                 />
                               </FormControl>
                               <FormMessage className="text-[10px]" />
@@ -1164,7 +1251,7 @@ export function CreateReservationDialog({
                         <FormField
                           control={form.control}
                           name={`rooms.${index}.rate`}
-                          render={({ field: f }) => (
+                          render={({ field: f, fieldState }) => (
                             <FormItem className="col-span-6 sm:col-span-2 space-y-1">
                               <FormLabel className="text-xs">Total (Kz)</FormLabel>
                               <FormControl>
@@ -1174,7 +1261,11 @@ export function CreateReservationDialog({
                                   min={0}
                                   {...f}
                                   onChange={(e) => f.onChange(parseFloat(e.target.value) || 0)}
-                                  className="bg-white h-8 text-xs font-semibold text-emerald-700"
+                                  className={cn(
+                                    'bg-white h-8 text-xs font-semibold text-emerald-700',
+                                    fieldState.invalid &&
+                                      'border-destructive focus-visible:ring-destructive',
+                                  )}
                                 />
                               </FormControl>
                               <FormMessage className="text-[10px]" />
@@ -1198,6 +1289,11 @@ export function CreateReservationDialog({
                       </div>
                     )
                   })}
+                  {form.formState.errors.rooms && form.formState.errors.rooms.root && (
+                    <div className="text-xs text-destructive mt-2">
+                      {form.formState.errors.rooms.root.message}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
