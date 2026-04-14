@@ -220,18 +220,20 @@ export function CreateReservationDialog({
   const calculateRoomRate = (typology: string, discountId: string | undefined) => {
     if (!typology || nights <= 0) return 0
     const config = roomConfigs.find((c) => c.name === typology)
-    let basePrice = config?.base_price || 0
+    const basePrice = config?.base_price || 0
+    let total = basePrice * nights
+
     if (discountId && discountId !== 'none') {
       const discount = discounts.find((d) => d.id === discountId)
       if (discount) {
         if (discount.type === 'percentage') {
-          basePrice = basePrice * (1 - discount.value / 100)
+          total = total * (1 - discount.value / 100)
         } else {
-          basePrice = Math.max(0, basePrice - discount.value)
+          total = Math.max(0, total - discount.value)
         }
       }
     }
-    return basePrice * nights
+    return total
   }
 
   useEffect(() => {

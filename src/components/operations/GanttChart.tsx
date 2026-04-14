@@ -152,7 +152,7 @@ export function GanttChart({
                           width: `${width * 4}rem`,
                           zIndex: 5,
                         }}
-                        title={`${res.guest_name} (${res.check_in} a ${res.check_out})`}
+                        title={`${res.guest_name} (${res.check_in} a ${res.check_out}) - ${new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(res.total_value || 0)}`}
                       >
                         <div className="font-semibold truncate">{res.guest_name}</div>
                         <div className="text-[10px] uppercase font-bold tracking-wider opacity-80 mt-0.5">
@@ -253,7 +253,10 @@ export function GanttChart({
                       Valor Total
                     </span>
                     <span className="font-bold text-slate-900 text-lg">
-                      R$ {selectedRes.total_value.toFixed(2)}
+                      {new Intl.NumberFormat('pt-AO', {
+                        style: 'currency',
+                        currency: 'AOA',
+                      }).format(selectedRes.total_value)}
                     </span>
                   </div>
                 )}
