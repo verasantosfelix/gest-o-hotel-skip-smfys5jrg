@@ -140,7 +140,11 @@ export default function Rates() {
     setSelected(selected.size === rooms.length ? new Set() : new Set(rooms.map((r) => r.id)))
   const toggleRow = (id: string) => {
     const s = new Set(selected)
-    s.has(id) ? s.delete(id) : s.add(id)
+    if (s.has(id)) {
+      s.delete(id)
+    } else {
+      s.add(id)
+    }
     setSelected(s)
   }
 
