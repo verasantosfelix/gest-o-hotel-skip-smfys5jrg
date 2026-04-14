@@ -86,12 +86,17 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
     }
 
     setIsSubmitting(true)
+    const payload = {
+      ...formData,
+      floor: formData.floor ?? 0,
+    }
+
     try {
       if (room?.id) {
-        await updateRoom(room.id, formData)
+        await updateRoom(room.id, payload)
         toast({ title: 'Quarto atualizado com sucesso!' })
       } else {
-        await createRoom(formData)
+        await createRoom(payload)
         toast({ title: 'Quarto criado com sucesso!' })
       }
       onOpenChange(false)
@@ -176,7 +181,7 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    floor: e.target.value === '' ? 0 : Number(e.target.value),
+                    floor: e.target.value === '' ? undefined : Number(e.target.value),
                   })
                 }
               />
