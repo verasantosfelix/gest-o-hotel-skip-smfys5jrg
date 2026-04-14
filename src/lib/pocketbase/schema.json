@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T21:23:46.664Z",
+  "generatedAt": "2026-04-14T21:25:59.241Z",
   "collections": [
     {
       "name": "users",
@@ -4008,6 +4008,46 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "room_type_configs",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": "@request.auth.id != ''",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "base_price",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_room_type_configs_name ON room_type_configs (name)"]
     }
   ]
 }
