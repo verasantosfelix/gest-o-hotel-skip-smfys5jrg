@@ -248,6 +248,32 @@ export function CreateReservationDialog({
     }
   }, [nights, roomConfigs, discounts, form])
 
+  // Real-time validation for room availability based on dates
+  useEffect(() => {
+    const currentRooms = form.getValues('rooms')
+    currentRooms.forEach((r, index) => {
+      if (r.roomId && r.typology) {
+        const available = getAvailableRooms(r.typology, index)
+        const isAvailable = available.some((ar) => ar.id === r.roomId)
+        const currentError = form.getFieldState(`rooms.${index}.roomId`).error
+
+        if (!isAvailable) {
+          if (
+            currentError?.message !== 'O quarto selecionado não está disponível para estas datas.'
+          ) {
+            form.setError(`rooms.${index}.roomId`, {
+              type: 'manual',
+              message: 'O quarto selecionado não está disponível para estas datas.',
+            })
+          }
+        } else if (isAvailable && currentError?.type === 'manual') {
+          form.clearErrors(`rooms.${index}.roomId`)
+        }
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overlappingRes, roomsList, selectedRooms, form])
+
   const onSubmit = async (v: z.infer<typeof schema>) => {
     // Validate room availability before submitting
     let hasRoomErrors = false
@@ -258,7 +284,7 @@ export function CreateReservationDialog({
         if (!available.some((ar) => ar.id === r.roomId)) {
           form.setError(`rooms.${i}.roomId`, {
             type: 'manual',
-            message: 'O quarto selecionado não está disponível para as datas escolhidas.',
+            message: 'O quarto selecionado não está disponível para estas datas.',
           })
           hasRoomErrors = true
         }
@@ -1186,7 +1212,7 @@ export function CreateReservationDialog({
                                   <SelectTrigger
                                     className={cn(
                                       'bg-white h-8 text-xs',
-                                      (fieldState.invalid || isCurrentRoomUnavailable) &&
+                                      fieldState.invalid &&
                                         'border-destructive text-destructive focus:ring-destructive',
                                     )}
                                   >
@@ -1215,11 +1241,6 @@ export function CreateReservationDialog({
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {isCurrentRoomUnavailable && !fieldState.invalid && (
-                                <p className="text-[10px] font-medium text-destructive">
-                                  Indisponível nestas datas
-                                </p>
-                              )}
                               <FormMessage className="text-[10px]" />
                             </FormItem>
                           )}
