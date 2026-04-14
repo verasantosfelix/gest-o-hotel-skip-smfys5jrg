@@ -249,6 +249,31 @@ export function CreateReservationDialog({
   }, [nights, roomConfigs, discounts, form])
 
   const onSubmit = async (v: z.infer<typeof schema>) => {
+    // Validate room availability before submitting
+    let hasRoomErrors = false
+    for (let i = 0; i < v.rooms.length; i++) {
+      const r = v.rooms[i]
+      if (r.roomId) {
+        const available = getAvailableRooms(r.typology, i)
+        if (!available.some((ar) => ar.id === r.roomId)) {
+          form.setError(`rooms.${i}.roomId`, {
+            type: 'manual',
+            message: 'O quarto selecionado não está disponível para as datas escolhidas.',
+          })
+          hasRoomErrors = true
+        }
+      }
+    }
+
+    if (hasRoomErrors) {
+      toast({
+        title: 'Erro de validação',
+        description: 'Um ou mais quartos não estão disponíveis para as datas selecionadas.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
       setIsSubmitting(true)
       let finalGuestId = v.guestId
@@ -361,10 +386,8 @@ export function CreateReservationDialog({
     })
   }
 
-  const getAvailableRooms = (typology: string, currentIndex: number, currentRoomId?: string) => {
+  const getAvailableRooms = (typology: string, currentIndex: number) => {
     return roomsList.filter((r) => {
-      if (currentRoomId && r.id === currentRoomId) return true
-
       if (
         r.status === 'Ocupado' ||
         r.status === 'Manutenção' ||
@@ -1092,7 +1115,10 @@ export function CreateReservationDialog({
                   {fields.map((field, index) => {
                     const typology = form.watch(`rooms.${index}.typology`)
                     const currentRoomId = form.watch(`rooms.${index}.roomId`)
-                    const availableRooms = getAvailableRooms(typology, index, currentRoomId)
+                    const availableRooms = getAvailableRooms(typology, index)
+                    const currentRoom = roomsList.find((r) => r.id === currentRoomId)
+                    const isCurrentRoomUnavailable =
+                      currentRoomId && !availableRooms.some((r) => r.id === currentRoomId)
 
                     return (
                       <div
@@ -1149,7 +1175,10 @@ export function CreateReservationDialog({
                             <FormItem className="col-span-12 sm:col-span-3 space-y-1">
                               <FormLabel className="text-xs">Quarto</FormLabel>
                               <Select
-                                onValueChange={f.onChange}
+                                onValueChange={(val) => {
+                                  f.onChange(val)
+                                  form.clearErrors(`rooms.${index}.roomId`)
+                                }}
                                 value={f.value}
                                 disabled={!typology}
                               >
@@ -1157,17 +1186,26 @@ export function CreateReservationDialog({
                                   <SelectTrigger
                                     className={cn(
                                       'bg-white h-8 text-xs',
-                                      fieldState.invalid &&
-                                        'border-destructive focus:ring-destructive',
+                                      (fieldState.invalid || isCurrentRoomUnavailable) &&
+                                        'border-destructive text-destructive focus:ring-destructive',
                                     )}
                                   >
                                     <SelectValue placeholder="Selecione um quarto" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {availableRooms.length === 0 && (
+                                  {availableRooms.length === 0 && !isCurrentRoomUnavailable && (
                                     <SelectItem value="none" disabled className="text-xs">
                                       Indisponível
+                                    </SelectItem>
+                                  )}
+                                  {isCurrentRoomUnavailable && currentRoom && (
+                                    <SelectItem
+                                      key={currentRoom.id}
+                                      value={currentRoom.id}
+                                      className="text-xs text-destructive focus:text-destructive focus:bg-destructive/10"
+                                    >
+                                      {currentRoom.bloco}-{currentRoom.room_number} (Ocupado)
                                     </SelectItem>
                                   )}
                                   {availableRooms.map((r) => (
@@ -1177,6 +1215,11 @@ export function CreateReservationDialog({
                                   ))}
                                 </SelectContent>
                               </Select>
+                              {isCurrentRoomUnavailable && !fieldState.invalid && (
+                                <p className="text-[10px] font-medium text-destructive">
+                                  Indisponível nestas datas
+                                </p>
+                              )}
                               <FormMessage className="text-[10px]" />
                             </FormItem>
                           )}
