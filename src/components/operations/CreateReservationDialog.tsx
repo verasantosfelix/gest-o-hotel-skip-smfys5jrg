@@ -26,6 +26,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Badge } from '@/components/ui/badge'
 import {
   Command,
   CommandEmpty,
@@ -52,6 +53,7 @@ const roomSchema = z.object({
 
 const schema = z
   .object({
+    reservationType: z.enum(['individual', 'corporate']).default('individual'),
     checkIn: z.date({ required_error: 'Obrigatório' }),
     checkOut: z.date({ required_error: 'Obrigatório' }),
     isCreatingGuest: z.boolean(),
@@ -67,6 +69,7 @@ const schema = z
     vatNumber: z.string().optional(),
     companyEmail: z.string().email('Email inválido').optional().or(z.literal('')),
     companyPhone: z.string().optional(),
+    additionalGuests: z.array(z.string()).optional(),
     rooms: z.array(roomSchema).min(1, 'Adicione pelo menos um quarto'),
   })
   .superRefine((data, ctx) => {
@@ -77,24 +80,7 @@ const schema = z
         path: ['checkOut'],
       })
     }
-    if (data.isCreatingGuest) {
-      if (!data.guestName || data.guestName.length < 2) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Nome obrigatório',
-          path: ['guestName'],
-        })
-      }
-    } else {
-      if (!data.guestId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Selecione ou crie um hóspede',
-          path: ['guestId'],
-        })
-      }
-    }
-    if (data.billingType === 'empresa' || data.billingType === 'ambos') {
+    if (data.reservationType === 'corporate') {
       if (data.isCreatingCompany) {
         if (!data.companyName || data.companyName.length < 2) {
           ctx.addIssue({
@@ -110,6 +96,43 @@ const schema = z
             message: 'Selecione ou crie uma empresa',
             path: ['companyId'],
           })
+        }
+      }
+    } else {
+      if (data.isCreatingGuest) {
+        if (!data.guestName || data.guestName.length < 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Nome obrigatório',
+            path: ['guestName'],
+          })
+        }
+      } else {
+        if (!data.guestId) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Selecione ou crie um hóspede',
+            path: ['guestId'],
+          })
+        }
+      }
+      if (data.billingType === 'empresa' || data.billingType === 'ambos') {
+        if (data.isCreatingCompany) {
+          if (!data.companyName || data.companyName.length < 2) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Nome da empresa obrigatório',
+              path: ['companyName'],
+            })
+          }
+        } else {
+          if (!data.companyId) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Selecione ou crie uma empresa',
+              path: ['companyId'],
+            })
+          }
         }
       }
     }
@@ -130,19 +153,23 @@ export function CreateReservationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [guestPopOpen, setGuestPopOpen] = useState(false)
   const [companyPopOpen, setCompanyPopOpen] = useState(false)
+  const [associatedGuestsPopOpen, setAssociatedGuestsPopOpen] = useState(false)
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
+      reservationType: 'individual',
       isCreatingGuest: false,
       isCreatingCompany: false,
       billingType: 'hospede',
+      additionalGuests: [],
       rooms: [{ typology: '', roomId: '', discountId: 'none', guestsCount: 1, rate: 0 }],
     },
   })
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'rooms' })
 
+  const reservationType = form.watch('reservationType')
   const checkIn = form.watch('checkIn')
   const checkOut = form.watch('checkOut')
   const selectedRooms = form.watch('rooms')
@@ -164,9 +191,11 @@ export function CreateReservationDialog({
         },
       )
       form.reset({
+        reservationType: 'individual',
         isCreatingGuest: false,
         isCreatingCompany: false,
         billingType: 'hospede',
+        additionalGuests: [],
         rooms: [{ typology: '', roomId: '', discountId: 'none', guestsCount: 1, rate: 0 }],
       })
       setOverlappingRes([])
@@ -222,49 +251,89 @@ export function CreateReservationDialog({
       let finalGuestId = v.guestId
       let finalCompanyId = v.companyId
 
-      if (v.isCreatingGuest && !finalGuestId) {
-        const newG = await createLoyalty({
-          guest_name: v.guestName,
-          document_id: v.guestDocument,
-          email: v.guestEmail,
-          phone: v.guestPhone,
-          tier: 'Basic',
-        })
-        finalGuestId = newG.id
-      }
+      if (v.reservationType === 'individual') {
+        if (v.isCreatingGuest && !finalGuestId) {
+          const newG = await createLoyalty({
+            guest_name: v.guestName,
+            document_id: v.guestDocument,
+            email: v.guestEmail,
+            phone: v.guestPhone,
+            tier: 'Basic',
+          })
+          finalGuestId = newG.id
+        }
 
-      if (['empresa', 'ambos'].includes(v.billingType) && v.isCreatingCompany && !finalCompanyId) {
-        const newC = await createLoyalty({
-          guest_name: v.companyName,
-          company_name: v.companyName,
-          vat_number: v.vatNumber,
-          email: v.companyEmail,
-          phone: v.companyPhone,
-          tier: 'Corporate',
-        })
-        finalCompanyId = newC.id
+        if (
+          ['empresa', 'ambos'].includes(v.billingType) &&
+          v.isCreatingCompany &&
+          !finalCompanyId
+        ) {
+          const newC = await createLoyalty({
+            guest_name: v.companyName,
+            company_name: v.companyName,
+            vat_number: v.vatNumber,
+            email: v.companyEmail,
+            phone: v.companyPhone,
+            tier: 'Corporate',
+          })
+          finalCompanyId = newC.id
+        }
+      } else {
+        if (v.isCreatingCompany && !finalCompanyId) {
+          const newC = await createLoyalty({
+            guest_name: v.companyName,
+            company_name: v.companyName,
+            vat_number: v.vatNumber,
+            email: v.companyEmail,
+            phone: v.companyPhone,
+            tier: 'Corporate',
+          })
+          finalCompanyId = newC.id
+        }
       }
-
-      const guestNameStr = finalGuestId
-        ? guests.find((g) => g.id === finalGuestId)?.guest_name
-        : v.guestName
 
       for (const r of v.rooms) {
-        await createReservation({
-          guest_name: guestNameStr || 'Desconhecido',
-          guest_id: finalGuestId,
-          company_id: ['empresa', 'ambos'].includes(v.billingType) ? finalCompanyId : undefined,
-          room_id: r.roomId,
-          applied_rate_type: r.typology,
-          billing_type: v.billingType,
-          check_in: format(v.checkIn, 'yyyy-MM-dd'),
-          check_out: format(v.checkOut, 'yyyy-MM-dd'),
-          status: 'previsto',
-          is_corporate: v.billingType !== 'hospede',
-          balance: r.rate,
-          total_value: r.rate,
-          guests_count: r.guestsCount,
-        })
+        if (v.reservationType === 'corporate') {
+          const companyNameStr = finalCompanyId
+            ? guests.find((g) => g.id === finalCompanyId)?.company_name
+            : v.companyName
+
+          await createReservation({
+            guest_name: companyNameStr || 'Empresa Desconhecida',
+            company_id: finalCompanyId,
+            room_id: r.roomId,
+            applied_rate_type: r.typology,
+            billing_type: 'empresa',
+            check_in: format(v.checkIn, 'yyyy-MM-dd'),
+            check_out: format(v.checkOut, 'yyyy-MM-dd'),
+            status: 'previsto',
+            is_corporate: true,
+            balance: r.rate,
+            total_value: r.rate,
+            guests_count: r.guestsCount,
+            additional_guests: v.additionalGuests || [],
+          })
+        } else {
+          const guestNameStr = finalGuestId
+            ? guests.find((g) => g.id === finalGuestId)?.guest_name
+            : v.guestName
+
+          await createReservation({
+            guest_name: guestNameStr || 'Desconhecido',
+            guest_id: finalGuestId,
+            company_id: ['empresa', 'ambos'].includes(v.billingType) ? finalCompanyId : undefined,
+            room_id: r.roomId,
+            applied_rate_type: r.typology,
+            billing_type: v.billingType,
+            check_in: format(v.checkIn, 'yyyy-MM-dd'),
+            check_out: format(v.checkOut, 'yyyy-MM-dd'),
+            status: 'previsto',
+            is_corporate: false,
+            balance: r.rate,
+            total_value: r.rate,
+            guests_count: r.guestsCount,
+          })
+        }
       }
 
       toast({ title: 'Sucesso', description: 'Reserva(s) criada(s) com sucesso!' })
@@ -299,6 +368,254 @@ export function CreateReservationDialog({
   const selectedGuest = guests.find((g) => g.id === guestId)
   const selectedCompany = guests.find((g) => g.id === companyId)
 
+  const renderCompanyBlock = () => {
+    return (
+      <div className="pt-2">
+        {companyId && selectedCompany && !isCreatingCompany ? (
+          <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
+            <div>
+              <p className="font-medium text-sm">{selectedCompany.company_name}</p>
+              {selectedCompany.vat_number && (
+                <p className="text-xs text-slate-500">NIF: {selectedCompany.vat_number}</p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                form.setValue('companyId', '')
+                form.setValue('isCreatingCompany', false)
+              }}
+            >
+              Alterar
+            </Button>
+          </div>
+        ) : isCreatingCompany ? (
+          <div className="space-y-3 p-4 border border-blue-100 rounded-md bg-blue-50/30 relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-6 w-6"
+              onClick={() => form.setValue('isCreatingCompany', false)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <h4 className="font-medium text-xs text-blue-800 uppercase tracking-wider">
+              Nova Empresa
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Nome Empresa</FormLabel>
+                    <FormControl>
+                      <Input className="h-8 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vatNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">NIF / Contribuinte</FormLabel>
+                    <FormControl>
+                      <Input className="h-8 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="companyEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Email</FormLabel>
+                    <FormControl>
+                      <Input className="h-8 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="companyPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Telefone</FormLabel>
+                    <FormControl>
+                      <Input className="h-8 text-sm" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        ) : (
+          <FormField
+            control={form.control}
+            name="companyId"
+            render={({ field }) => (
+              <FormItem>
+                <Popover open={companyPopOpen} onOpenChange={setCompanyPopOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-between bg-white text-sm',
+                          !field.value && 'text-muted-foreground',
+                        )}
+                      >
+                        {field.value
+                          ? corporateGuests.find((g) => g.id === field.value)?.company_name
+                          : 'Buscar empresa...'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                    <Command>
+                      <CommandInput placeholder="Procurar por empresa..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          {corporateGuests.map((g) => (
+                            <CommandItem
+                              key={g.id}
+                              onSelect={() => {
+                                field.onChange(g.id)
+                                setCompanyPopOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  g.id === field.value ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              {g.company_name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                      <div className="p-1 border-t">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full justify-start text-blue-600 text-sm h-8"
+                          onClick={() => {
+                            form.setValue('isCreatingCompany', true)
+                            setCompanyPopOpen(false)
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> Criar Nova Empresa
+                        </Button>
+                      </div>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </div>
+    )
+  }
+
+  const renderAssociatedGuests = () => (
+    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+      <FormField
+        control={form.control}
+        name="additionalGuests"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-semibold text-sm text-slate-800">
+              Hóspedes Associados
+            </FormLabel>
+            <Popover open={associatedGuestsPopOpen} onOpenChange={setAssociatedGuestsPopOpen}>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-between bg-white text-sm h-auto min-h-[40px] py-2',
+                      (!field.value || field.value.length === 0) && 'text-muted-foreground',
+                    )}
+                  >
+                    {field.value && field.value.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {field.value.map((id) => {
+                          const g = physicalGuests.find((g) => g.id === id)
+                          return g ? (
+                            <Badge key={id} variant="secondary" className="mr-1">
+                              {g.guest_name}
+                            </Badge>
+                          ) : null
+                        })}
+                      </div>
+                    ) : (
+                      'Selecionar hóspedes...'
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                <Command>
+                  <CommandInput placeholder="Procurar por nome..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum hóspede encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {physicalGuests.map((g) => {
+                        const isSelected = field.value?.includes(g.id)
+                        return (
+                          <CommandItem
+                            key={g.id}
+                            onSelect={() => {
+                              const current = field.value || []
+                              const newVals = isSelected
+                                ? current.filter((val) => val !== g.id)
+                                : [...current, g.id]
+                              field.onChange(newVals)
+                            }}
+                          >
+                            <div
+                              className={cn(
+                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'opacity-50 [&_svg]:invisible',
+                              )}
+                            >
+                              <Check className={cn('h-4 w-4')} />
+                            </div>
+                            {g.guest_name}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-slate-50/50">
@@ -307,6 +624,49 @@ export function CreateReservationDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-2">
+            <FormField
+              control={form.control}
+              name="reservationType"
+              render={({ field }) => (
+                <FormItem className="space-y-3 p-4 bg-white rounded-lg border shadow-sm">
+                  <FormLabel className="font-semibold text-sm text-slate-800">
+                    Tipo de Reserva
+                  </FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(val) => {
+                        field.onChange(val)
+                        if (val === 'corporate') {
+                          form.setValue('billingType', 'empresa')
+                        } else {
+                          form.setValue('billingType', 'hospede')
+                        }
+                      }}
+                      defaultValue={field.value}
+                      className="flex space-x-6"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="individual" />
+                        </FormControl>
+                        <FormLabel className="font-normal cursor-pointer text-sm">
+                          Individual (Particular)
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="corporate" />
+                        </FormControl>
+                        <FormLabel className="font-normal cursor-pointer text-sm">
+                          Corporate (Empresa)
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4 p-4 bg-white rounded-lg border shadow-sm">
               <FormField
                 control={form.control}
@@ -387,233 +747,18 @@ export function CreateReservationDialog({
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
-                  <h3 className="font-semibold text-sm text-slate-800">Hóspede Principal</h3>
-                  {guestId && selectedGuest && !isCreatingGuest ? (
-                    <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
-                      <div>
-                        <p className="font-medium text-sm">{selectedGuest.guest_name}</p>
-                        {(selectedGuest.email || selectedGuest.document_id) && (
-                          <p className="text-xs text-slate-500">
-                            {selectedGuest.document_id} • {selectedGuest.email}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          form.setValue('guestId', '')
-                          form.setValue('isCreatingGuest', false)
-                        }}
-                      >
-                        Alterar
-                      </Button>
-                    </div>
-                  ) : isCreatingGuest ? (
-                    <div className="space-y-3 p-4 border border-emerald-100 rounded-md bg-emerald-50/30 relative">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6"
-                        onClick={() => form.setValue('isCreatingGuest', false)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                      <h4 className="font-medium text-xs text-emerald-800 uppercase tracking-wider">
-                        Novo Hóspede
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <FormField
-                          control={form.control}
-                          name="guestName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Nome</FormLabel>
-                              <FormControl>
-                                <Input className="h-8 text-sm" {...field} />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="guestDocument"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Documento</FormLabel>
-                              <FormControl>
-                                <Input className="h-8 text-sm" {...field} />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="guestEmail"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Email</FormLabel>
-                              <FormControl>
-                                <Input className="h-8 text-sm" {...field} />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="guestPhone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Telefone</FormLabel>
-                              <FormControl>
-                                <Input className="h-8 text-sm" {...field} />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <FormField
-                      control={form.control}
-                      name="guestId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    'w-full justify-between bg-white text-sm',
-                                    !field.value && 'text-muted-foreground',
-                                  )}
-                                >
-                                  {field.value
-                                    ? physicalGuests.find((g) => g.id === field.value)?.guest_name
-                                    : 'Buscar hóspede...'}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                              <Command>
-                                <CommandInput placeholder="Procurar por nome..." />
-                                <CommandList>
-                                  <CommandEmpty>Nenhum hóspede encontrado.</CommandEmpty>
-                                  <CommandGroup>
-                                    {physicalGuests.map((g) => (
-                                      <CommandItem
-                                        key={g.id}
-                                        onSelect={() => {
-                                          field.onChange(g.id)
-                                          setGuestPopOpen(false)
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            'mr-2 h-4 w-4',
-                                            g.id === field.value ? 'opacity-100' : 'opacity-0',
-                                          )}
-                                        />
-                                        {g.guest_name}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                                <div className="p-1 border-t">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="w-full justify-start text-emerald-600 text-sm h-8"
-                                    onClick={() => {
-                                      form.setValue('isCreatingGuest', true)
-                                      setGuestPopOpen(false)
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 mr-2" /> Criar Novo Hóspede
-                                  </Button>
-                                </div>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="billingType"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="font-semibold text-sm text-slate-800">
-                          Faturação (A quem faturar)
-                        </FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={(val) => {
-                              field.onChange(val)
-                              if (val === 'hospede') {
-                                form.setValue('companyId', '')
-                                form.setValue('isCreatingCompany', false)
-                              }
-                            }}
-                            defaultValue={field.value}
-                            className="flex space-x-2"
-                          >
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="hospede" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer text-sm">
-                                Hóspede
-                              </FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="empresa" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer text-sm">
-                                Empresa
-                              </FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="ambos" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer text-sm">
-                                Ambos
-                              </FormLabel>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  {['empresa', 'ambos'].includes(billingType) && (
-                    <div className="pt-2">
-                      {companyId && selectedCompany && !isCreatingCompany ? (
+              {reservationType === 'individual' ? (
+                <>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+                      <h3 className="font-semibold text-sm text-slate-800">Hóspede Principal</h3>
+                      {guestId && selectedGuest && !isCreatingGuest ? (
                         <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
                           <div>
-                            <p className="font-medium text-sm">{selectedCompany.company_name}</p>
-                            {selectedCompany.vat_number && (
+                            <p className="font-medium text-sm">{selectedGuest.guest_name}</p>
+                            {(selectedGuest.email || selectedGuest.document_id) && (
                               <p className="text-xs text-slate-500">
-                                NIF: {selectedCompany.vat_number}
+                                {selectedGuest.document_id} • {selectedGuest.email}
                               </p>
                             )}
                           </div>
@@ -622,34 +767,34 @@ export function CreateReservationDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              form.setValue('companyId', '')
-                              form.setValue('isCreatingCompany', false)
+                              form.setValue('guestId', '')
+                              form.setValue('isCreatingGuest', false)
                             }}
                           >
                             Alterar
                           </Button>
                         </div>
-                      ) : isCreatingCompany ? (
-                        <div className="space-y-3 p-4 border border-blue-100 rounded-md bg-blue-50/30 relative">
+                      ) : isCreatingGuest ? (
+                        <div className="space-y-3 p-4 border border-emerald-100 rounded-md bg-emerald-50/30 relative">
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="absolute top-2 right-2 h-6 w-6"
-                            onClick={() => form.setValue('isCreatingCompany', false)}
+                            onClick={() => form.setValue('isCreatingGuest', false)}
                           >
                             <X className="w-4 h-4" />
                           </Button>
-                          <h4 className="font-medium text-xs text-blue-800 uppercase tracking-wider">
-                            Nova Empresa
+                          <h4 className="font-medium text-xs text-emerald-800 uppercase tracking-wider">
+                            Novo Hóspede
                           </h4>
                           <div className="grid grid-cols-2 gap-3">
                             <FormField
                               control={form.control}
-                              name="companyName"
+                              name="guestName"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-xs">Nome Empresa</FormLabel>
+                                  <FormLabel className="text-xs">Nome</FormLabel>
                                   <FormControl>
                                     <Input className="h-8 text-sm" {...field} />
                                   </FormControl>
@@ -659,10 +804,10 @@ export function CreateReservationDialog({
                             />
                             <FormField
                               control={form.control}
-                              name="vatNumber"
+                              name="guestDocument"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-xs">NIF / Contribuinte</FormLabel>
+                                  <FormLabel className="text-xs">Documento</FormLabel>
                                   <FormControl>
                                     <Input className="h-8 text-sm" {...field} />
                                   </FormControl>
@@ -672,7 +817,7 @@ export function CreateReservationDialog({
                             />
                             <FormField
                               control={form.control}
-                              name="companyEmail"
+                              name="guestEmail"
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Email</FormLabel>
@@ -685,7 +830,7 @@ export function CreateReservationDialog({
                             />
                             <FormField
                               control={form.control}
-                              name="companyPhone"
+                              name="guestPhone"
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="text-xs">Telefone</FormLabel>
@@ -701,10 +846,10 @@ export function CreateReservationDialog({
                       ) : (
                         <FormField
                           control={form.control}
-                          name="companyId"
+                          name="guestId"
                           render={({ field }) => (
                             <FormItem>
-                              <Popover open={companyPopOpen} onOpenChange={setCompanyPopOpen}>
+                              <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
                                 <PopoverTrigger asChild>
                                   <FormControl>
                                     <Button
@@ -715,25 +860,25 @@ export function CreateReservationDialog({
                                       )}
                                     >
                                       {field.value
-                                        ? corporateGuests.find((g) => g.id === field.value)
-                                            ?.company_name
-                                        : 'Buscar empresa...'}
+                                        ? physicalGuests.find((g) => g.id === field.value)
+                                            ?.guest_name
+                                        : 'Buscar hóspede...'}
                                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                   </FormControl>
                                 </PopoverTrigger>
                                 <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
                                   <Command>
-                                    <CommandInput placeholder="Procurar por empresa..." />
+                                    <CommandInput placeholder="Procurar por nome..." />
                                     <CommandList>
-                                      <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                                      <CommandEmpty>Nenhum hóspede encontrado.</CommandEmpty>
                                       <CommandGroup>
-                                        {corporateGuests.map((g) => (
+                                        {physicalGuests.map((g) => (
                                           <CommandItem
                                             key={g.id}
                                             onSelect={() => {
                                               field.onChange(g.id)
-                                              setCompanyPopOpen(false)
+                                              setGuestPopOpen(false)
                                             }}
                                           >
                                             <Check
@@ -742,7 +887,7 @@ export function CreateReservationDialog({
                                                 g.id === field.value ? 'opacity-100' : 'opacity-0',
                                               )}
                                             />
-                                            {g.company_name}
+                                            {g.guest_name}
                                           </CommandItem>
                                         ))}
                                       </CommandGroup>
@@ -751,13 +896,13 @@ export function CreateReservationDialog({
                                       <Button
                                         type="button"
                                         variant="ghost"
-                                        className="w-full justify-start text-blue-600 text-sm h-8"
+                                        className="w-full justify-start text-emerald-600 text-sm h-8"
                                         onClick={() => {
-                                          form.setValue('isCreatingCompany', true)
-                                          setCompanyPopOpen(false)
+                                          form.setValue('isCreatingGuest', true)
+                                          setGuestPopOpen(false)
                                         }}
                                       >
-                                        <Plus className="w-4 h-4 mr-2" /> Criar Nova Empresa
+                                        <Plus className="w-4 h-4 mr-2" /> Criar Novo Hóspede
                                       </Button>
                                     </div>
                                   </Command>
@@ -769,9 +914,75 @@ export function CreateReservationDialog({
                         />
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="billingType"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel className="font-semibold text-sm text-slate-800">
+                              Faturação (A quem faturar)
+                            </FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={(val) => {
+                                  field.onChange(val)
+                                  if (val === 'hospede') {
+                                    form.setValue('companyId', '')
+                                    form.setValue('isCreatingCompany', false)
+                                  }
+                                }}
+                                defaultValue={field.value}
+                                className="flex space-x-2"
+                              >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="hospede" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm">
+                                    Hóspede
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="empresa" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm">
+                                    Empresa
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="ambos" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm">
+                                    Ambos
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      {['empresa', 'ambos'].includes(billingType) && renderCompanyBlock()}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+                      <h3 className="font-semibold text-sm text-slate-800">Empresa Principal</h3>
+                      {renderCompanyBlock()}
+                    </div>
+                  </div>
+                  <div className="space-y-4">{renderAssociatedGuests()}</div>
+                </>
+              )}
             </div>
 
             <div className="space-y-4 p-4 bg-white rounded-lg border shadow-sm">

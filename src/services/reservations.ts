@@ -13,6 +13,8 @@ export interface PBReservation {
   billing_type?: 'hospede' | 'empresa' | 'ambos'
   applied_rate_type?: string
   company_id?: string
+  guest_id?: string
+  additional_guests?: string[]
   signature_file?: string
   balance: number
   total_value?: number
@@ -22,6 +24,8 @@ export interface PBReservation {
   updated: string
   expand?: {
     room_id?: RoomRecord
+    company_id?: any
+    additional_guests?: any[]
   }
 }
 
@@ -44,7 +48,9 @@ export interface PBConsumption {
 }
 
 export const getReservations = () =>
-  pb.collection('reservations').getFullList<PBReservation>({ expand: 'room_id' })
+  pb
+    .collection('reservations')
+    .getFullList<PBReservation>({ expand: 'room_id,company_id,additional_guests' })
 
 export const updateReservation = (id: string, data: FormData | Partial<PBReservation>) =>
   pb.collection('reservations').update<PBReservation>(id, data)

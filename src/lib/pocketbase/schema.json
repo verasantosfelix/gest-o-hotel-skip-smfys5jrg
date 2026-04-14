@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T21:55:28.526Z",
+  "generatedAt": "2026-04-14T22:09:12.071Z",
   "collections": [
     {
       "name": "users",
@@ -1662,6 +1662,13 @@
         },
         {
           "name": "company_id",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "guest_loyalty"
+        },
+        {
+          "name": "additional_guests",
           "type": "relation",
           "required": false,
           "system": false,
