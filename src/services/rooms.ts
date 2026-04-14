@@ -16,6 +16,7 @@ export interface RoomRecord {
     | 'Vivenda T1'
     | 'Vivenda T2'
     | string
+  bloco: 'A' | 'B' | 'V' | string
   floor: number
   assigned_staff?: string
   max_occupancy?: number
@@ -28,7 +29,7 @@ export interface RoomRecord {
 }
 
 export const getRooms = () =>
-  pb.collection('rooms').getFullList<RoomRecord>({ sort: 'floor,room_number' })
+  pb.collection('rooms').getFullList<RoomRecord>({ sort: 'bloco,floor,room_number' })
 
 export const updateRoom = (id: string, data: Partial<RoomRecord>) =>
   pb.collection('rooms').update<RoomRecord>(id, data)

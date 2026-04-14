@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T16:07:58.726Z",
+  "generatedAt": "2026-04-14T16:20:18.758Z",
   "collections": [
     {
       "name": "users",
@@ -1418,11 +1418,19 @@
           "type": "number",
           "required": false,
           "system": false
+        },
+        {
+          "name": "bloco",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["A", "B", "V"]
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_rooms_number ON rooms (room_number)",
-        "CREATE INDEX `idx_rooms_status_validation` ON `rooms` (status)"
+        "CREATE INDEX `idx_rooms_status_validation` ON `rooms` (status)",
+        "CREATE INDEX `idx_rooms_location` ON `rooms` (bloco, floor)"
       ]
     },
     {

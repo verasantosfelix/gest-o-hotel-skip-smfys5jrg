@@ -175,6 +175,8 @@ export default function Rooms() {
           <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead className="w-[100px]">Número</TableHead>
+              <TableHead>Bloco</TableHead>
+              <TableHead>Andar</TableHead>
               <TableHead>Tipologia</TableHead>
               <TableHead className="text-center">Lotação</TableHead>
               <TableHead>Status</TableHead>
@@ -185,17 +187,16 @@ export default function Rooms() {
           <TableBody>
             {filteredRooms.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-slate-500">
                   Nenhum quarto encontrado com os filtros atuais.
                 </TableCell>
               </TableRow>
             ) : (
               filteredRooms.map((room) => (
                 <TableRow key={room.id} className="hover:bg-slate-50 transition-colors">
-                  <TableCell className="font-semibold text-slate-900">
-                    {room.room_number}
-                    <div className="text-[10px] text-slate-400 font-normal">Andar {room.floor}</div>
-                  </TableCell>
+                  <TableCell className="font-semibold text-slate-900">{room.room_number}</TableCell>
+                  <TableCell className="font-medium text-slate-700">{room.bloco || '—'}</TableCell>
+                  <TableCell>{room.floor === 0 ? 'Térreo' : `${room.floor}º`}</TableCell>
                   <TableCell>{room.room_type}</TableCell>
                   <TableCell className="text-center">{room.max_occupancy} Pax</TableCell>
                   <TableCell>
@@ -282,7 +283,7 @@ export default function Rooms() {
 
           {viewRoom && (
             <div className="space-y-6 pt-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Status</p>
                   <Badge variant="outline" className={cn(getStatusConfig(viewRoom.status))}>
@@ -294,8 +295,14 @@ export default function Rooms() {
                   <p className="font-semibold text-slate-900">{viewRoom.room_type}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-slate-500 mb-1">Bloco</p>
+                  <p className="font-semibold text-slate-900">{viewRoom.bloco || '—'}</p>
+                </div>
+                <div>
                   <p className="text-xs text-slate-500 mb-1">Andar</p>
-                  <p className="font-semibold text-slate-900">{viewRoom.floor}º</p>
+                  <p className="font-semibold text-slate-900">
+                    {viewRoom.floor === 0 ? 'Térreo' : `${viewRoom.floor}º`}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Tarifa Base</p>

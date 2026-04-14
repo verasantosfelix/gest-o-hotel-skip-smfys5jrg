@@ -54,7 +54,8 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
       } else {
         setFormData({
           room_number: '',
-          floor: 1,
+          bloco: 'A',
+          floor: 0,
           room_type: 'Single',
           status: 'Disponível',
           max_occupancy: 2,
@@ -75,6 +76,9 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
     const errors: FieldErrors = {}
     if (!formData.room_number?.trim()) {
       errors.room_number = 'O número do quarto é obrigatório.'
+    }
+    if (!formData.bloco) {
+      errors.bloco = 'O bloco é obrigatório.'
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
@@ -134,7 +138,7 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Número do Quarto *</Label>
               <Input
@@ -147,12 +151,34 @@ export function RoomFormDialog({ open, onOpenChange, room }: RoomFormDialogProps
               )}
             </div>
             <div className="space-y-2">
+              <Label>Bloco *</Label>
+              <Select
+                value={formData.bloco}
+                onValueChange={(val: any) => setFormData({ ...formData, bloco: val })}
+              >
+                <SelectTrigger className={fieldErrors.bloco ? 'border-rose-500' : ''}>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A">Bloco A</SelectItem>
+                  <SelectItem value="B">Bloco B</SelectItem>
+                  <SelectItem value="V">Vivendas (V)</SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldErrors.bloco && <p className="text-xs text-rose-500">{fieldErrors.bloco}</p>}
+            </div>
+            <div className="space-y-2">
               <Label>Andar</Label>
               <Input
                 type="number"
                 min="0"
-                value={formData.floor || ''}
-                onChange={(e) => setFormData({ ...formData, floor: Number(e.target.value) })}
+                value={formData.floor ?? ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    floor: e.target.value === '' ? 0 : Number(e.target.value),
+                  })
+                }
               />
             </div>
           </div>
