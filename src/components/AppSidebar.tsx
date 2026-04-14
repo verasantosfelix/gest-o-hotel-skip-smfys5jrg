@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   BedDouble,
+  Tags,
   Users,
   History,
   Settings,
@@ -132,6 +133,7 @@ const navGroups = [
   {
     label: 'Estratégico & Financeiro',
     items: [
+      { name: 'Tarifas', url: '/tarifas', icon: Tags, requiresManager: true },
       { name: 'Alçadas (Aprovações)', url: '/alcadas', icon: ShieldCheck, requiresManager: true },
       { name: 'Analytics', url: '/analytics', icon: BarChart },
       { name: 'Relatórios', url: '/relatorios', icon: FileText },

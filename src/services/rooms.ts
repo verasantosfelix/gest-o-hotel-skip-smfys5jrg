@@ -24,6 +24,10 @@ export interface RoomRecord {
   allow_extra_bed?: boolean
   appliances?: string[]
   base_rate?: number
+  discount_corporate?: number
+  discount_group?: number
+  discount_frequent?: number
+  discount_custom?: number
   created: string
   updated: string
 }

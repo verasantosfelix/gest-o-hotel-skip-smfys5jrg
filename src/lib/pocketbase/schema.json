@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T16:57:48.783Z",
+  "generatedAt": "2026-04-14T17:03:40.084Z",
   "collections": [
     {
       "name": "users",
@@ -1425,6 +1425,30 @@
           "required": true,
           "system": false,
           "selectValues": ["A", "B", "V"]
+        },
+        {
+          "name": "discount_corporate",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "discount_group",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "discount_frequent",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "discount_custom",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
