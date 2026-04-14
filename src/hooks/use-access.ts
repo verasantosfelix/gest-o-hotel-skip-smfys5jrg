@@ -20,6 +20,7 @@ export function useAccess() {
           'Analytics',
           'Equipe & RH',
           'Pagamentos',
+          'Tarifário',
         ]
       default: {
         const actions = new Set([...transversal])
@@ -43,7 +44,12 @@ export function useAccess() {
               .add('F&B Operações')
           }
           if (role === 'Gerente_Area') {
-            actions.add('Revenue Mgmt').add('CRM').add('Manutenção').add('Governança')
+            actions
+              .add('Revenue Mgmt')
+              .add('CRM')
+              .add('Manutenção')
+              .add('Governança')
+              .add('Tarifário')
           }
         } else if (sector === 'F&B' || sector === 'Restaurante_Bar') {
           actions.add('F&B Básico').add('Menu Digital')
