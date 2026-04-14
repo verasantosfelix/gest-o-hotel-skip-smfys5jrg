@@ -55,8 +55,11 @@ export default function Index() {
 
   const loadData = async () => {
     try {
-      const [res, rms] = await Promise.all([getReservations(), getRooms()])
-      setReservations(res)
+      const [res, rms] = await Promise.all([
+        pb.collection('reservations').getFullList({ expand: 'guest_id' }),
+        getRooms(),
+      ])
+      setReservations(res as any)
       setRooms(rms)
     } catch (e) {
       console.error(e)
@@ -279,6 +282,16 @@ export default function Index() {
   }
 
   if (isExecutive) {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const inHouseCount = reservations.filter((r) => r.status === 'in_house').length
+    const activeRooms =
+      rooms.filter((r) => r.status !== 'maintenance' && r.status !== 'out_of_order').length || 1
+    const occupancy = Math.round((inHouseCount / activeRooms) * 100)
+
+    const checkinsToday = reservations.filter(
+      (r) => r.check_in.startsWith(todayStr) && r.status === 'previsto',
+    ).length
+
     return (
       <div className="space-y-6 animate-fade-in-up pb-8">
         <div className="mb-4">
@@ -294,14 +307,14 @@ export default function Index() {
             <CardContent className="p-6">
               <BedDouble className="w-6 h-6 mb-2 text-blue-600" />
               <p className="text-sm font-bold text-slate-600">Ocupação Global</p>
-              <p className="text-3xl font-black text-slate-800 mt-1">82%</p>
+              <p className="text-3xl font-black text-slate-800 mt-1">{occupancy}%</p>
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">
             <CardContent className="p-6">
               <ShieldCheck className="w-6 h-6 mb-2 text-emerald-600" />
               <p className="text-sm font-bold text-slate-600">Check-ins Hoje</p>
-              <p className="text-3xl font-black text-slate-800 mt-1">24</p>
+              <p className="text-3xl font-black text-slate-800 mt-1">{checkinsToday}</p>
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">

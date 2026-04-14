@@ -6,16 +6,21 @@ import { PBReservation } from '@/services/reservations'
 import { RoomRecord } from '@/services/rooms'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useState } from 'react'
 
 export function GanttChart({
   reservations,
   rooms,
   onMove,
 }: {
-  reservations: PBReservation[]
+  reservations: (PBReservation & { expand?: { guest_id?: any }; total_value?: number })[]
   rooms: RoomRecord[]
   onMove: (id: string, roomId: string, checkIn: string, checkOut: string) => void
 }) {
+  const [selectedRes, setSelectedRes] = useState<
+    (PBReservation & { expand?: { guest_id?: any }; total_value?: number }) | null
+  >(null)
   const today = startOfDay(new Date())
   const startDate = addDays(today, -3)
   const daysCount = 30
@@ -133,6 +138,7 @@ export function GanttChart({
                         key={res.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, res)}
+                        onClick={() => setSelectedRes(res)}
                         className={cn(
                           'absolute top-2 bottom-2 rounded-md border shadow-sm p-2 text-xs overflow-hidden cursor-grab active:cursor-grabbing hover:brightness-95 transition-all',
                           res.status === 'in_house'
@@ -163,6 +169,99 @@ export function GanttChart({
           )}
         </div>
       </div>
+
+      <Sheet open={!!selectedRes} onOpenChange={(open) => !open && setSelectedRes(null)}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Detalhes da Reserva</SheetTitle>
+          </SheetHeader>
+          {selectedRes && (
+            <div className="space-y-6 mt-6">
+              <div className="space-y-4 text-sm">
+                <div>
+                  <span className="text-slate-500 block text-xs mb-1 uppercase tracking-wider">
+                    Hóspede
+                  </span>
+                  <span className="font-medium text-slate-900 text-base">
+                    {selectedRes.expand?.guest_id?.guest_name || selectedRes.guest_name}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-xs mb-1 uppercase tracking-wider">
+                    Status
+                  </span>
+                  <Badge variant={selectedRes.status === 'in_house' ? 'default' : 'secondary'}>
+                    {selectedRes.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1 uppercase tracking-wider">
+                      Check-in
+                    </span>
+                    <span className="font-medium text-slate-900">{selectedRes.check_in}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs mb-1 uppercase tracking-wider">
+                      Check-out
+                    </span>
+                    <span className="font-medium text-slate-900">{selectedRes.check_out}</span>
+                  </div>
+                </div>
+                {selectedRes.expand?.guest_id && (
+                  <div className="p-4 bg-slate-50 rounded-lg space-y-3 mt-2 border border-slate-100">
+                    <h4 className="font-semibold text-slate-700 text-xs uppercase tracking-wider mb-2">
+                      Informações do Hóspede
+                    </h4>
+                    {selectedRes.expand.guest_id.email && (
+                      <div>
+                        <span className="text-slate-500 block text-xs">Email</span>
+                        <span className="font-medium text-slate-900">
+                          {selectedRes.expand.guest_id.email}
+                        </span>
+                      </div>
+                    )}
+                    {selectedRes.expand.guest_id.phone && (
+                      <div>
+                        <span className="text-slate-500 block text-xs">Telefone</span>
+                        <span className="font-medium text-slate-900">
+                          {selectedRes.expand.guest_id.phone}
+                        </span>
+                      </div>
+                    )}
+                    {selectedRes.expand.guest_id.document_id && (
+                      <div>
+                        <span className="text-slate-500 block text-xs">Documento</span>
+                        <span className="font-medium text-slate-900">
+                          {selectedRes.expand.guest_id.document_id}
+                        </span>
+                      </div>
+                    )}
+                    {selectedRes.expand.guest_id.tier && (
+                      <div>
+                        <span className="text-slate-500 block text-xs">Nível (Fidelidade)</span>
+                        <Badge variant="outline" className="mt-0.5">
+                          {selectedRes.expand.guest_id.tier}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selectedRes.total_value !== undefined && (
+                  <div className="pt-2 border-t border-slate-100 mt-4">
+                    <span className="text-slate-500 block text-xs mb-1 uppercase tracking-wider">
+                      Valor Total
+                    </span>
+                    <span className="font-bold text-slate-900 text-lg">
+                      R$ {selectedRes.total_value.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

@@ -1,0 +1,77 @@
+migrate(
+  (app) => {
+    // Update guest_loyalty
+    const guests = app.findCollectionByNameOrId('guest_loyalty')
+
+    if (!guests.fields.getByName('phone')) {
+      guests.fields.add(new TextField({ name: 'phone' }))
+    }
+    if (!guests.fields.getByName('document_id')) {
+      guests.fields.add(new TextField({ name: 'document_id' }))
+    }
+    app.save(guests)
+
+    // Update reservations
+    const reservations = app.findCollectionByNameOrId('reservations')
+    if (!reservations.fields.getByName('guest_id')) {
+      reservations.fields.add(
+        new RelationField({
+          name: 'guest_id',
+          collectionId: guests.id,
+          maxSelect: 1,
+          cascadeDelete: false,
+        }),
+      )
+    }
+    if (!reservations.fields.getByName('total_value')) {
+      reservations.fields.add(new NumberField({ name: 'total_value' }))
+    }
+    app.save(reservations)
+
+    // Seed Data: Create a dummy guest and link existing reservations without a guest
+    try {
+      let guest
+      try {
+        guest = app.findFirstRecordByData('guest_loyalty', 'email', 'joao.silva@example.com')
+      } catch (_) {
+        guest = new Record(guests)
+        guest.set('guest_name', 'João Silva')
+        guest.set('email', 'joao.silva@example.com')
+        guest.set('phone', '+55 11 99999-9999')
+        guest.set('document_id', '123.456.789-00')
+        guest.set('tier', 'Gold')
+        app.save(guest)
+      }
+
+      const resList = app.findRecordsByFilter('reservations', "guest_id = ''", '', 50, 0)
+      for (let r of resList) {
+        r.set('guest_id', guest.id)
+        if (!r.get('total_value')) {
+          r.set('total_value', 1500.0)
+        }
+        app.save(r)
+      }
+    } catch (err) {
+      console.log('Error seeding data:', err)
+    }
+  },
+  (app) => {
+    const guests = app.findCollectionByNameOrId('guest_loyalty')
+    if (guests.fields.getByName('phone')) {
+      guests.fields.removeByName('phone')
+    }
+    if (guests.fields.getByName('document_id')) {
+      guests.fields.removeByName('document_id')
+    }
+    app.save(guests)
+
+    const reservations = app.findCollectionByNameOrId('reservations')
+    if (reservations.fields.getByName('guest_id')) {
+      reservations.fields.removeByName('guest_id')
+    }
+    if (reservations.fields.getByName('total_value')) {
+      reservations.fields.removeByName('total_value')
+    }
+    app.save(reservations)
+  },
+)
