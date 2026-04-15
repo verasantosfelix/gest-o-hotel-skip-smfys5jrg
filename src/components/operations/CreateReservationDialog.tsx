@@ -255,19 +255,19 @@ export function CreateReservationDialog({
       if (r.roomId && r.typology) {
         const available = getAvailableRooms(r.typology, index)
         const isAvailable = available.some((ar) => ar.id === r.roomId)
-        const currentError = form.getFieldState(`rooms.${index}.roomId`).error
 
         if (!isAvailable) {
-          if (
-            currentError?.message !== 'O quarto selecionado não está disponível para estas datas.'
-          ) {
-            form.setError(`rooms.${index}.roomId`, {
-              type: 'manual',
-              message: 'O quarto selecionado não está disponível para estas datas.',
-            })
+          form.setValue(`rooms.${index}.roomId`, '', { shouldValidate: false })
+          form.setError(`rooms.${index}.roomId`, {
+            type: 'manual',
+            message:
+              'O quarto selecionado não está disponível para as datas escolhidas. Selecione outro quarto ou altere as datas.',
+          })
+        } else {
+          const currentError = form.getFieldState(`rooms.${index}.roomId`).error
+          if (currentError?.type === 'manual') {
+            form.clearErrors(`rooms.${index}.roomId`)
           }
-        } else if (isAvailable && currentError?.type === 'manual') {
-          form.clearErrors(`rooms.${index}.roomId`)
         }
       }
     })
@@ -284,7 +284,8 @@ export function CreateReservationDialog({
         if (!available.some((ar) => ar.id === r.roomId)) {
           form.setError(`rooms.${i}.roomId`, {
             type: 'manual',
-            message: 'O quarto selecionado não está disponível para estas datas.',
+            message:
+              'O quarto selecionado não está disponível para as datas escolhidas. Selecione outro quarto ou altere as datas.',
           })
           hasRoomErrors = true
         }
