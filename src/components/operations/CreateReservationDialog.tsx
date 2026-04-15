@@ -99,6 +99,15 @@ const schema = z
           })
         }
       }
+      if (data.isCreatingGuest) {
+        if (!data.guestName || data.guestName.trim().length < 2) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'O nome do hóspede é obrigatório',
+            path: ['guestName'],
+          })
+        }
+      }
     } else {
       if (data.isCreatingGuest) {
         if (!data.guestName || data.guestName.trim().length < 2) {
@@ -306,45 +315,31 @@ export function CreateReservationDialog({
       let finalGuestId = v.guestId
       let finalCompanyId = v.companyId
 
-      if (v.reservationType === 'individual') {
-        if (v.isCreatingGuest && !finalGuestId) {
-          const newG = await createLoyalty({
-            guest_name: v.guestName,
-            document_id: v.guestDocument,
-            email: v.guestEmail,
-            phone: v.guestPhone,
-            tier: 'Basic',
-          })
-          finalGuestId = newG.id
-        }
+      if (v.isCreatingGuest && !finalGuestId && v.guestName) {
+        const newG = await createLoyalty({
+          guest_name: v.guestName,
+          document_id: v.guestDocument,
+          email: v.guestEmail,
+          phone: v.guestPhone,
+          tier: 'Basic',
+        })
+        finalGuestId = newG.id
+      }
 
-        if (
-          ['empresa', 'ambos'].includes(v.billingType) &&
-          v.isCreatingCompany &&
-          !finalCompanyId
-        ) {
-          const newC = await createLoyalty({
-            guest_name: v.companyName,
-            company_name: v.companyName,
-            vat_number: v.vatNumber,
-            email: v.companyEmail,
-            phone: v.companyPhone,
-            tier: 'Corporate',
-          })
-          finalCompanyId = newC.id
-        }
-      } else {
-        if (v.isCreatingCompany && !finalCompanyId) {
-          const newC = await createLoyalty({
-            guest_name: v.companyName,
-            company_name: v.companyName,
-            vat_number: v.vatNumber,
-            email: v.companyEmail,
-            phone: v.companyPhone,
-            tier: 'Corporate',
-          })
-          finalCompanyId = newC.id
-        }
+      if (
+        (v.reservationType === 'corporate' || ['empresa', 'ambos'].includes(v.billingType)) &&
+        v.isCreatingCompany &&
+        !finalCompanyId
+      ) {
+        const newC = await createLoyalty({
+          guest_name: v.companyName,
+          company_name: v.companyName,
+          vat_number: v.vatNumber,
+          email: v.companyEmail,
+          phone: v.companyPhone,
+          tier: 'Corporate',
+        })
+        finalCompanyId = newC.id
       }
 
       for (const r of v.rooms) {
@@ -362,25 +357,24 @@ export function CreateReservationDialog({
           payload.applied_rate_type = r.typology
         }
 
-        if (v.reservationType === 'corporate') {
-          const companyNameStr = finalCompanyId
-            ? guests.find((g) => g.id === finalCompanyId)?.company_name
-            : v.companyName
+        const guestNameStr = finalGuestId
+          ? guests.find((g) => g.id === finalGuestId)?.guest_name
+          : v.guestName
 
-          payload.guest_name = companyNameStr || 'Empresa Desconhecida'
+        const companyNameStr = finalCompanyId
+          ? guests.find((g) => g.id === finalCompanyId)?.company_name
+          : v.companyName
+
+        if (v.reservationType === 'corporate') {
+          payload.guest_name = guestNameStr || companyNameStr || 'Empresa Desconhecida'
           payload.billing_type = 'empresa'
           payload.is_corporate = true
-
           if (finalCompanyId) payload.company_id = finalCompanyId
-
+          if (finalGuestId) payload.guest_id = finalGuestId
           if (v.additionalGuests && v.additionalGuests.length > 0) {
             payload.additional_guests = v.additionalGuests
           }
         } else {
-          const guestNameStr = finalGuestId
-            ? guests.find((g) => g.id === finalGuestId)?.guest_name
-            : v.guestName
-
           payload.guest_name = guestNameStr || 'Desconhecido'
           payload.billing_type = v.billingType
           payload.is_corporate = false
@@ -625,6 +619,200 @@ export function CreateReservationDialog({
     )
   }
 
+  const renderGuestBlock = (isOptional = false) => (
+    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+      <h3 className="font-semibold text-sm text-slate-800">
+        Hóspede Principal{' '}
+        {isOptional && <span className="font-normal text-slate-500">(Opcional)</span>}
+      </h3>
+      {guestId && selectedGuest && !isCreatingGuest ? (
+        <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
+          <div>
+            <p className="font-medium text-sm">{selectedGuest.guest_name}</p>
+            {(selectedGuest.email || selectedGuest.document_id) && (
+              <p className="text-xs text-slate-500">
+                {selectedGuest.document_id} • {selectedGuest.email}
+              </p>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              form.setValue('guestId', '')
+              form.setValue('isCreatingGuest', false)
+            }}
+          >
+            Alterar
+          </Button>
+        </div>
+      ) : isCreatingGuest ? (
+        <div className="space-y-3 p-4 border border-emerald-100 rounded-md bg-emerald-50/30 relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-6 w-6"
+            onClick={() => form.setValue('isCreatingGuest', false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+          <h4 className="font-medium text-xs text-emerald-800 uppercase tracking-wider">
+            Novo Hóspede
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="guestName"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Nome</FormLabel>
+                  <FormControl>
+                    <Input
+                      className={cn(
+                        'h-8 text-sm',
+                        fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="guestDocument"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Documento</FormLabel>
+                  <FormControl>
+                    <Input
+                      className={cn(
+                        'h-8 text-sm',
+                        fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="guestEmail"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      className={cn(
+                        'h-8 text-sm',
+                        fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="guestPhone"
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Telefone</FormLabel>
+                  <FormControl>
+                    <Input
+                      className={cn(
+                        'h-8 text-sm',
+                        fieldState.invalid && 'border-destructive focus-visible:ring-destructive',
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      ) : (
+        <FormField
+          control={form.control}
+          name="guestId"
+          render={({ field, fieldState }) => (
+            <FormItem>
+              <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-between bg-white text-sm',
+                        !field.value && 'text-muted-foreground',
+                        fieldState.invalid && 'border-destructive text-destructive',
+                      )}
+                    >
+                      {field.value
+                        ? physicalGuests.find((g) => g.id === field.value)?.guest_name
+                        : 'Buscar hóspede...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
+                  <Command>
+                    <CommandInput placeholder="Procurar por nome..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum hóspede encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {physicalGuests.map((g) => (
+                          <CommandItem
+                            key={g.id}
+                            onSelect={() => {
+                              field.onChange(g.id)
+                              setGuestPopOpen(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                g.id === field.value ? 'opacity-100' : 'opacity-0',
+                              )}
+                            />
+                            {g.guest_name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                    <div className="p-1 border-t">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full justify-start text-emerald-600 text-sm h-8"
+                        onClick={() => {
+                          form.setValue('isCreatingGuest', true)
+                          setGuestPopOpen(false)
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Criar Novo Hóspede
+                      </Button>
+                    </div>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+    </div>
+  )
+
   const renderAssociatedGuests = () => (
     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
       <FormField
@@ -732,21 +920,8 @@ export function CreateReservationDialog({
                         form.clearErrors()
                         if (val === 'corporate') {
                           form.setValue('billingType', 'empresa')
-                          form.setValue('isCreatingGuest', false)
-                          form.setValue('guestId', '')
-                          form.setValue('guestName', '')
-                          form.setValue('guestDocument', '')
-                          form.setValue('guestEmail', '')
-                          form.setValue('guestPhone', '')
                         } else {
                           form.setValue('billingType', 'hospede')
-                          form.setValue('isCreatingCompany', false)
-                          form.setValue('companyId', '')
-                          form.setValue('companyName', '')
-                          form.setValue('vatNumber', '')
-                          form.setValue('companyEmail', '')
-                          form.setValue('companyPhone', '')
-                          form.setValue('additionalGuests', [])
                         }
                       }}
                       defaultValue={field.value}
@@ -858,201 +1033,7 @@ export function CreateReservationDialog({
             <div className="grid grid-cols-2 gap-6">
               {reservationType === 'individual' ? (
                 <>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
-                      <h3 className="font-semibold text-sm text-slate-800">Hóspede Principal</h3>
-                      {guestId && selectedGuest && !isCreatingGuest ? (
-                        <div className="flex items-center justify-between p-3 border rounded-md bg-slate-50">
-                          <div>
-                            <p className="font-medium text-sm">{selectedGuest.guest_name}</p>
-                            {(selectedGuest.email || selectedGuest.document_id) && (
-                              <p className="text-xs text-slate-500">
-                                {selectedGuest.document_id} • {selectedGuest.email}
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              form.setValue('guestId', '')
-                              form.setValue('isCreatingGuest', false)
-                            }}
-                          >
-                            Alterar
-                          </Button>
-                        </div>
-                      ) : isCreatingGuest ? (
-                        <div className="space-y-3 p-4 border border-emerald-100 rounded-md bg-emerald-50/30 relative">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 right-2 h-6 w-6"
-                            onClick={() => form.setValue('isCreatingGuest', false)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                          <h4 className="font-medium text-xs text-emerald-800 uppercase tracking-wider">
-                            Novo Hóspede
-                          </h4>
-                          <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                              control={form.control}
-                              name="guestName"
-                              render={({ field, fieldState }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs">Nome</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className={cn(
-                                        'h-8 text-sm',
-                                        fieldState.invalid &&
-                                          'border-destructive focus-visible:ring-destructive',
-                                      )}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="guestDocument"
-                              render={({ field, fieldState }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs">Documento</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className={cn(
-                                        'h-8 text-sm',
-                                        fieldState.invalid &&
-                                          'border-destructive focus-visible:ring-destructive',
-                                      )}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="guestEmail"
-                              render={({ field, fieldState }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs">Email</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className={cn(
-                                        'h-8 text-sm',
-                                        fieldState.invalid &&
-                                          'border-destructive focus-visible:ring-destructive',
-                                      )}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="guestPhone"
-                              render={({ field, fieldState }) => (
-                                <FormItem>
-                                  <FormLabel className="text-xs">Telefone</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      className={cn(
-                                        'h-8 text-sm',
-                                        fieldState.invalid &&
-                                          'border-destructive focus-visible:ring-destructive',
-                                      )}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <FormField
-                          control={form.control}
-                          name="guestId"
-                          render={({ field, fieldState }) => (
-                            <FormItem>
-                              <Popover open={guestPopOpen} onOpenChange={setGuestPopOpen}>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        'w-full justify-between bg-white text-sm',
-                                        !field.value && 'text-muted-foreground',
-                                        fieldState.invalid && 'border-destructive text-destructive',
-                                      )}
-                                    >
-                                      {field.value
-                                        ? physicalGuests.find((g) => g.id === field.value)
-                                            ?.guest_name
-                                        : 'Buscar hóspede...'}
-                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]">
-                                  <Command>
-                                    <CommandInput placeholder="Procurar por nome..." />
-                                    <CommandList>
-                                      <CommandEmpty>Nenhum hóspede encontrado.</CommandEmpty>
-                                      <CommandGroup>
-                                        {physicalGuests.map((g) => (
-                                          <CommandItem
-                                            key={g.id}
-                                            onSelect={() => {
-                                              field.onChange(g.id)
-                                              setGuestPopOpen(false)
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
-                                                'mr-2 h-4 w-4',
-                                                g.id === field.value ? 'opacity-100' : 'opacity-0',
-                                              )}
-                                            />
-                                            {g.guest_name}
-                                          </CommandItem>
-                                        ))}
-                                      </CommandGroup>
-                                    </CommandList>
-                                    <div className="p-1 border-t">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="w-full justify-start text-emerald-600 text-sm h-8"
-                                        onClick={() => {
-                                          form.setValue('isCreatingGuest', true)
-                                          setGuestPopOpen(false)
-                                        }}
-                                      >
-                                        <Plus className="w-4 h-4 mr-2" /> Criar Novo Hóspede
-                                      </Button>
-                                    </div>
-                                  </Command>
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                    </div>
-                  </div>
+                  <div className="space-y-4">{renderGuestBlock(false)}</div>
 
                   <div className="space-y-4">
                     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
@@ -1123,8 +1104,9 @@ export function CreateReservationDialog({
                       <h3 className="font-semibold text-sm text-slate-800">Empresa Principal</h3>
                       {renderCompanyBlock()}
                     </div>
+                    {renderAssociatedGuests()}
                   </div>
-                  <div className="space-y-4">{renderAssociatedGuests()}</div>
+                  <div className="space-y-4">{renderGuestBlock(true)}</div>
                 </>
               )}
             </div>
