@@ -729,10 +729,24 @@ export function CreateReservationDialog({
                     <RadioGroup
                       onValueChange={(val) => {
                         field.onChange(val)
+                        form.clearErrors()
                         if (val === 'corporate') {
                           form.setValue('billingType', 'empresa')
+                          form.setValue('isCreatingGuest', false)
+                          form.setValue('guestId', '')
+                          form.setValue('guestName', '')
+                          form.setValue('guestDocument', '')
+                          form.setValue('guestEmail', '')
+                          form.setValue('guestPhone', '')
                         } else {
                           form.setValue('billingType', 'hospede')
+                          form.setValue('isCreatingCompany', false)
+                          form.setValue('companyId', '')
+                          form.setValue('companyName', '')
+                          form.setValue('vatNumber', '')
+                          form.setValue('companyEmail', '')
+                          form.setValue('companyPhone', '')
+                          form.setValue('additionalGuests', [])
                         }
                       }}
                       defaultValue={field.value}
@@ -1054,9 +1068,15 @@ export function CreateReservationDialog({
                               <RadioGroup
                                 onValueChange={(val) => {
                                   field.onChange(val)
+                                  form.clearErrors('companyId')
+                                  form.clearErrors('companyName')
                                   if (val === 'hospede') {
                                     form.setValue('companyId', '')
                                     form.setValue('isCreatingCompany', false)
+                                    form.setValue('companyName', '')
+                                    form.setValue('vatNumber', '')
+                                    form.setValue('companyEmail', '')
+                                    form.setValue('companyPhone', '')
                                   }
                                 }}
                                 defaultValue={field.value}
