@@ -47,6 +47,7 @@ import pb from '@/lib/pocketbase/client'
 const roomSchema = z.object({
   typology: z.string().min(1, 'Selecione uma tipologia'),
   roomId: z.string().min(1, 'Selecione um quarto'),
+  subOccupancy: z.string().min(1, 'Selecione a subocupação'),
   discountId: z.string().optional(),
   guestsCount: z.number().min(1, 'Mínimo 1 hóspede'),
   rate: z.number().min(0, 'Valor inválido'),
@@ -173,10 +174,11 @@ export function CreateReservationDialog({
       isCreatingCompany: false,
       billingType: 'hospede',
       additionalGuests: [],
-      rooms: [{ typology: '', roomId: '', discountId: 'none', guestsCount: 1, rate: 0 }],
+      rooms: [
+        { typology: '', roomId: '', subOccupancy: '', discountId: 'none', guestsCount: 1, rate: 0 },
+      ],
     },
   })
-
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'rooms' })
 
   const reservationType = form.watch('reservationType')
@@ -206,7 +208,16 @@ export function CreateReservationDialog({
         isCreatingCompany: false,
         billingType: 'hospede',
         additionalGuests: [],
-        rooms: [{ typology: '', roomId: '', discountId: 'none', guestsCount: 1, rate: 0 }],
+        rooms: [
+          {
+            typology: '',
+            roomId: '',
+            subOccupancy: '',
+            discountId: 'none',
+            guestsCount: 1,
+            rate: 0,
+          },
+        ],
       })
       setOverlappingRes([])
     }
@@ -250,9 +261,13 @@ export function CreateReservationDialog({
     if (nights > 0 && roomConfigs.length > 0) {
       const currentRooms = form.getValues('rooms')
       currentRooms.forEach((r, index) => {
-        form.setValue(`rooms.${index}.rate`, calculateRoomRate(r.typology, r.discountId), {
-          shouldValidate: true,
-        })
+        form.setValue(
+          `rooms.${index}.rate`,
+          calculateRoomRate(r.subOccupancy || r.typology, r.discountId),
+          {
+            shouldValidate: true,
+          },
+        )
       })
     }
   }, [nights, roomConfigs, discounts, form])
@@ -353,7 +368,9 @@ export function CreateReservationDialog({
           guests_count: r.guestsCount,
         }
 
-        if (r.typology) {
+        if (r.subOccupancy) {
+          payload.applied_rate_type = r.subOccupancy
+        } else if (r.typology) {
           payload.applied_rate_type = r.typology
         }
 
@@ -1124,6 +1141,7 @@ export function CreateReservationDialog({
                     append({
                       typology: '',
                       roomId: '',
+                      subOccupancy: '',
                       discountId: 'none',
                       guestsCount: 1,
                       rate: 0,
@@ -1158,30 +1176,26 @@ export function CreateReservationDialog({
                           control={form.control}
                           name={`rooms.${index}.typology`}
                           render={({ field: f, fieldState }) => (
-                            <FormItem className="col-span-12 sm:col-span-3 space-y-1">
+                            <FormItem className="col-span-12 sm:col-span-2 space-y-1">
                               <FormLabel className="text-xs">Tipologia</FormLabel>
                               <Select
                                 onValueChange={(val) => {
                                   f.onChange(val)
                                   form.setValue(`rooms.${index}.roomId`, '')
-                                  const discountId = form.getValues(`rooms.${index}.discountId`)
-                                  form.setValue(
-                                    `rooms.${index}.rate`,
-                                    calculateRoomRate(val, discountId),
-                                    { shouldValidate: true },
-                                  )
+                                  form.setValue(`rooms.${index}.subOccupancy`, '')
+                                  form.setValue(`rooms.${index}.rate`, 0, { shouldValidate: true })
                                 }}
                                 value={f.value}
                               >
                                 <FormControl>
                                   <SelectTrigger
                                     className={cn(
-                                      'bg-white h-8 text-xs',
+                                      'bg-white h-8 text-xs px-2',
                                       fieldState.invalid &&
                                         'border-destructive focus:ring-destructive',
                                     )}
                                   >
-                                    <SelectValue placeholder="Selecione o tipo..." />
+                                    <SelectValue placeholder="Tipo..." />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1201,12 +1215,26 @@ export function CreateReservationDialog({
                           control={form.control}
                           name={`rooms.${index}.roomId`}
                           render={({ field: f, fieldState }) => (
-                            <FormItem className="col-span-12 sm:col-span-3 space-y-1">
+                            <FormItem className="col-span-12 sm:col-span-2 space-y-1">
                               <FormLabel className="text-xs">Quarto</FormLabel>
                               <Select
                                 onValueChange={(val) => {
                                   f.onChange(val)
                                   form.clearErrors(`rooms.${index}.roomId`)
+                                  const selectedRoom = roomsList.find((r) => r.id === val)
+                                  if (selectedRoom && selectedRoom.room_type) {
+                                    form.setValue(
+                                      `rooms.${index}.subOccupancy`,
+                                      selectedRoom.room_type,
+                                      { shouldValidate: true },
+                                    )
+                                    const discountId = form.getValues(`rooms.${index}.discountId`)
+                                    form.setValue(
+                                      `rooms.${index}.rate`,
+                                      calculateRoomRate(selectedRoom.room_type, discountId),
+                                      { shouldValidate: true },
+                                    )
+                                  }
                                 }}
                                 value={f.value}
                                 disabled={!typology}
@@ -1214,12 +1242,12 @@ export function CreateReservationDialog({
                                 <FormControl>
                                   <SelectTrigger
                                     className={cn(
-                                      'bg-white h-8 text-xs',
+                                      'bg-white h-8 text-xs px-2',
                                       fieldState.invalid &&
                                         'border-destructive text-destructive focus:ring-destructive',
                                     )}
                                   >
-                                    <SelectValue placeholder="Selecione um quarto" />
+                                    <SelectValue placeholder="Quarto" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1251,17 +1279,62 @@ export function CreateReservationDialog({
 
                         <FormField
                           control={form.control}
-                          name={`rooms.${index}.discountId`}
+                          name={`rooms.${index}.subOccupancy`}
                           render={({ field: f, fieldState }) => (
-                            <FormItem className="col-span-12 sm:col-span-3 space-y-1">
-                              <FormLabel className="text-xs">Desconto Aplicado</FormLabel>
+                            <FormItem className="col-span-12 sm:col-span-2 space-y-1">
+                              <FormLabel className="text-xs">Subocupação</FormLabel>
                               <Select
                                 onValueChange={(val) => {
                                   f.onChange(val)
-                                  const selectedTypology = form.getValues(`rooms.${index}.typology`)
+                                  const discountId = form.getValues(`rooms.${index}.discountId`)
                                   form.setValue(
                                     `rooms.${index}.rate`,
-                                    calculateRoomRate(selectedTypology, val),
+                                    calculateRoomRate(val, discountId),
+                                    { shouldValidate: true },
+                                  )
+                                }}
+                                value={f.value}
+                                disabled={!currentRoomId}
+                              >
+                                <FormControl>
+                                  <SelectTrigger
+                                    className={cn(
+                                      'bg-white h-8 text-xs px-2',
+                                      fieldState.invalid &&
+                                        'border-destructive focus:ring-destructive',
+                                    )}
+                                  >
+                                    <SelectValue placeholder="Subocupação..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {roomConfigs.map((c) => (
+                                    <SelectItem key={c.id} value={c.name} className="text-xs">
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage className="text-[10px]" />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`rooms.${index}.discountId`}
+                          render={({ field: f, fieldState }) => (
+                            <FormItem className="col-span-12 sm:col-span-3 space-y-1">
+                              <FormLabel className="text-xs">Desconto</FormLabel>
+                              <Select
+                                onValueChange={(val) => {
+                                  f.onChange(val)
+                                  const selectedRateType =
+                                    form.getValues(`rooms.${index}.subOccupancy`) ||
+                                    form.getValues(`rooms.${index}.typology`)
+                                  form.setValue(
+                                    `rooms.${index}.rate`,
+                                    calculateRoomRate(selectedRateType, val),
                                     { shouldValidate: true },
                                   )
                                 }}
