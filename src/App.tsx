@@ -105,6 +105,7 @@ import AIConcierge from './pages/AIConcierge'
 import FinanceCorporate from './pages/FinanceCorporate'
 import NightAudit from './pages/NightAudit'
 import Tarifario from './pages/Tarifario'
+import PrimeiroAcesso from './pages/PrimeiroAcesso'
 
 import HRIntelligence from './pages/HRIntelligence'
 import ITAdmin from './pages/ITAdmin'
@@ -156,6 +157,7 @@ const App = () => {
 
                         <Route element={<Layout />}>
                           <Route path="/" element={<Index />} />
+                          <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
 
                           {/* Main Routes */}
                           <Route path="/reservas" element={<Reservations />} />

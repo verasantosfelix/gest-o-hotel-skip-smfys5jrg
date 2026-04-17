@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-17T14:10:18.844Z",
+  "generatedAt": "2026-04-17T14:56:29.928Z",
   "collections": [
     {
       "name": "users",
@@ -73,6 +73,12 @@
         {
           "name": "phone",
           "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "first_login_completed",
+          "type": "bool",
           "required": false,
           "system": false
         }

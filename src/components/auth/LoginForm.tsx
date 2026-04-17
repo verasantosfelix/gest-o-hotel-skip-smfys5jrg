@@ -47,18 +47,27 @@ export function LoginForm() {
     setError('')
 
     try {
-      const res = await pb.send('/backend/v1/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      })
+      const res = await pb.collection('users').authWithPassword(email, password)
 
-      pb.authStore.save(res.token, res.record)
+      if (res.record.is_active === false) {
+        pb.authStore.clear()
+        setError('A sua conta está suspensa. Por favor, contacte o administrador.')
+        setLoading(false)
+        return
+      }
+
       retryLoadProfile()
 
-      const searchParams = new URLSearchParams(location.search)
-      const redirect = searchParams.get('redirect')
-      if (redirect) {
-        navigate(redirect, { replace: true })
+      if (res.record.first_login_completed === false) {
+        navigate('/primeiro-acesso', { replace: true })
+      } else {
+        const searchParams = new URLSearchParams(location.search)
+        const redirect = searchParams.get('redirect')
+        if (redirect) {
+          navigate(redirect, { replace: true })
+        } else {
+          navigate('/', { replace: true })
+        }
       }
     } catch (err: any) {
       console.error('Login error:', err)
