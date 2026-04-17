@@ -1,33 +1,21 @@
 routerAdd('POST', '/backend/v1/auth/login', (e) => {
   const body = e.requestInfo().body || {}
-  const identifier = (body.identifier || '').trim()
+  const email = (body.email || '').trim()
   const password = body.password || ''
 
-  if (!identifier || !password) {
+  if (!email || !password) {
     return e.badRequestError('Missing credentials')
   }
 
   let user
   try {
-    if (identifier.includes('@')) {
-      user = $app.findAuthRecordByEmail('users', identifier)
-    } else {
-      try {
-        user = $app.findFirstRecordByData('users', 'employee_number', identifier)
-      } catch (_) {
-        try {
-          user = $app.findFirstRecordByData('users', 'phone', identifier)
-        } catch (_) {
-          return e.badRequestError('Invalid credentials.')
-        }
-      }
-    }
+    user = $app.findAuthRecordByEmail('users', email)
   } catch (_) {
-    return e.badRequestError('Invalid credentials.')
+    return e.badRequestError('Invalid email or password.')
   }
 
   if (!user.validatePassword(password)) {
-    return e.badRequestError('Invalid credentials.')
+    return e.badRequestError('Invalid email or password.')
   }
 
   if (user.getBool('is_active') === false) {

@@ -11,7 +11,7 @@ import useAuthStore from '@/stores/useAuthStore'
 import { toast } from '@/components/ui/use-toast'
 
 export function LoginForm() {
-  const [identifier, setIdentifier] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -20,14 +20,14 @@ export function LoginForm() {
   const location = useLocation()
 
   const handleResetPassword = async () => {
-    if (!identifier || !identifier.includes('@')) {
+    if (!email || !email.includes('@')) {
       setError('Para recuperar a palavra-passe, insira o seu email no campo acima.')
       return
     }
     setLoading(true)
     setError('')
     try {
-      await pb.collection('users').requestPasswordReset(identifier)
+      await pb.collection('users').requestPasswordReset(email)
       toast({ title: 'Email enviado', description: 'Verifique a sua caixa de entrada.' })
     } catch (err: any) {
       setError('Erro ao solicitar recuperação. Verifique se o email está correto.')
@@ -38,7 +38,7 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!identifier || !password) {
+    if (!email || !password) {
       setError('Por favor, preencha todos os campos.')
       return
     }
@@ -49,7 +49,7 @@ export function LoginForm() {
     try {
       const res = await pb.send('/backend/v1/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ email, password }),
       })
 
       pb.authStore.save(res.token, res.record)
@@ -65,7 +65,7 @@ export function LoginForm() {
       if (err.status === 403) {
         setError('A sua conta está suspensa. Por favor, contacte o administrador.')
       } else {
-        setError('Credenciais inválidas. Verifique os seus dados.')
+        setError('Email ou palavra-passe inválidos.')
       }
     } finally {
       setLoading(false)
@@ -96,15 +96,15 @@ export function LoginForm() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="identifier" className="text-slate-700">
-                Email, Nº Funcionário ou Telemóvel
+              <Label htmlFor="email" className="text-slate-700">
+                Email
               </Label>
               <Input
-                id="identifier"
-                type="text"
-                placeholder="Ex: EMP001, 912345678, email@exemplo.com"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="exemplo@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 className="h-11 border-slate-200"
                 autoComplete="username"
