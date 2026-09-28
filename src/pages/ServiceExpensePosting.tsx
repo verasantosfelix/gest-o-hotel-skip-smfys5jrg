@@ -20,7 +20,8 @@ import { useAccess } from '@/hooks/use-access'
 import { RestrictedAccess } from '@/components/RestrictedAccess'
 
 export default function ServiceExpensePosting() {
-  const { hasAccess, profile } = useAccess()
+  const { hasAccess } = useAccess()
+  const { profile } = useAuthStore()
   const [searchParams] = useSearchParams()
   const { reservations, addConsumption } = useReservationStore()
   const { userName } = useAuthStore()

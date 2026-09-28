@@ -82,9 +82,9 @@ export function SpaKPIs() {
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
                 <YAxis hide />
                 <ChartTooltip
-                  content={
-                    <ChartTooltipContent formatter={(v: number) => formatCurrency(v, 'AOA')} />
-                  }
+                  content={(props: any) => (
+                    <ChartTooltipContent {...props} formatter={(v: any) => formatCurrency(Number(v), 'AOA')} />
+                  )}
                 />
                 <Bar dataKey="valor" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>

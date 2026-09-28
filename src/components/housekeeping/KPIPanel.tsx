@@ -5,11 +5,18 @@ import { CheckCircle2, Clock, XCircle, Wrench } from 'lucide-react'
 export function KPIPanel({ rooms }: { rooms: RoomRecord[] }) {
   const total = rooms.length
   const ready = rooms.filter(
-    (r) => r.status === 'vago_pronto' || r.status === 'ocupado_pronto',
+    (r) =>
+      (r.status as string) === 'Disponível' ||
+      (r.status as string) === 'vago_pronto' ||
+      (r.status as string) === 'ocupado_pronto',
   ).length
-  const dirty = rooms.filter((r) => r.status === 'sujo').length
-  const maint = rooms.filter((r) => r.status === 'manutencao').length
-  const dnd = rooms.filter((r) => r.status === 'nao_perturbar').length
+  const dirty = rooms.filter(
+    (r) => (r.status as string) === 'Limpeza' || (r.status as string) === 'sujo',
+  ).length
+  const maint = rooms.filter(
+    (r) => (r.status as string) === 'Manutenção' || (r.status as string) === 'manutencao',
+  ).length
+  const dnd = rooms.filter((r) => (r.status as string) === 'nao_perturbar').length
 
   return (
     <div className="space-y-6 animate-fade-in">

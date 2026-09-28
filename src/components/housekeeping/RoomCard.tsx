@@ -59,12 +59,12 @@ export function RoomCard({ room, onAction }: RoomCardProps) {
       </CardHeader>
 
       <CardContent className="px-4 py-3 flex-1">
-        {room.status === 'nao_perturbar' && (
+        {(room.status as string) === 'nao_perturbar' && (
           <div className="flex items-center gap-2 text-purple-700 bg-purple-100 p-2 rounded text-sm">
             <ShieldAlert className="w-4 h-4" /> Não Perturbe
           </div>
         )}
-        {room.status === 'manutencao' && (
+        {((room.status as string) === 'manutencao' || (room.status as string) === 'Manutenção') && (
           <div className="flex items-center gap-2 text-slate-700 bg-slate-200 p-2 rounded text-sm line-clamp-2">
             <Wrench className="w-4 h-4 shrink-0" />{' '}
             {room.maintenance_description || 'Manutenção geral'}
@@ -78,9 +78,11 @@ export function RoomCard({ room, onAction }: RoomCardProps) {
           className="col-span-2 bg-slate-900 text-white hover:bg-slate-800"
           onClick={() => onAction('checklist', room)}
           disabled={
-            room.status === 'nao_perturbar' ||
-            room.status === 'manutencao' ||
-            room.status === 'vago_pronto'
+            (room.status as string) === 'nao_perturbar' ||
+            (room.status as string) === 'manutencao' ||
+            (room.status as string) === 'Manutenção' ||
+            (room.status as string) === 'vago_pronto' ||
+            (room.status as string) === 'Disponível'
           }
         >
           <PlayCircle className="w-4 h-4 mr-1" /> Iniciar

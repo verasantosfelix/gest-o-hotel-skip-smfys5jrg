@@ -3,7 +3,21 @@ import pb from '@/lib/pocketbase/client'
 export interface RoomRecord {
   id: string
   room_number: string
-  status: 'Disponível' | 'Ocupado' | 'Manutenção' | 'Limpeza'
+  status:
+    | 'Disponível'
+    | 'Ocupado'
+    | 'Manutenção'
+    | 'Limpeza'
+    | 'occupied'
+    | 'available'
+    | 'cleaning'
+    | 'maintenance'
+    | 'sujo'
+    | 'vago_pronto'
+    | 'ocupado_pronto'
+    | 'nao_perturbar'
+    | 'manutencao'
+    | string
   maintenance_description?: string
   priority?: 'low' | 'medium' | 'high' | ''
   housekeeping_priority?: 'normal' | 'vip' | 'early_checkin' | 'late_checkout'

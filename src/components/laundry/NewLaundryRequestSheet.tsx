@@ -32,14 +32,21 @@ import { toast } from '@/components/ui/use-toast'
 
 const formSchema = z.object({
   type: z.string().min(1, 'Selecione o tipo de item'),
-  quantity: z.coerce.number().min(1, 'A quantidade deve ser maior que 0'),
+  quantity: z.number().min(1, 'A quantidade deve ser maior que 0'),
   urgency: z.enum(['normal', 'high']),
   item: z.string().min(1, 'Descreva os itens'),
   location: z.string().min(1, 'Informe o número do quarto'),
   staff_member: z.string().min(1, 'Informe o nome do hóspede'),
 })
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = {
+  type: string
+  quantity: number
+  urgency: 'normal' | 'high'
+  item: string
+  location: string
+  staff_member: string
+}
 
 interface Props {
   open: boolean
@@ -51,7 +58,7 @@ export function NewLaundryRequestSheet({ open, onOpenChange, onSuccess }: Props)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       type: '',
       quantity: 1,
@@ -163,7 +170,12 @@ export function NewLaundryRequestSheet({ open, onOpenChange, onSuccess }: Props)
                   <FormItem>
                     <FormLabel>Quantidade Total</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} />
+                      <Input
+                        type="number"
+                        min="1"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-15T16:46:00.664Z",
+  "generatedAt": "2026-09-28T23:28:29.554Z",
   "collections": [
     {
       "name": "users",
@@ -73,6 +73,12 @@
         {
           "name": "phone",
           "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "first_login_completed",
+          "type": "bool",
           "required": false,
           "system": false
         }
@@ -1303,7 +1309,10 @@
           ]
         }
       ],
-      "indexes": ["CREATE INDEX `idx_profiles_manager` ON `profiles` (manager_id)"]
+      "indexes": [
+        "CREATE INDEX `idx_profiles_manager` ON `profiles` (manager_id)",
+        "CREATE UNIQUE INDEX `idx_profiles_slug` ON `profiles` (`slug`) WHERE slug != ''"
+      ]
     },
     {
       "name": "rooms",

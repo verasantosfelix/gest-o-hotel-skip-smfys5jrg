@@ -42,7 +42,7 @@ export function MaintenanceModal({
         priority,
         status: 'open',
       })
-      await updateRoom(room.id, { status: 'manutencao', maintenance_description: desc })
+      await updateRoom(room.id, { status: 'Manutenção', maintenance_description: desc })
       toast({ title: 'Ticket de manutenção criado.' })
       onClose()
     } catch (e) {

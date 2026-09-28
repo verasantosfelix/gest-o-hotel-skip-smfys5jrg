@@ -46,9 +46,15 @@ export function FrontOfficeMain({ onNavigate }: { onNavigate: (tab: string) => v
   )
   const inHouse = reservations.filter((r) => r.status === 'in_house')
 
-  const readyRooms = rooms.filter((r) => r.status === 'available').length
-  const dirtyRooms = rooms.filter((r) => r.status === 'cleaning').length
-  const maintRooms = rooms.filter((r) => r.status === 'maintenance').length
+  const readyRooms = rooms.filter(
+    (r) => (r.status as string) === 'Disponível' || (r.status as string) === 'available',
+  ).length
+  const dirtyRooms = rooms.filter(
+    (r) => (r.status as string) === 'Limpeza' || (r.status as string) === 'cleaning',
+  ).length
+  const maintRooms = rooms.filter(
+    (r) => (r.status as string) === 'Manutenção' || (r.status as string) === 'maintenance',
+  ).length
 
   return (
     <div className="space-y-6 animate-fade-in pb-2">

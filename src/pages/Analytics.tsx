@@ -121,7 +121,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={(props: any) => <ChartTooltipContent {...props} />} />
                 <Bar dataKey="occ" fill="var(--color-occ)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
@@ -138,7 +138,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={(props: any) => <ChartTooltipContent {...props} />} />
                 <Line
                   type="monotone"
                   dataKey="rev"

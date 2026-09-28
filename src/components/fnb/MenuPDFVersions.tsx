@@ -239,7 +239,7 @@ export function MenuPDFVersions() {
               <label className="text-xs font-bold text-slate-500 uppercase">Versão (Ex: 1.0)</label>
               <Input
                 value={genForm.version}
-                onChange={(e) => setForm({ ...genForm, version: e.target.value })}
+                onChange={(e) => setGenForm({ ...genForm, version: e.target.value })}
                 placeholder="1.0"
               />
             </div>

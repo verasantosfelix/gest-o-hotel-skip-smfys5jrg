@@ -46,7 +46,7 @@ const formSchema = z
     email: z.string().email('Email inválido'),
     phone: z.string().optional(),
     employee_number: z.string().optional(),
-    role: z.enum(['manager', 'user'], { required_error: 'Selecione um nível de acesso base' }),
+    role: z.enum(['manager', 'user']),
     profile: z.string().optional(),
     password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
     passwordConfirm: z.string(),
@@ -66,7 +66,7 @@ export function CreateUserDialog({ profiles = [] }: { profiles?: any[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: '',
       email: '',

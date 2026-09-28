@@ -24,6 +24,6 @@ export const updateRoomDiscount = async (
   return pb.collection('room_discounts').update(id, data)
 }
 
-export const deleteRoomDiscount = async (id: string): Promise<void> => {
+export const deleteRoomDiscount = async (id: string): Promise<boolean> => {
   return pb.collection('room_discounts').delete(id)
 }

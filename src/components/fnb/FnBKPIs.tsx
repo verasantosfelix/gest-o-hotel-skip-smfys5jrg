@@ -34,7 +34,7 @@ export function FnBKPIs() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
                 <YAxis hide />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={(props: any) => <ChartTooltipContent {...props} />} />
                 <Bar dataKey="ticket" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
@@ -56,7 +56,7 @@ export function FnBKPIs() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
                 <YAxis hide />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={(props: any) => <ChartTooltipContent {...props} />} />
                 <Bar dataKey="time" fill="#f97316" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>

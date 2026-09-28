@@ -47,10 +47,23 @@ export function LoginForm() {
     setError('')
 
     try {
-      const res = await pb.send('/backend/v1/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ identifier, password }),
-      })
+      let res: any
+      try {
+        res = await pb.send('/backend/v1/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ identifier: identifier.trim(), password }),
+        })
+      } catch (customErr: any) {
+        // Fallback: se o endpoint customizado falhar e o identificador for email, tentar auth padrão PocketBase
+        if (identifier.includes('@')) {
+          const authData = await pb
+            .collection('users')
+            .authWithPassword(identifier.trim().toLowerCase(), password)
+          res = { token: authData.token, record: authData.record }
+        } else {
+          throw customErr
+        }
+      }
 
       pb.authStore.save(res.token, res.record)
       retryLoadProfile()

@@ -185,7 +185,7 @@ export default function Reports() {
                     tick={{ fill: '#64748b' }}
                     tickFormatter={(val) => `$${val}`}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartTooltip content={(props: any) => <ChartTooltipContent {...props} />} />
                   <Bar
                     dataKey="revenue"
                     fill="var(--color-revenue)"

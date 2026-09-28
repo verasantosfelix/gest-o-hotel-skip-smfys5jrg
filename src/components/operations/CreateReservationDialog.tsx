@@ -55,9 +55,9 @@ const roomSchema = z.object({
 
 const schema = z
   .object({
-    reservationType: z.enum(['individual', 'corporate']).default('individual'),
-    checkIn: z.date({ required_error: 'Data de check-in obrigatória' }),
-    checkOut: z.date({ required_error: 'Data de check-out obrigatória' }),
+    reservationType: z.enum(['individual', 'corporate']),
+    checkIn: z.date(),
+    checkOut: z.date(),
     isCreatingGuest: z.boolean(),
     guestId: z.string().optional(),
     guestName: z.string().optional(),
@@ -167,7 +167,7 @@ export function CreateReservationDialog({
   const [associatedGuestsPopOpen, setAssociatedGuestsPopOpen] = useState(false)
 
   const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       reservationType: 'individual',
       isCreatingGuest: false,
@@ -426,12 +426,8 @@ export function CreateReservationDialog({
 
   const getAvailableRooms = (typology: string, currentIndex: number) => {
     return roomsList.filter((r) => {
-      if (
-        r.status === 'Ocupado' ||
-        r.status === 'Manutenção' ||
-        r.status === 'maintenance' ||
-        r.status === 'out_of_order'
-      )
+      const s = r.status as string
+      if (s === 'Ocupado' || s === 'Manutenção' || s === 'maintenance' || s === 'out_of_order')
         return false
       if (typology && r.room_type !== typology) return false
       if (overlappingRes.some((ov) => ov.room_id === r.id)) return false

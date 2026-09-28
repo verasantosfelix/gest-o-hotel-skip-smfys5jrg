@@ -50,10 +50,19 @@ const formSchema = z.object({
   room_id: z.string().min(1, 'Selecione o quarto'),
   guest_name: z.string().min(1, 'Nome do solicitante é obrigatório'),
   item: z.string().min(1, 'Selecione um item'),
-  quantity: z.coerce.number().min(1, 'Quantidade mínima é 1'),
+  quantity: z.number().min(1, 'Quantidade mínima é 1'),
   description: z.string().optional(),
   priority: z.enum(['normal', 'urgente']),
 })
+
+type FormValues = {
+  room_id: string
+  guest_name: string
+  item: string
+  quantity: number
+  description?: string
+  priority: 'normal' | 'urgente'
+}
 
 export function NewAmenityRequestDialog({
   open,
@@ -67,8 +76,8 @@ export function NewAmenityRequestDialog({
   const [rooms, setRooms] = useState<RoomRecord[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       room_id: '',
       guest_name: '',
@@ -126,7 +135,11 @@ export function NewAmenityRequestDialog({
                       </FormControl>
                       <SelectContent>
                         {rooms
-                          .filter((r) => r.status === 'occupied')
+                          .filter(
+                            (r) =>
+                              (r.status as string) === 'Ocupado' ||
+                              (r.status as string) === 'occupied',
+                          )
                           .map((r) => (
                             <SelectItem key={r.id} value={r.id}>
                               Quarto {r.room_number}
@@ -185,7 +198,12 @@ export function NewAmenityRequestDialog({
                   <FormItem>
                     <FormLabel>Quantidade</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} />
+                      <Input
+                        type="number"
+                        min="1"
+                        value={field.value}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

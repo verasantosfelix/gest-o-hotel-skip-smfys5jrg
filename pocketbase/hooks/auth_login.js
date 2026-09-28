@@ -10,7 +10,7 @@ routerAdd('POST', '/backend/v1/auth/login', (e) => {
   let user
   try {
     if (identifier.includes('@')) {
-      user = $app.findAuthRecordByEmail('users', identifier)
+      user = $app.findAuthRecordByEmail('users', identifier.toLowerCase())
     } else {
       try {
         user = $app.findFirstRecordByData('users', 'employee_number', identifier)

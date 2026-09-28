@@ -91,7 +91,7 @@ export function ChecklistModal({ room, onClose }: ChecklistModalProps) {
 
   const handleFinish = async () => {
     try {
-      await updateRoom(room.id, { status: type === 'checkout' ? 'vago_pronto' : 'ocupado_pronto' })
+      await updateRoom(room.id, { status: type === 'checkout' ? 'Disponível' : 'Ocupado' })
       await createHousekeepingLog({
         room_id: room.id,
         staff_id: pb.authStore.model?.id,
@@ -140,7 +140,10 @@ export function ChecklistModal({ room, onClose }: ChecklistModalProps) {
             </div>
             <Button
               className="w-full mt-4"
-              onClick={() => setStep(0) || setChecked({ init: true })}
+              onClick={() => {
+                setStep(0)
+                setChecked({ init: true })
+              }}
             >
               Iniciar Fluxo
             </Button>
