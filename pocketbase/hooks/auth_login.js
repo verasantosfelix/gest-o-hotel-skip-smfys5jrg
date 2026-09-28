@@ -34,5 +34,5 @@ routerAdd('POST', '/backend/v1/auth/login', (e) => {
     return e.forbiddenError('Account suspended.')
   }
 
-  return $apis.recordAuthResponse($app, e, user)
+  return $apis.recordAuthResponse(e, user)
 })
