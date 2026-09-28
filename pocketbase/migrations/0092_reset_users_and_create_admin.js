@@ -85,6 +85,7 @@ migrate(
     adminUser.set('employee_number', 'ADM001')
     adminUser.set('phone', '910000000')
     adminUser.set('first_login_completed', true)
+    // Confirmação de credenciais finais
 
     if (adminProfile) {
       adminUser.set('profile', adminProfile.id)

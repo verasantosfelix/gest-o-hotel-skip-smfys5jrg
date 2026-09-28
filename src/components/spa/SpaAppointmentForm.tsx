@@ -320,7 +320,10 @@ export function SpaAppointmentForm({
           {!isFrontDesk && initialData && (
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
+              <Select
+                value={form.status}
+                onValueChange={(v: any) => setForm({ ...form, status: v })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
